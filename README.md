@@ -23,7 +23,7 @@ This repository folder contains a custom Home Assistant integration for MHI Nova
 
 If you use HACS, add this repository as a custom repository:
 
-- Repository URL: [https://github.com/flom89/mhiNova](https://github.com/flom89/mhi_nova_link)
+- Repository URL: [https://github.com/flom89/mhi_nova_link](https://github.com/flom89/mhi_nova_link)
 - Category: Integration
 
 Then search for "MHI Nova Link" in HACS and install it.
