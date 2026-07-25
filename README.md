@@ -15,7 +15,7 @@ This repository folder contains a custom Home Assistant integration for MHI Nova
 
 ### Manual installation
 
-1. Copy the `mhi_nova` folder into your Home Assistant `custom_components` directory.
+1. Copy the `mhi_nova_link` folder into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
 3. Add the integration from Settings → Devices & Services.
 
@@ -23,10 +23,10 @@ This repository folder contains a custom Home Assistant integration for MHI Nova
 
 If you use HACS, add this repository as a custom repository:
 
-- Repository URL: https://github.com/flom89/mhiNova
+- Repository URL: [https://github.com/flom89/mhiNova](https://github.com/flom89/mhi_nova_link)
 - Category: Integration
 
-Then search for "MHI Nova" in HACS and install it.
+Then search for "MHI Nova Link" in HACS and install it.
 
 ## Development
 
@@ -39,5 +39,3 @@ python -m pytest -q tests/components/mhi_nova
 ```
 
 ## Notes
-
-This folder is intended to be self-contained for use as a custom component, while still fitting into the Home Assistant Core test layout.
