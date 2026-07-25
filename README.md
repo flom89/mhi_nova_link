@@ -1,6 +1,6 @@
 # MHI Nova for Home Assistant
 
-![MHI Nova logo](brand/logo.png)
+![MHI Nova logo](custom_components/mhi_nova_link/brand/logo.png)
 
 This repository folder contains a custom Home Assistant integration for MHI Nova gateways.
 
