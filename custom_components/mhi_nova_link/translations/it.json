@@ -1,0 +1,154 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connetti il gateway CompTrol Nova",
+        "description": "Inserisci l'indirizzo IP o il nome host e le credenziali del gateway S-Klima CompTrol Nova.",
+        "data": {
+          "host": "Indirizzo IP / nome host",
+          "username": "Nome utente",
+          "password": "Password"
+        }
+      },
+      "init": {
+        "description": "Regola la frequenza con cui il gateway viene interrogato per gli aggiornamenti.",
+        "data": {
+          "poll_interval": "Intervallo di polling (secondi)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi al gateway. Controlla l'indirizzo IP.",
+      "invalid_auth": "Nome utente o password non validi.",
+      "unknown": "Si è verificato un errore imprevisto."
+    },
+    "abort": {
+      "already_configured": "Questo gateway è già configurato in Home Assistant."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "In esecuzione",
+        "state": {
+          "on": "In esecuzione",
+          "off": "Fermato"
+        }
+      },
+      "available": {
+        "name": "Disponibile",
+        "state": {
+          "on": "Disponibile",
+          "off": "Non disponibile"
+        }
+      },
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Attivato",
+          "off": "Disattivato"
+        }
+      },
+      "temperature_range": {
+        "name": "Intervallo di temperatura",
+        "state": {
+          "on": "Attivato",
+          "off": "Disattivato"
+        }
+      },
+      "critical_error": {
+        "name": "Errore critico",
+        "state": {
+          "on": "Presente",
+          "off": "Normale"
+        }
+      },
+      "maintenance_required": {
+        "name": "Manutenzione richiesta",
+        "state": {
+          "on": "Richiesta",
+          "off": "Non richiesta"
+        }
+      },
+      "compressor_active": {
+        "name": "Compressore attivo",
+        "state": {
+          "on": "Attivo",
+          "off": "Inattivo"
+        }
+      },
+      "defrosting_active": {
+        "name": "Sbrinamento",
+        "state": {
+          "on": "Attivo",
+          "off": "Inattivo"
+        }
+      },
+      "filter_sign": {
+        "name": "Promemoria filtro",
+        "state": {
+          "on": "Richiesto",
+          "off": "OK"
+        }
+      }
+    },
+    "climate": {
+      "mhi_nova_zone": {
+        "name": "Climatizzazione",
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "low": "Bassa",
+              "medium": "Media",
+              "high": "Alta",
+              "powerful": "Potente"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "louver_position": {"name": "Posizione lamelle"},
+      "vane_position": {"name": "Posizione alette"}
+    },
+    "sensor": {
+      "room_temperature": {"name": "Temperatura"},
+      "setpoint": {"name": "Setpoint"},
+      "indoor_unit_temperature": {"name": "Temperatura dell'unità interna"},
+      "outdoor_air_temperature": {"name": "Temperatura dell'aria esterna"},
+      "compressor_frequency": {"name": "Frequenza del compressore"},
+      "protection_state": {"name": "Stato di protezione"},
+      "operation_mode": {
+        "name": "Modalità",
+        "state": {
+          "off": "Spento",
+          "cooling": "Raffreddamento",
+          "heating": "Riscaldamento",
+          "auto": "Auto",
+          "dry": "Deumidificazione",
+          "fan": "Ventilazione"
+        }
+      },
+      "fan_speed": {
+        "name": "Ventilatore",
+        "state": {
+          "auto": "Auto",
+          "low": "Bassa",
+          "medium": "Media",
+          "high": "Alta",
+          "powerful": "Potente"
+        }
+      }
+    },
+    "switch": {
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Attivato",
+          "off": "Disattivato"
+        }
+      }
+    }
+  }
+}

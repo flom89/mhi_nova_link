@@ -1,0 +1,161 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "CompTrol Nova-Gateway verbinden",
+        "description": "Gib die IP-Adresse oder den Hostnamen sowie die Zugangsdaten für dein S-Klima CompTrol Nova-Gateway ein.",
+        "data": {
+          "host": "IP-Adresse / Hostname",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
+      "init": {
+        "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
+        "data": {
+          "poll_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Gateway fehlgeschlagen. Prüfe die IP-Adresse.",
+      "invalid_auth": "Ungültiger Benutzername oder Passwort.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten."
+    },
+    "abort": {
+      "already_configured": "Dieses Gateway ist bereits in Home Assistant konfiguriert."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "Läuft",
+        "state": {
+          "on": "Läuft",
+          "off": "Gestoppt"
+        }
+      },
+      "available": {
+        "name": "Verfügbar",
+        "state": {
+          "on": "Verfügbar",
+          "off": "Nicht verfügbar"
+        }
+      },
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Aktiviert",
+          "off": "Deaktiviert"
+        }
+      },
+      "temperature_range": {
+        "name": "Temperaturbereich",
+        "state": {
+          "on": "Aktiviert",
+          "off": "Deaktiviert"
+        }
+      },
+      "critical_error": {
+        "name": "Kritischer Fehler",
+        "state": {
+          "on": "Vorhanden",
+          "off": "Normal"
+        }
+      },
+      "maintenance_required": {
+        "name": "Wartung erforderlich",
+        "state": {
+          "on": "Erforderlich",
+          "off": "Nicht erforderlich"
+        }
+      },
+      "compressor_active": {
+        "name": "Kompressor aktiv",
+        "state": {
+          "on": "Aktiv",
+          "off": "Inaktiv"
+        }
+      },
+      "defrosting_active": {
+        "name": "Abtauung",
+        "state": {
+          "on": "Aktiv",
+          "off": "Inaktiv"
+        }
+      },
+      "filter_sign": {
+        "name": "Filterhinweis",
+        "state": {
+          "on": "Erforderlich",
+          "off": "OK"
+        }
+      },
+      "notifications": {
+        "name": "Aktive Benachrichtigungen",
+        "state": {
+          "on": "Vorhanden",
+          "off": "Keine"
+        }
+      }
+    },
+    "climate": {
+      "mhi_nova_zone": {
+        "name": "Klima",
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "low": "Niedrig",
+              "medium": "Mittel",
+              "high": "Hoch",
+              "powerful": "Power"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "louver_position": {"name": "Lüftungsposition"},
+      "vane_position": {"name": "Lamellenposition"}
+    },
+    "sensor": {
+      "room_temperature": {"name": "Temperatur"},
+      "setpoint": {"name": "Sollwert"},
+      "indoor_unit_temperature": {"name": "Innengerät-Temperatur"},
+      "outdoor_air_temperature": {"name": "Außenlufttemperatur"},
+      "compressor_frequency": {"name": "Kompressorfrequenz"},
+      "protection_state": {"name": "Schutzstatus"},
+      "operation_mode": {
+        "name": "Modus",
+        "state": {
+          "off": "Aus",
+          "cooling": "Kühlen",
+          "heating": "Heizen",
+          "auto": "Auto",
+          "dry": "Entfeuchten",
+          "fan": "Lüften"
+        }
+      },
+      "fan_speed": {
+        "name": "Lüfter",
+        "state": {
+          "auto": "Auto",
+          "low": "Niedrig",
+          "medium": "Mittel",
+          "high": "Hoch",
+          "powerful": "Power"
+        }
+      }
+    },
+    "switch": {
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Ein",
+          "off": "Aus"
+        }
+      }
+    }
+  }
+}

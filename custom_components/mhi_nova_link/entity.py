@@ -1,0 +1,59 @@
+"""Shared entity helpers for MHI Nova zone-based entities."""
+
+from typing import Any
+
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN
+from .coordinator import SKlimaDataUpdateCoordinator
+
+
+class SKlimaZoneEntity(CoordinatorEntity[SKlimaDataUpdateCoordinator]):
+    """Common base for zone-scoped entities in the custom integration.
+
+    The integration is centered around gateway zones, so this shared base keeps the
+    device metadata and zone lookup logic consistent across entities.
+    """
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the entity for a specific gateway zone."""
+        super().__init__(coordinator)
+        self.zone_id = zone_id
+
+    @property
+    def _zone_data(self) -> dict[str, Any]:
+        """Return the latest zone payload for the entity."""
+        for zone in self.coordinator.data:
+            if zone.get("zoneId") == self.zone_id:
+                return zone
+        return {}
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return Home Assistant device metadata for the zone."""
+        zone_name = (
+            self._zone_data.get("name")
+            or self._zone_data.get("displayName")
+            or f"Zone {self.zone_id}"
+        )
+        return {
+            "identifiers": {
+                (
+                    DOMAIN,
+                    f"{self.coordinator.config_entry.entry_id}_{self.zone_id}",
+                )
+            },
+            "name": zone_name,
+            "manufacturer": "flom89",
+            "model": "S-Klima CompTrol 4Web NOVA RC | Custom Integration",
+            "sw_version": "NOVA RC Software 3.2.5",
+        }
+
+    def get_indoor_unit_data(self, indoor_unit_id: int) -> dict[str, Any]:
+        """Return the payload for a specific indoor unit attached to the zone."""
+        for indoor_unit in self._zone_data.get("indoorUnits", []) or []:
+            if indoor_unit.get("indoorUnitId") == indoor_unit_id:
+                return indoor_unit
+        return {}

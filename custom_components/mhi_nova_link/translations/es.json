@@ -1,0 +1,154 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectar la puerta de enlace CompTrol Nova",
+        "description": "Introduce la dirección IP o el nombre de host y las credenciales de tu puerta de enlace S-Klima CompTrol Nova.",
+        "data": {
+          "host": "Dirección IP / nombre de host",
+          "username": "Nombre de usuario",
+          "password": "Contraseña"
+        }
+      },
+      "init": {
+        "description": "Ajusta la frecuencia con la que se consulta la puerta de enlace para actualizarse.",
+        "data": {
+          "poll_interval": "Intervalo de sondeo (segundos)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se pudo conectar a la puerta de enlace. Comprueba la dirección IP.",
+      "invalid_auth": "Nombre de usuario o contraseña no válidos.",
+      "unknown": "Se ha producido un error inesperado."
+    },
+    "abort": {
+      "already_configured": "Esta puerta de enlace ya está configurada en Home Assistant."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "Funcionando",
+        "state": {
+          "on": "Funcionando",
+          "off": "Detenido"
+        }
+      },
+      "available": {
+        "name": "Disponible",
+        "state": {
+          "on": "Disponible",
+          "off": "No disponible"
+        }
+      },
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Activado",
+          "off": "Desactivado"
+        }
+      },
+      "temperature_range": {
+        "name": "Rango de temperatura",
+        "state": {
+          "on": "Activado",
+          "off": "Desactivado"
+        }
+      },
+      "critical_error": {
+        "name": "Error crítico",
+        "state": {
+          "on": "Presente",
+          "off": "Normal"
+        }
+      },
+      "maintenance_required": {
+        "name": "Mantenimiento requerido",
+        "state": {
+          "on": "Requerido",
+          "off": "No requerido"
+        }
+      },
+      "compressor_active": {
+        "name": "Compresor activo",
+        "state": {
+          "on": "Activo",
+          "off": "Inactivo"
+        }
+      },
+      "defrosting_active": {
+        "name": "Desescarche",
+        "state": {
+          "on": "Activo",
+          "off": "Inactivo"
+        }
+      },
+      "filter_sign": {
+        "name": "Recordatorio de filtro",
+        "state": {
+          "on": "Requerido",
+          "off": "OK"
+        }
+      }
+    },
+    "climate": {
+      "mhi_nova_zone": {
+        "name": "Climatización",
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "low": "Baja",
+              "medium": "Media",
+              "high": "Alta",
+              "powerful": "Potente"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "louver_position": {"name": "Posición de persiana"},
+      "vane_position": {"name": "Posición de aletas"}
+    },
+    "sensor": {
+      "room_temperature": {"name": "Temperatura"},
+      "setpoint": {"name": "Consigna"},
+      "indoor_unit_temperature": {"name": "Temperatura de la unidad interior"},
+      "outdoor_air_temperature": {"name": "Temperatura del aire exterior"},
+      "compressor_frequency": {"name": "Frecuencia del compresor"},
+      "protection_state": {"name": "Estado de protección"},
+      "operation_mode": {
+        "name": "Modo",
+        "state": {
+          "off": "Apagado",
+          "cooling": "Enfriamiento",
+          "heating": "Calefacción",
+          "auto": "Auto",
+          "dry": "Secado",
+          "fan": "Ventilador"
+        }
+      },
+      "fan_speed": {
+        "name": "Ventilador",
+        "state": {
+          "auto": "Auto",
+          "low": "Baja",
+          "medium": "Media",
+          "high": "Alta",
+          "powerful": "Potente"
+        }
+      }
+    },
+    "switch": {
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Activado",
+          "off": "Desactivado"
+        }
+      }
+    }
+  }
+}

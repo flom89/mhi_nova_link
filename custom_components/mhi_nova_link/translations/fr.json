@@ -1,0 +1,133 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connecter la passerelle CompTrol Nova",
+        "description": "Saisissez l'adresse IP ou le nom d'hôte ainsi que les identifiants de votre passerelle S-Klima CompTrol Nova.",
+        "data": {
+          "host": "Adresse IP / nom d'hôte",
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe"
+        }
+      },
+      "init": {
+        "description": "Ajustez la fréquence à laquelle la passerelle est interrogée pour les mises à jour.",
+        "data": {
+          "poll_interval": "Intervalle d'interrogation (secondes)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion à la passerelle. Vérifiez l'adresse IP.",
+      "invalid_auth": "Nom d'utilisateur ou mot de passe invalide.",
+      "unknown": "Une erreur inattendue s'est produite."
+    },
+    "abort": {
+      "already_configured": "Cette passerelle est déjà configurée dans Home Assistant."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "En marche",
+        "state": {
+          "on": "En marche",
+          "off": "Arrêté"
+        }
+      },
+      "available": {
+        "name": "Disponible",
+        "state": {
+          "on": "Disponible",
+          "off": "Indisponible"
+        }
+      },
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Activé",
+          "off": "Désactivé"
+        }
+      },
+      "temperature_range": {
+        "name": "Plage de température",
+        "state": {
+          "on": "Activé",
+          "off": "Désactivé"
+        }
+      },
+      "critical_error": {
+        "name": "Erreur critique",
+        "state": {
+          "on": "Présent",
+          "off": "Normal"
+        }
+      },
+      "maintenance_required": {
+        "name": "Maintenance requise",
+        "state": {
+          "on": "Requis",
+          "off": "Non requis"
+        }
+      }
+    },
+    "climate": {
+      "mhi_nova_zone": {
+        "name": "Climatisation",
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "low": "Faible",
+              "medium": "Moyenne",
+              "high": "Élevée",
+              "powerful": "Puissant"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "louver_position": {"name": "Position des lames"},
+      "vane_position": {"name": "Position des ailettes"}
+    },
+    "sensor": {
+      "room_temperature": {"name": "Température"},
+      "setpoint": {"name": "Consigne"},
+      "indoor_unit_temperature": {"name": "Température de l'unité intérieure"},
+      "outdoor_air_temperature": {"name": "Température de l'air extérieur"},
+      "compressor_frequency": {"name": "Fréquence du compresseur"},
+      "protection_state": {"name": "État de protection"},
+      "operation_mode": {
+        "name": "Mode",
+        "state": {
+          "off": "Arrêt",
+          "cooling": "Refroidissement",
+          "heating": "Chauffage",
+          "auto": "Auto",
+          "dry": "Déshumidification",
+          "fan": "Ventilation"
+        }
+      },
+      "fan_speed": {
+        "name": "Ventilateur",
+        "state": {
+          "auto": "Auto",
+          "low": "Faible",
+          "medium": "Moyenne",
+          "high": "Élevée",
+          "powerful": "Puissant"
+        }
+      }
+    },
+    "switch": {
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Activé",
+          "off": "Désactivé"
+        }
+      }
+    }
+  }
+}

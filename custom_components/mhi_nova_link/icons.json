@@ -1,0 +1,15 @@
+{
+  "entity": {
+    "climate": {
+      "mhi_nova_link": {
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "powerful": "mdi:fan-speed-3"
+            }
+          }
+        }
+      }
+    }
+  }
+}

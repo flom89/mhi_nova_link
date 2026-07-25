@@ -1,0 +1,1 @@
+# No additional runtime dependencies are required beyond Home Assistant Core.

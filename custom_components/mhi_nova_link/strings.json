@@ -1,0 +1,188 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect MHI NovaLink gateway",
+        "description": "Enter the IP address or hostname and the credentials for your MHI NovaLink gateway.",
+        "data": {
+          "host": "IP address / hostname",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "init": {
+        "description": "Adjust how often the gateway is polled for updates.",
+        "data": {
+          "poll_interval": "Polling interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the gateway. Check the IP address.",
+      "invalid_auth": "Invalid username or password.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This gateway is already configured in Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Adjust how often the gateway is polled for updates.",
+        "data": {
+          "poll_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "Running",
+        "state": {
+          "on": "Running",
+          "off": "Stopped"
+        }
+      },
+      "available": {
+        "name": "Available",
+        "state": {
+          "on": "Available",
+          "off": "Unavailable"
+        }
+      },
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "Enabled",
+          "off": "Disabled"
+        }
+      },
+      "temperature_range": {
+        "name": "Temperature range",
+        "state": {
+          "on": "Enabled",
+          "off": "Disabled"
+        }
+      },
+      "critical_error": {
+        "name": "Critical error",
+        "state": {
+          "on": "Present",
+          "off": "Normal"
+        }
+      },
+      "maintenance_required": {
+        "name": "Maintenance required",
+        "state": {
+          "on": "Required",
+          "off": "Not required"
+        }
+      },
+      "compressor_active": {
+        "name": "Compressor active",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "defrosting_active": {
+        "name": "Defrosting",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "filter_sign": {
+        "name": "Filter reminder",
+        "state": {
+          "on": "Required",
+          "off": "OK"
+        }
+      },
+      "notifications": {
+        "name": "Active notifications",
+        "state": {
+          "on": "Present",
+          "off": "None"
+        }
+      },
+      "indoor_unit_running": {
+        "name": "Indoor unit running",
+        "state": {
+          "on": "Running",
+          "off": "Stopped"
+        }
+      },
+      "indoor_unit_filter_sign": {
+        "name": "Indoor unit filter reminder",
+        "state": {
+          "on": "Required",
+          "off": "OK"
+        }
+      }
+    },
+    "climate": {
+      "mhi_nova_zone": {
+        "name": "Climate",
+        "state_attributes": {
+          "fan_mode": {
+            "state": {
+              "auto": "Auto",
+              "low": "Low",
+              "medium": "Medium",
+              "high": "High",
+              "powerful": "Power"
+            }
+          }
+        }
+      }
+    },
+    "select": {
+      "louver_position": {"name": "Louver position"},
+      "vane_position": {"name": "Vane position"}
+    },
+    "sensor": {
+      "room_temperature": {"name": "Temperature"},
+      "setpoint": {"name": "Setpoint"},
+      "indoor_unit_temperature": {"name": "Indoor unit temperature"},
+      "indoor_unit_setpoint": {"name": "Indoor unit setpoint"},
+      "indoor_unit_operation_mode": {"name": "Indoor unit mode"},
+      "indoor_unit_fan_speed": {"name": "Indoor unit fan"},
+      "outdoor_air_temperature": {"name": "Outdoor air temperature"},
+      "compressor_frequency": {"name": "Compressor frequency"},
+      "protection_state": {"name": "Protection state"},
+      "operation_mode": {
+        "name": "Mode",
+        "state": {
+          "off": "Off",
+          "cooling": "Cooling",
+          "heating": "Heating",
+          "auto": "Auto",
+          "dry": "Dry",
+          "fan": "Fan"
+        }
+      },
+      "fan_speed": {
+        "name": "Fan",
+        "state": {
+          "auto": "Auto",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "powerful": "Power"
+        }
+      }
+    },
+    "switch": {
+      "three_d_auto": {
+        "name": "3D Auto",
+        "state": {
+          "on": "On",
+          "off": "Off"
+        }
+      }
+    }
+  }
+}

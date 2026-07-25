@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mhi-nova"
+version = "0.1.0"
+description = "Custom Home Assistant integration for MHI Nova gateways"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.setuptools]
+include-package-data = true
