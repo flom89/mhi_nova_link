@@ -3,11 +3,12 @@
     "step": {
       "user": {
         "title": "CompTrol Nova-Gateway verbinden",
-        "description": "Gib die IP-Adresse oder den Hostnamen sowie die Zugangsdaten für dein S-Klima CompTrol Nova-Gateway ein.",
+        "description": "Gib die IP-Adresse oder den Hostnamen sowie die Zugangsdaten für dein NOVA_RC CompTrol Nova-Gateway ein.",
         "data": {
           "host": "IP-Adresse / Hostname",
           "username": "Benutzername",
-          "password": "Passwort"
+          "password": "Passwort",
+          "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)"
         }
       },
       "init": {
@@ -20,6 +21,8 @@
     "error": {
       "cannot_connect": "Verbindung zum Gateway fehlgeschlagen. Prüfe die IP-Adresse.",
       "invalid_auth": "Ungültiger Benutzername oder Passwort.",
+      "invalid_ssl_fingerprint": "TLS-Zertifikatsprüfung fehlgeschlagen. Prüfe den hinterlegten Fingerprint.",
+      "invalid_ssl_fingerprint_format": "Das SSL-Fingerprint-Format ist ungültig.",
       "unknown": "Ein unerwarteter Fehler ist aufgetreten."
     },
     "abort": {
@@ -97,6 +100,55 @@
           "on": "Vorhanden",
           "off": "Keine"
         }
+      },
+      "indoor_unit_running": {
+        "name": "Innengerät",
+        "state": {
+          "on": "Läuft",
+          "off": "Aus"
+        }
+      },
+      "indoor_unit_filter_sign": {
+        "name": "Innengerät Filterhinweis",
+        "state": {
+          "on": "Erforderlich",
+          "off": "OK"
+        }
+      },
+      "sequencing_stop": {
+        "name": "Free-Cooling-Anforderung",
+        "state": {
+          "on": "Angefordert",
+          "off": "Inaktiv"
+        }
+      },
+      "sequencing_stop_active": {
+        "name": "Free Cooling aktiv",
+        "state": {
+          "on": "Aktiv",
+          "off": "Inaktiv"
+        }
+      },
+      "system_stop": {
+        "name": "System-Stopp",
+        "state": {
+          "on": "Gestoppt",
+          "off": "Laufend"
+        }
+      },
+      "system_fault": {
+        "name": "Systemfehler",
+        "state": {
+          "on": "Fehler",
+          "off": "Normal"
+        }
+      },
+      "gateway_update_available": {
+        "name": "Gateway-Update verfügbar",
+        "state": {
+          "on": "Verfügbar",
+          "off": "Aktuell"
+        }
       }
     },
     "climate": {
@@ -116,16 +168,47 @@
       }
     },
     "select": {
-      "louver_position": {"name": "Lüftungsposition"},
-      "vane_position": {"name": "Lamellenposition"}
+      "louver_position": {
+        "name": "Lüftungsposition"
+      },
+      "vane_position": {
+        "name": "Lamellenposition"
+      }
     },
     "sensor": {
-      "room_temperature": {"name": "Temperatur"},
-      "setpoint": {"name": "Sollwert"},
-      "indoor_unit_temperature": {"name": "Innengerät-Temperatur"},
-      "outdoor_air_temperature": {"name": "Außenlufttemperatur"},
-      "compressor_frequency": {"name": "Kompressorfrequenz"},
-      "protection_state": {"name": "Schutzstatus"},
+      "room_temperature": {
+        "name": "Temperatur"
+      },
+      "setpoint": {
+        "name": "Sollwert"
+      },
+      "indoor_unit_temperature": {
+        "name": "Innengerät-Temperatur"
+      },
+      "outdoor_air_temperature": {
+        "name": "Außenlufttemperatur"
+      },
+      "compressor_frequency": {
+        "name": "Kompressorfrequenz"
+      },
+      "protection_state": {
+        "name": "Schutzstatus"
+      },
+      "indoor_capacity": {
+        "name": "Innengeräteleistung"
+      },
+      "indoor_heat_exchanger_1_low_temp": {
+        "name": "Innengerät Auswurftemperatur"
+      },
+      "outdoor_heat_exchanger_1_low_temp": {
+        "name": "Wärmetauscher Außen Unten"
+      },
+      "outdoor_heat_exchanger_1_high_temp": {
+        "name": "Wärmetauscher Außen Oben"
+      },
+      "gateway_software_version": {
+        "name": "Gateway-Softwareversion"
+      },
       "operation_mode": {
         "name": "Modus",
         "state": {
@@ -146,6 +229,15 @@
           "high": "Hoch",
           "powerful": "Power"
         }
+      },
+      "indoor_unit_setpoint": {
+        "name": "Innengerät Sollwert"
+      },
+      "indoor_unit_operation_mode": {
+        "name": "Innengerät Modus"
+      },
+      "indoor_unit_fan_speed": {
+        "name": "Innengerät Lüfter"
       }
     },
     "switch": {
@@ -154,6 +246,17 @@
         "state": {
           "on": "Ein",
           "off": "Aus"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
+        "data": {
+          "poll_interval": "Abfrageintervall (Sekunden)",
+          "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)"
         }
       }
     }

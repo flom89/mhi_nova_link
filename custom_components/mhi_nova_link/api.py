@@ -1,9 +1,25 @@
-"""API client for the MHI NovaLink GraphQL gateway."""
+"""Provide the NOVA_RC GraphQL API client."""
 
+import asyncio
+import binascii
+from datetime import UTC, datetime, timedelta
+import hashlib
 import logging
+import ssl
 from typing import Any
+from urllib.parse import urlsplit
 
 import aiohttp
+from aiohttp import client_exceptions as aiohttp_exceptions
+
+from .graphql import (
+    GET_GPIOS_QUERY,
+    GET_NOTIFICATIONS_QUERY,
+    GET_TIME_SERIES_QUERY,
+    GET_UPDATE_CLOUD_SETTINGS_QUERY,
+    GET_ZONES_QUERY,
+    SET_ZONE_PATCH_MUTATION,
+)
 
 DEFAULT_TIME_SERIES_DATASET_IDS = {
     "iu_room_air_temperature",
@@ -44,202 +60,10 @@ DEFAULT_TIME_SERIES_DATASET_IDS = {
     "iu_indication_total_running_hours",
 }
 
+TIME_SERIES_LOOKBACK = timedelta(days=30)
+TIME_SERIES_POINT_COUNT = 100
+
 _LOGGER = logging.getLogger(__name__)
-
-# GraphQL query to read all zones, including the richer gateway detail fields.
-GET_ZONES_QUERY = """
-query GetZones {
-  xybus {
-    zones {
-      ... on XYBusZone {
-        ...Zone
-        __typename
-      }
-      ... on OfflineZone {
-        ...ZoneOffline
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-fragment Zone on XYBusZone {
-  __typename
-  zoneId
-  available
-  displayName
-  name
-  indoorUnitCount
-  newIndoorUnitCount
-  indoorUnits {
-    indoorUnitId
-    displayName
-    name
-    isNew
-    unitNoMain
-    unitNoSub
-    state {
-      running
-      roomAirTemperature
-      operationMode
-      fanSpeed
-      setpoint
-      __typename
-    }
-    __typename
-  }
-  sequencingState {
-    alarm
-    __typename
-  }
-  error {
-    maintenanceCount
-    criticalCount
-    __typename
-  }
-  controllingMode
-  controllingModeChangeProgress
-  unitNoMain
-  unitNoSub
-  setpoint
-  roomAirTemperature
-  running
-  operationMode
-  operationModePermission {
-    auto
-    cooling
-    heating
-    dry
-    __typename
-  }
-  temperatureRangeEnable
-  temperatureRangeCooling {
-    lower
-    upper
-    __typename
-  }
-  temperatureRangeHeating {
-    lower
-    upper
-    __typename
-  }
-  fanSpeed
-  louverPosition
-  vanePosition
-  flap3dAuto
-  manualOperationTimeout {
-    totalSeconds
-    __typename
-  }
-  manualOperationDurationSec
-  controlProgram
-}
-
-fragment ZoneOffline on OfflineZone {
-  __typename
-  zoneId
-}
-"""
-
-GET_INDOOR_UNIT_QUERY = """
-query GetIndoorUnit($indoorUnitId: Int!) {
-  xybus {
-    indoorUnit(indoorUnitId: $indoorUnitId) {
-      indoorUnitId
-      name
-      displayName
-      isNew
-      unitNoMain
-      unitNoSub
-      state {
-        running
-        roomAirTemperature
-        operationMode
-        fanSpeed
-        setpoint
-        __typename
-      }
-      controllingMode
-      controlProgram
-      manualOperationDurationSec
-      __typename
-    }
-  }
-}
-"""
-
-GET_NOTIFICATIONS_QUERY = """
-query GetNotifications {
-  notification {
-    notifications(filter: {} orders: [{ by: NOTIFICATION_ID, direction: ASC }] page: { limit: 20, offset: 0 }) {
-      notificationId
-      confirmedBy
-      creationDate
-      confirmationDate
-      error
-      priority
-      active
-      source
-    }
-    errors(onlyActive: true) {
-      name
-      code
-      description(language: \"en\")
-      priority
-    }
-    notificationCount(filter: {})
-    sources
-  }
-}
-"""
-
-# GraphQL mutation to change zone settings.
-SET_ZONE_PATCH_MUTATION = """
-mutation PatchZone($zoneId: Int!, $patch: ZonePatch!) {
-  xybus {
-    zone(zoneId: $zoneId) {
-      patch(patch: $patch) {
-        ...JobFragment
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-fragment JobFragment on Job {
-  id
-  done
-  cancelled
-  exception
-  result {
-    ... on SmtpServerResponseResult {
-      message
-      code
-      __typename
-    }
-    ... on SmtpSendTestEmailResult {
-      error
-      __typename
-    }
-    ... on Notification {
-      confirmedBy {
-        username
-        userId
-        fullName
-        __typename
-      }
-      confirmationDate
-      __typename
-    }
-    __typename
-  }
-  __typename
-}
-"""
 
 
 class CannotConnect(Exception):
@@ -248,6 +72,61 @@ class CannotConnect(Exception):
 
 class InvalidAuth(Exception):
     """Raised when authentication fails."""
+
+
+class InvalidCertificate(Exception):
+    """Raised when TLS certificate validation fails."""
+
+
+def normalize_ssl_fingerprint(value: str | None) -> str | None:
+    """Normalize a SHA256 fingerprint to lowercase hex without separators."""
+    if value is None:
+        return None
+
+    compact = value.replace(":", "").replace(" ", "").lower()
+    if not compact:
+        return None
+    if len(compact) != 64:
+        raise ValueError("Fingerprint must contain exactly 64 hex characters")
+
+    try:
+        int(compact, 16)
+    except ValueError as err:
+        raise ValueError(
+            "Fingerprint must be a valid hexadecimal SHA256 value"
+        ) from err
+
+    return compact
+
+
+def _raise_if_auth_rejected(status: int, response_text: str, operation: str) -> None:
+    """Raise InvalidAuth for HTTP auth failures."""
+    if status in (401, 403):
+        _LOGGER.error(
+            "Authentication error in %s (%s): %s", operation, status, response_text
+        )
+        raise InvalidAuth("Authentication rejected.")
+
+
+def _format_utc_timestamp(timestamp: datetime) -> str:
+    """Return a GraphQL-friendly UTC timestamp string."""
+    return (
+        timestamp.astimezone(UTC)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def build_time_series_period(
+    lookback: timedelta = TIME_SERIES_LOOKBACK,
+) -> dict[str, str]:
+    """Build a rolling time-series period ending at the current UTC time."""
+    end = datetime.now(UTC)
+    start = end - lookback
+    return {
+        "startDate": _format_utc_timestamp(start),
+        "endDate": _format_utc_timestamp(end),
+    }
 
 
 def build_time_series_identifiers(zone: dict[str, Any]) -> list[dict[str, str]]:
@@ -261,6 +140,9 @@ def build_time_series_identifiers(zone: dict[str, Any]) -> list[dict[str, str]]:
         indoor_unit_id = indoor_unit.get("indoorUnitId")
         if indoor_unit_id is not None:
             indoor_references.append(f"/indoor_unit/{indoor_unit_id}")
+
+    # Some gateways report the zone indoor unit in both places; deduplicate references.
+    indoor_references = list(dict.fromkeys(indoor_references))
 
     identifiers: list[dict[str, str]] = []
     for dataset_id in sorted(DEFAULT_TIME_SERIES_DATASET_IDS):
@@ -297,29 +179,6 @@ def normalize_time_series_payload(data: dict[str, Any]) -> dict[str, dict[str, A
     return datasets
 
 
-def normalize_indoor_unit_payload(data: dict[str, Any]) -> dict[str, Any]:
-    """Normalize the direct indoor-unit payload into a simple dict."""
-    xybus = data.get("data", {}).get("xybus", {})
-    indoor_unit = xybus.get("indoorUnit")
-    if not isinstance(indoor_unit, dict):
-        return {}
-
-    state = indoor_unit.get("state") or {}
-    if isinstance(state, dict):
-        normalized_state = dict(state)
-        normalized_state.setdefault(
-            "roomAirTemperature", indoor_unit.get("roomAirTemperature")
-        )
-        normalized_state.setdefault("running", indoor_unit.get("running"))
-        normalized_state.setdefault("operationMode", indoor_unit.get("operationMode"))
-        normalized_state.setdefault("fanSpeed", indoor_unit.get("fanSpeed"))
-        normalized_state.setdefault("setpoint", indoor_unit.get("setpoint"))
-        indoor_unit = dict(indoor_unit)
-        indoor_unit["state"] = normalized_state
-
-    return indoor_unit
-
-
 def normalize_notifications_payload(data: dict[str, Any]) -> dict[str, Any]:
     """Normalize the notification payload into a simple dict for entity use."""
     notification = data.get("data", {}).get("notification", {})
@@ -348,6 +207,28 @@ def normalize_notifications_payload(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def normalize_gpios_payload(data: dict[str, Any]) -> dict[str, bool]:
+    """Normalize GPIO payload into a function-to-state mapping."""
+    gpio = data.get("data", {}).get("gpio", {})
+    if not isinstance(gpio, dict):
+        return {}
+
+    gpios = gpio.get("gpios") or []
+    if not isinstance(gpios, list):
+        return {}
+
+    normalized: dict[str, bool] = {}
+    for item in gpios:
+        if not isinstance(item, dict):
+            continue
+        function = item.get("function")
+        value = item.get("value")
+        if isinstance(function, str) and function:
+            normalized[function] = bool(value)
+
+    return normalized
+
+
 def normalize_zones_payload(data: dict[str, Any]) -> list[dict[str, Any]]:
     """Normalize the zone payload for both list-style and single-zone responses."""
     xybus = data.get("data", {}).get("xybus", {})
@@ -364,18 +245,128 @@ def normalize_zones_payload(data: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-class SKlimaApiClient:
-    """GraphQL client for MHI NovaLink."""
+def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize gateway software and update information for entity consumption."""
+    payload = data.get("data", {})
+    system = payload.get("system", {})
+    information = system.get("information", {}) if isinstance(system, dict) else {}
+    update = payload.get("update", {})
+    cloud = update.get("cloud", {}) if isinstance(update, dict) else {}
 
-    def __init__(self, host: str, session: aiohttp.ClientSession) -> None:
+    installed_version = (
+        information.get("installedVersion", {}).get("asString")
+        if isinstance(information, dict)
+        else None
+    )
+    available_release = (
+        cloud.get("availableSoftwareRelease", {}) if isinstance(cloud, dict) else {}
+    )
+    available_version = (
+        available_release.get("version", {}).get("asString")
+        if isinstance(available_release, dict)
+        else None
+    )
+    settings = cloud.get("settings", {}) if isinstance(cloud, dict) else {}
+
+    return {
+        "installed_version": installed_version,
+        "installed_bundle_description": information.get("installedBundleDescription")
+        if isinstance(information, dict)
+        else None,
+        "installed_bundle_build": information.get("installedBundleBuild")
+        if isinstance(information, dict)
+        else None,
+        "available_version": available_version,
+        "update_available": bool(available_version),
+        "automatic_check": settings.get("automaticCheck")
+        if isinstance(settings, dict)
+        else None,
+        "automatic_install": settings.get("automaticInstall")
+        if isinstance(settings, dict)
+        else None,
+    }
+
+
+class NovaRcApiClient:
+    """GraphQL client for NOVA_RC."""
+
+    def __init__(
+        self,
+        host: str,
+        session: aiohttp.ClientSession,
+        ssl_fingerprint: str | None = None,
+    ) -> None:
         """Initialize the client."""
         self.host = host
         self.session = session
 
         clean_host = host.replace("https://", "").replace("http://", "").strip("/")
-        self.endpoint = f"https://{clean_host}/graphql/"
+        base_url = f"https://{clean_host}"
+        parsed = urlsplit(base_url)
+        self._connect_host = parsed.hostname or clean_host
+        self._connect_port = parsed.port or 443
+        self.endpoint = f"{base_url}/graphql/"
         self.username: str | None = None
         self.password: str | None = None
+        normalized_fingerprint = normalize_ssl_fingerprint(ssl_fingerprint)
+        self._ssl_context: bool | aiohttp.Fingerprint = True
+        if normalized_fingerprint:
+            self._ssl_context = aiohttp.Fingerprint(
+                binascii.unhexlify(normalized_fingerprint)
+            )
+
+    async def async_get_tls_fingerprint(self) -> str:
+        """Return the SHA256 fingerprint of the gateway's presented TLS certificate."""
+        # Use a minimal TLS context to avoid loading system trust stores in the event loop.
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+        writer = None
+        try:
+            _, writer = await asyncio.wait_for(
+                asyncio.open_connection(
+                    host=self._connect_host,
+                    port=self._connect_port,
+                    ssl=ssl_context,
+                    server_hostname=self._connect_host,
+                ),
+                timeout=10,
+            )
+        except (OSError, TimeoutError) as err:
+            raise CannotConnect(
+                f"Unable to retrieve gateway certificate fingerprint: {err}"
+            ) from err
+
+        try:
+            ssl_object = writer.get_extra_info("ssl_object")
+            if ssl_object is None:
+                raise CannotConnect(
+                    "No TLS session established while reading certificate"
+                )
+
+            certificate = ssl_object.getpeercert(binary_form=True)
+            if not certificate:
+                raise CannotConnect("Gateway did not provide a TLS certificate")
+
+            return hashlib.sha256(certificate).hexdigest()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    def _build_auth(self) -> aiohttp.BasicAuth | None:
+        """Build auth credentials if username and password are available."""
+        if self.username and self.password:
+            return aiohttp.BasicAuth(self.username, self.password)
+        return None
+
+    @staticmethod
+    def _build_headers() -> dict[str, str]:
+        """Build standard GraphQL HTTP headers."""
+        return {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
 
     async def async_login(self, username: str, password: str) -> bool:
         """Validate connectivity and store authentication credentials."""
@@ -396,16 +387,6 @@ class SKlimaApiClient:
 
     async def async_get_zones(self) -> list[dict[str, Any]]:
         """Fetch all active zones and their properties."""
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        auth = (
-            aiohttp.BasicAuth(self.username, self.password)
-            if self.username and self.password
-            else None
-        )
-
         try:
             async with self.session.post(
                 self.endpoint,
@@ -414,27 +395,23 @@ class SKlimaApiClient:
                     "operationName": "GetZones",
                     "variables": {},
                 },
-                headers=headers,
-                auth=auth,
+                headers=self._build_headers(),
+                auth=self._build_auth(),
                 timeout=10,
-                ssl=False,
+                ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
-
-                if response.status in (401, 403):
-                    _LOGGER.error("Auth-Fehler (%s): %s", response.status, text)
-                    raise InvalidAuth("Authentication rejected.")
+                _raise_if_auth_rejected(response.status, text, "GetZones")
 
                 if response.status != 200:
                     _LOGGER.error(
                         "GetZones returned HTTP error (%s): %s", response.status, text
                     )
-                    raise CannotConnect(f"HTTP Fehler: {response.status}")
+                    raise CannotConnect(f"HTTP error: {response.status}")
 
                 data = await response.json()
-
                 if "errors" in data:
-                    _LOGGER.error("GraphQL-Antwort Fehler: %s", data["errors"])
+                    _LOGGER.error("GraphQL response error: %s", data["errors"])
                     raise CannotConnect("GraphQL query error")
 
                 zones = normalize_zones_payload(data)
@@ -443,71 +420,19 @@ class SKlimaApiClient:
 
                 return zones
 
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
         except aiohttp.ClientError as err:
             raise CannotConnect(f"Connection error: {err}") from err
-
-    async def async_get_indoor_unit(self, indoor_unit_id: int) -> dict[str, Any]:
-        """Fetch a single indoor unit directly using a dedicated GraphQL query."""
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        auth = (
-            aiohttp.BasicAuth(self.username, self.password)
-            if self.username and self.password
-            else None
-        )
-
-        try:
-            async with self.session.post(
-                self.endpoint,
-                json={
-                    "query": GET_INDOOR_UNIT_QUERY,
-                    "operationName": "GetIndoorUnit",
-                    "variables": {"indoorUnitId": indoor_unit_id},
-                },
-                headers=headers,
-                auth=auth,
-                timeout=10,
-                ssl=False,
-            ) as response:
-                text = await response.text()
-
-                if response.status in (401, 403):
-                    _LOGGER.error("Auth-Fehler (%s): %s", response.status, text)
-                    raise InvalidAuth("Authentication rejected.")
-
-                if response.status != 200:
-                    _LOGGER.error(
-                        "GetIndoorUnit returned HTTP error (%s): %s",
-                        response.status,
-                        text,
-                    )
-                    raise CannotConnect(f"HTTP Fehler: {response.status}")
-
-                data = await response.json()
-
-                if "errors" in data:
-                    _LOGGER.error("GraphQL-Antwort Fehler: %s", data["errors"])
-                    raise CannotConnect("GraphQL query error")
-
-                return normalize_indoor_unit_payload(data)
-
-        except aiohttp.ClientError as err:
-            raise CannotConnect(f"Connection error: {err}") from err
+        except asyncio.TimeoutError as err:
+            raise CannotConnect("Timeout while fetching zones") from err
 
     async def async_get_notifications(self) -> dict[str, Any]:
         """Fetch active gateway notifications and errors."""
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        auth = (
-            aiohttp.BasicAuth(self.username, self.password)
-            if self.username and self.password
-            else None
-        )
-
         try:
             async with self.session.post(
                 self.endpoint,
@@ -516,12 +441,13 @@ class SKlimaApiClient:
                     "operationName": "GetNotifications",
                     "variables": {},
                 },
-                headers=headers,
-                auth=auth,
+                headers=self._build_headers(),
+                auth=self._build_auth(),
                 timeout=10,
-                ssl=False,
+                ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "GetNotifications")
                 if response.status != 200:
                     _LOGGER.debug("Notification query failed: %s", text)
                     return {}
@@ -532,8 +458,93 @@ class SKlimaApiClient:
                     return {}
 
                 return normalize_notifications_payload(data)
-        except aiohttp.ClientError as err:
+
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             _LOGGER.debug("Notification request failed: %s", err)
+            return {}
+
+    async def async_get_gpios(self) -> dict[str, bool]:
+        """Fetch GPIO states for gateway-level binary indicators."""
+        try:
+            async with self.session.post(
+                self.endpoint,
+                json={
+                    "query": GET_GPIOS_QUERY,
+                    "operationName": "GetGpios",
+                    "variables": {},
+                },
+                headers=self._build_headers(),
+                auth=self._build_auth(),
+                timeout=10,
+                ssl=self._ssl_context,
+            ) as response:
+                text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "GetGpios")
+                if response.status != 200:
+                    _LOGGER.debug("GPIO query failed: %s", text)
+                    return {}
+
+                data = await response.json()
+                if "errors" in data:
+                    _LOGGER.debug("GPIO query error: %s", data.get("errors"))
+                    return {}
+
+                return normalize_gpios_payload(data)
+
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            _LOGGER.debug("GPIO request failed: %s", err)
+            return {}
+
+    async def async_get_gateway_update_information(self) -> dict[str, Any]:
+        """Fetch installed software version and cloud update availability."""
+        try:
+            async with self.session.post(
+                self.endpoint,
+                json={
+                    "query": GET_UPDATE_CLOUD_SETTINGS_QUERY,
+                    "operationName": "GetUpdateCloudSettings",
+                    "variables": {},
+                },
+                headers=self._build_headers(),
+                auth=self._build_auth(),
+                timeout=10,
+                ssl=self._ssl_context,
+            ) as response:
+                text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "GetUpdateCloudSettings")
+                if response.status != 200:
+                    _LOGGER.debug("Gateway update-info query failed: %s", text)
+                    return {}
+
+                data = await response.json()
+                if "errors" in data:
+                    _LOGGER.debug(
+                        "Gateway update-info query error: %s", data.get("errors")
+                    )
+                    return {}
+
+                return normalize_gateway_update_payload(data)
+
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            _LOGGER.debug("Gateway update-info request failed: %s", err)
             return {}
 
     async def _attach_time_series_data(self, zone: dict[str, Any]) -> None:
@@ -546,97 +557,26 @@ class SKlimaApiClient:
             return
 
         payload = {
-            "query": """
-query GetData($count: Int!, $identifiers: [DataSetIdentifier!]!, $period: DateTimeIntervalInput!) {
-  timeSeries {
-    dataSetsWithData(count: $count, identifiers: $identifiers, period: $period) {
-      ...DataSet
-      data {
-        ... on NumericalTuple {
-          __typename
-        }
-        __typename
-      }
-      __typename
-    }
-    __typename
-  }
-}
-
-fragment DataSet on DataSet {
-  id
-  reference
-  source
-  data {
-    timestamp
-    value
-    __typename
-  }
-  options {
-    ... on NumericalOptions {
-      ...NumericalOptions
-      __typename
-    }
-    ... on EnumeratedOptions {
-      ...EnumeratedOptions
-      __typename
-    }
-    __typename
-  }
-  __typename
-}
-
-fragment NumericalOptions on NumericalOptions {
-  __typename
-  suffix
-  process
-  precision
-  curve
-  factor
-  divisor
-}
-
-fragment EnumeratedOptions on EnumeratedOptions {
-  __typename
-  options {
-    label
-    color
-    value
-    __typename
-  }
-}
-""",
+            "query": GET_TIME_SERIES_QUERY,
             "operationName": "GetData",
             "variables": {
-                "count": 100,
+                "count": TIME_SERIES_POINT_COUNT,
                 "identifiers": identifiers,
-                "period": {
-                    "startDate": "2026-06-24T22:00:00.000Z",
-                    "endDate": "2026-07-25T22:00:00.000Z",
-                },
+                "period": build_time_series_period(),
             },
         }
-
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        auth = (
-            aiohttp.BasicAuth(self.username, self.password)
-            if self.username and self.password
-            else None
-        )
 
         try:
             async with self.session.post(
                 self.endpoint,
                 json=payload,
-                headers=headers,
-                auth=auth,
+                headers=self._build_headers(),
+                auth=self._build_auth(),
                 timeout=10,
-                ssl=False,
+                ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "GetData")
                 if response.status != 200:
                     _LOGGER.debug(
                         "Time-series query failed for zone %s: %s",
@@ -657,7 +597,14 @@ fragment EnumeratedOptions on EnumeratedOptions {
                 datasets = normalize_time_series_payload(data)
                 if datasets:
                     zone["timeSeries"] = {"dataSets": list(datasets.values())}
-        except aiohttp.ClientError as err:
+
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             _LOGGER.debug(
                 "Time-series request failed for zone %s: %s", zone.get("zoneId"), err
             )
@@ -674,17 +621,6 @@ fragment EnumeratedOptions on EnumeratedOptions {
         flap3d_auto: bool | None = None,
     ) -> bool:
         """Change settings for a specific zone via a patch mutation."""
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        auth = (
-            aiohttp.BasicAuth(self.username, self.password)
-            if self.username and self.password
-            else None
-        )
-
-        # Build the patch payload.
         patch_data: dict[str, Any] = {}
         if running is not None:
             patch_data["running"] = running
@@ -717,12 +653,13 @@ fragment EnumeratedOptions on EnumeratedOptions {
             async with self.session.post(
                 self.endpoint,
                 json=payload,
-                headers=headers,
-                auth=auth,
+                headers=self._build_headers(),
+                auth=self._build_auth(),
                 timeout=10,
-                ssl=False,
+                ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "PatchZone")
 
                 if response.status != 200:
                     _LOGGER.error(
@@ -730,14 +667,13 @@ fragment EnumeratedOptions on EnumeratedOptions {
                     )
                     return False
 
-                res_json = await response.json()
-
-                if "errors" in res_json:
-                    _LOGGER.error("Mutation GraphQL error: %s", res_json["errors"])
+                response_json = await response.json()
+                if "errors" in response_json:
+                    _LOGGER.error("Mutation GraphQL error: %s", response_json["errors"])
                     return False
 
                 job = (
-                    res_json.get("data", {})
+                    response_json.get("data", {})
                     .get("xybus", {})
                     .get("zone", {})
                     .get("patch", {})
@@ -750,6 +686,12 @@ fragment EnumeratedOptions on EnumeratedOptions {
                 )
                 return True
 
-        except (aiohttp.ClientError, ValueError) as err:
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as err:
             _LOGGER.error("Failed to send mutation for zone %s: %s", zone_id, err)
             return False

@@ -1,4 +1,4 @@
-"""Basic smoke tests for the standalone custom integration layout."""
+"""Run smoke tests for the NOVA_RC custom integration."""
 
 from pathlib import Path
 import sys

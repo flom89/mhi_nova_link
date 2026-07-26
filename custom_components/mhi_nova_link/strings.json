@@ -2,12 +2,13 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect MHI NovaLink gateway",
-        "description": "Enter the IP address or hostname and the credentials for your MHI NovaLink gateway.",
+        "title": "Connect NOVA_RC gateway",
+        "description": "Enter the IP address or hostname and the credentials for your NOVA_RC gateway.",
         "data": {
           "host": "IP address / hostname",
           "username": "Username",
-          "password": "Password"
+          "password": "Password",
+          "ssl_fingerprint": "SSL fingerprint (SHA256, optional)"
         }
       },
       "init": {
@@ -20,6 +21,8 @@
     "error": {
       "cannot_connect": "Failed to connect to the gateway. Check the IP address.",
       "invalid_auth": "Invalid username or password.",
+      "invalid_ssl_fingerprint": "TLS certificate validation failed. Verify the configured fingerprint.",
+      "invalid_ssl_fingerprint_format": "The SSL fingerprint format is invalid.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {
@@ -31,7 +34,8 @@
       "init": {
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
-          "poll_interval": "Polling interval (seconds)"
+          "poll_interval": "Polling interval (seconds)",
+          "ssl_fingerprint": "SSL fingerprint (SHA256, optional)"
         }
       }
     }
@@ -109,10 +113,10 @@
         }
       },
       "indoor_unit_running": {
-        "name": "Indoor unit running",
+        "name": "Indoor unit",
         "state": {
           "on": "Running",
-          "off": "Stopped"
+          "off": "Off"
         }
       },
       "indoor_unit_filter_sign": {
@@ -120,6 +124,41 @@
         "state": {
           "on": "Required",
           "off": "OK"
+        }
+      },
+      "sequencing_stop": {
+        "name": "Free cooling request",
+        "state": {
+          "on": "Requested",
+          "off": "Inactive"
+        }
+      },
+      "sequencing_stop_active": {
+        "name": "Free cooling active",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "system_stop": {
+        "name": "System stop",
+        "state": {
+          "on": "Stopped",
+          "off": "Running"
+        }
+      },
+      "system_fault": {
+        "name": "System fault",
+        "state": {
+          "on": "Fault",
+          "off": "Normal"
+        }
+      },
+      "gateway_update_available": {
+        "name": "Gateway update available",
+        "state": {
+          "on": "Available",
+          "off": "Up to date"
         }
       }
     },
@@ -153,6 +192,11 @@
       "outdoor_air_temperature": {"name": "Outdoor air temperature"},
       "compressor_frequency": {"name": "Compressor frequency"},
       "protection_state": {"name": "Protection state"},
+      "indoor_capacity": {"name": "Indoor unit capacity"},
+      "indoor_heat_exchanger_1_low_temp": {"name": "Indoor unit discharge temperature"},
+      "outdoor_heat_exchanger_1_low_temp": {"name": "Outdoor heat exchanger bottom temperature"},
+      "outdoor_heat_exchanger_1_high_temp": {"name": "Outdoor heat exchanger top temperature"},
+      "gateway_software_version": {"name": "Gateway software version"},
       "operation_mode": {
         "name": "Mode",
         "state": {

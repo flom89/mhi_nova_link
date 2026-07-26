@@ -1,1 +1,1 @@
-"""Tests for the MHI Nova custom integration."""
+"""Test suite for the NOVA_RC custom integration."""

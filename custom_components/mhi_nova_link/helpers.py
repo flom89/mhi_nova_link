@@ -1,4 +1,4 @@
-"""Helpers for deriving entities from MHI Nova time series payloads."""
+"""Provide helpers for parsing NOVA_RC time-series payloads."""
 
 from collections.abc import Mapping
 from typing import Any

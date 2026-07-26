@@ -3,11 +3,12 @@
     "step": {
       "user": {
         "title": "Connetti il gateway CompTrol Nova",
-        "description": "Inserisci l'indirizzo IP o il nome host e le credenziali del gateway S-Klima CompTrol Nova.",
+        "description": "Inserisci l'indirizzo IP o il nome host e le credenziali del gateway NOVA_RC CompTrol Nova.",
         "data": {
           "host": "Indirizzo IP / nome host",
           "username": "Nome utente",
-          "password": "Password"
+          "password": "Password",
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opzionale)"
         }
       },
       "init": {
@@ -20,6 +21,8 @@
     "error": {
       "cannot_connect": "Impossibile connettersi al gateway. Controlla l'indirizzo IP.",
       "invalid_auth": "Nome utente o password non validi.",
+      "invalid_ssl_fingerprint": "La validazione del certificato TLS non è riuscita. Verifica il fingerprint configurato.",
+      "invalid_ssl_fingerprint_format": "Il formato del fingerprint SSL non è valido.",
       "unknown": "Si è verificato un errore imprevisto."
     },
     "abort": {
@@ -90,6 +93,62 @@
           "on": "Richiesto",
           "off": "OK"
         }
+      },
+      "notifications": {
+        "name": "Active notifications",
+        "state": {
+          "on": "Present",
+          "off": "None"
+        }
+      },
+      "indoor_unit_running": {
+        "name": "Unità interna",
+        "state": {
+          "on": "In funzione",
+          "off": "Spenta"
+        }
+      },
+      "indoor_unit_filter_sign": {
+        "name": "Promemoria filtro unità interna",
+        "state": {
+          "on": "Richiesto",
+          "off": "OK"
+        }
+      },
+      "sequencing_stop": {
+        "name": "Richiesta free cooling",
+        "state": {
+          "on": "Richiesta",
+          "off": "Inattivo"
+        }
+      },
+      "sequencing_stop_active": {
+        "name": "Free cooling attivo",
+        "state": {
+          "on": "Attivo",
+          "off": "Inattivo"
+        }
+      },
+      "system_stop": {
+        "name": "Arresto sistema",
+        "state": {
+          "on": "Arrestato",
+          "off": "In funzione"
+        }
+      },
+      "system_fault": {
+        "name": "Guasto sistema",
+        "state": {
+          "on": "Guasto",
+          "off": "Normale"
+        }
+      },
+      "gateway_update_available": {
+        "name": "Aggiornamento gateway disponibile",
+        "state": {
+          "on": "Disponibile",
+          "off": "Aggiornato"
+        }
       }
     },
     "climate": {
@@ -109,16 +168,47 @@
       }
     },
     "select": {
-      "louver_position": {"name": "Posizione lamelle"},
-      "vane_position": {"name": "Posizione alette"}
+      "louver_position": {
+        "name": "Posizione lamelle"
+      },
+      "vane_position": {
+        "name": "Posizione alette"
+      }
     },
     "sensor": {
-      "room_temperature": {"name": "Temperatura"},
-      "setpoint": {"name": "Setpoint"},
-      "indoor_unit_temperature": {"name": "Temperatura dell'unità interna"},
-      "outdoor_air_temperature": {"name": "Temperatura dell'aria esterna"},
-      "compressor_frequency": {"name": "Frequenza del compressore"},
-      "protection_state": {"name": "Stato di protezione"},
+      "room_temperature": {
+        "name": "Temperatura"
+      },
+      "setpoint": {
+        "name": "Setpoint"
+      },
+      "indoor_unit_temperature": {
+        "name": "Temperatura dell'unità interna"
+      },
+      "outdoor_air_temperature": {
+        "name": "Temperatura dell'aria esterna"
+      },
+      "compressor_frequency": {
+        "name": "Frequenza del compressore"
+      },
+      "protection_state": {
+        "name": "Stato di protezione"
+      },
+      "indoor_capacity": {
+        "name": "Potenza unità interna"
+      },
+      "indoor_heat_exchanger_1_low_temp": {
+        "name": "Temperatura mandata unità interna"
+      },
+      "outdoor_heat_exchanger_1_low_temp": {
+        "name": "Scambiatore esterno inferiore"
+      },
+      "outdoor_heat_exchanger_1_high_temp": {
+        "name": "Scambiatore esterno superiore"
+      },
+      "gateway_software_version": {
+        "name": "Versione software del gateway"
+      },
       "operation_mode": {
         "name": "Modalità",
         "state": {
@@ -139,6 +229,15 @@
           "high": "Alta",
           "powerful": "Potente"
         }
+      },
+      "indoor_unit_setpoint": {
+        "name": "Setpoint unità interna"
+      },
+      "indoor_unit_operation_mode": {
+        "name": "Modalità unità interna"
+      },
+      "indoor_unit_fan_speed": {
+        "name": "Ventilatore unità interna"
       }
     },
     "switch": {
@@ -147,6 +246,17 @@
         "state": {
           "on": "Attivato",
           "off": "Disattivato"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Regola la frequenza con cui il gateway viene interrogato per gli aggiornamenti.",
+        "data": {
+          "poll_interval": "Intervallo di polling (secondi)",
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opzionale)"
         }
       }
     }
