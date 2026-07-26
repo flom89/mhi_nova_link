@@ -3,11 +3,12 @@
     "step": {
       "user": {
         "title": "Connecter la passerelle CompTrol Nova",
-        "description": "Saisissez l'adresse IP ou le nom d'hôte ainsi que les identifiants de votre passerelle S-Klima CompTrol Nova.",
+        "description": "Saisissez l'adresse IP ou le nom d'hôte ainsi que les identifiants de votre passerelle NOVA_RC CompTrol Nova.",
         "data": {
           "host": "Adresse IP / nom d'hôte",
           "username": "Nom d'utilisateur",
-          "password": "Mot de passe"
+          "password": "Mot de passe",
+          "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)"
         }
       },
       "init": {
@@ -20,6 +21,8 @@
     "error": {
       "cannot_connect": "Échec de la connexion à la passerelle. Vérifiez l'adresse IP.",
       "invalid_auth": "Nom d'utilisateur ou mot de passe invalide.",
+      "invalid_ssl_fingerprint": "La validation du certificat TLS a échoué. Vérifiez l'empreinte configurée.",
+      "invalid_ssl_fingerprint_format": "Le format de l'empreinte SSL est invalide.",
       "unknown": "Une erreur inattendue s'est produite."
     },
     "abort": {
@@ -69,6 +72,83 @@
           "on": "Requis",
           "off": "Non requis"
         }
+      },
+      "compressor_active": {
+        "name": "Compressor active",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "defrosting_active": {
+        "name": "Defrosting",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "filter_sign": {
+        "name": "Filter reminder",
+        "state": {
+          "on": "Required",
+          "off": "OK"
+        }
+      },
+      "notifications": {
+        "name": "Active notifications",
+        "state": {
+          "on": "Present",
+          "off": "None"
+        }
+      },
+      "indoor_unit_running": {
+        "name": "Unité intérieure",
+        "state": {
+          "on": "En marche",
+          "off": "Arrêtée"
+        }
+      },
+      "indoor_unit_filter_sign": {
+        "name": "Rappel filtre unité intérieure",
+        "state": {
+          "on": "Requis",
+          "off": "OK"
+        }
+      },
+      "sequencing_stop": {
+        "name": "Demande de free cooling",
+        "state": {
+          "on": "Demandee",
+          "off": "Inactif"
+        }
+      },
+      "sequencing_stop_active": {
+        "name": "Free cooling actif",
+        "state": {
+          "on": "Actif",
+          "off": "Inactif"
+        }
+      },
+      "system_stop": {
+        "name": "Arret systeme",
+        "state": {
+          "on": "Arrete",
+          "off": "En marche"
+        }
+      },
+      "system_fault": {
+        "name": "Defaut systeme",
+        "state": {
+          "on": "Defaut",
+          "off": "Normal"
+        }
+      },
+      "gateway_update_available": {
+        "name": "Mise à jour de la passerelle disponible",
+        "state": {
+          "on": "Disponible",
+          "off": "À jour"
+        }
       }
     },
     "climate": {
@@ -88,16 +168,47 @@
       }
     },
     "select": {
-      "louver_position": {"name": "Position des lames"},
-      "vane_position": {"name": "Position des ailettes"}
+      "louver_position": {
+        "name": "Position des lames"
+      },
+      "vane_position": {
+        "name": "Position des ailettes"
+      }
     },
     "sensor": {
-      "room_temperature": {"name": "Température"},
-      "setpoint": {"name": "Consigne"},
-      "indoor_unit_temperature": {"name": "Température de l'unité intérieure"},
-      "outdoor_air_temperature": {"name": "Température de l'air extérieur"},
-      "compressor_frequency": {"name": "Fréquence du compresseur"},
-      "protection_state": {"name": "État de protection"},
+      "room_temperature": {
+        "name": "Température"
+      },
+      "setpoint": {
+        "name": "Consigne"
+      },
+      "indoor_unit_temperature": {
+        "name": "Température de l'unité intérieure"
+      },
+      "outdoor_air_temperature": {
+        "name": "Température de l'air extérieur"
+      },
+      "compressor_frequency": {
+        "name": "Fréquence du compresseur"
+      },
+      "protection_state": {
+        "name": "État de protection"
+      },
+      "indoor_capacity": {
+        "name": "Puissance unité intérieure"
+      },
+      "indoor_heat_exchanger_1_low_temp": {
+        "name": "Température de soufflage unité intérieure"
+      },
+      "outdoor_heat_exchanger_1_low_temp": {
+        "name": "Échangeur extérieur bas"
+      },
+      "outdoor_heat_exchanger_1_high_temp": {
+        "name": "Échangeur extérieur haut"
+      },
+      "gateway_software_version": {
+        "name": "Version logicielle de la passerelle"
+      },
       "operation_mode": {
         "name": "Mode",
         "state": {
@@ -118,6 +229,15 @@
           "high": "Élevée",
           "powerful": "Puissant"
         }
+      },
+      "indoor_unit_setpoint": {
+        "name": "Consigne unité intérieure"
+      },
+      "indoor_unit_operation_mode": {
+        "name": "Mode unité intérieure"
+      },
+      "indoor_unit_fan_speed": {
+        "name": "Ventilateur unité intérieure"
       }
     },
     "switch": {
@@ -126,6 +246,17 @@
         "state": {
           "on": "Activé",
           "off": "Désactivé"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Ajustez la fréquence à laquelle la passerelle est interrogée pour les mises à jour.",
+        "data": {
+          "poll_interval": "Intervalle d'interrogation (secondes)",
+          "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)"
         }
       }
     }

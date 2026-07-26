@@ -3,11 +3,12 @@
     "step": {
       "user": {
         "title": "Conectar la puerta de enlace CompTrol Nova",
-        "description": "Introduce la dirección IP o el nombre de host y las credenciales de tu puerta de enlace S-Klima CompTrol Nova.",
+        "description": "Introduce la dirección IP o el nombre de host y las credenciales de tu puerta de enlace NOVA_RC CompTrol Nova.",
         "data": {
           "host": "Dirección IP / nombre de host",
           "username": "Nombre de usuario",
-          "password": "Contraseña"
+          "password": "Contraseña",
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)"
         }
       },
       "init": {
@@ -20,6 +21,8 @@
     "error": {
       "cannot_connect": "No se pudo conectar a la puerta de enlace. Comprueba la dirección IP.",
       "invalid_auth": "Nombre de usuario o contraseña no válidos.",
+      "invalid_ssl_fingerprint": "La validación del certificado TLS falló. Verifica el fingerprint configurado.",
+      "invalid_ssl_fingerprint_format": "El formato del fingerprint SSL no es válido.",
       "unknown": "Se ha producido un error inesperado."
     },
     "abort": {
@@ -90,6 +93,62 @@
           "on": "Requerido",
           "off": "OK"
         }
+      },
+      "notifications": {
+        "name": "Active notifications",
+        "state": {
+          "on": "Present",
+          "off": "None"
+        }
+      },
+      "indoor_unit_running": {
+        "name": "Unidad interior",
+        "state": {
+          "on": "En marcha",
+          "off": "Apagada"
+        }
+      },
+      "indoor_unit_filter_sign": {
+        "name": "Aviso de filtro unidad interior",
+        "state": {
+          "on": "Requerido",
+          "off": "OK"
+        }
+      },
+      "sequencing_stop": {
+        "name": "Solicitud de free cooling",
+        "state": {
+          "on": "Solicitada",
+          "off": "Inactiva"
+        }
+      },
+      "sequencing_stop_active": {
+        "name": "Free cooling activo",
+        "state": {
+          "on": "Activo",
+          "off": "Inactivo"
+        }
+      },
+      "system_stop": {
+        "name": "Parada del sistema",
+        "state": {
+          "on": "Detenido",
+          "off": "En marcha"
+        }
+      },
+      "system_fault": {
+        "name": "Fallo del sistema",
+        "state": {
+          "on": "Fallo",
+          "off": "Normal"
+        }
+      },
+      "gateway_update_available": {
+        "name": "Actualización del gateway disponible",
+        "state": {
+          "on": "Disponible",
+          "off": "Actualizado"
+        }
       }
     },
     "climate": {
@@ -109,16 +168,47 @@
       }
     },
     "select": {
-      "louver_position": {"name": "Posición de persiana"},
-      "vane_position": {"name": "Posición de aletas"}
+      "louver_position": {
+        "name": "Posición de persiana"
+      },
+      "vane_position": {
+        "name": "Posición de aletas"
+      }
     },
     "sensor": {
-      "room_temperature": {"name": "Temperatura"},
-      "setpoint": {"name": "Consigna"},
-      "indoor_unit_temperature": {"name": "Temperatura de la unidad interior"},
-      "outdoor_air_temperature": {"name": "Temperatura del aire exterior"},
-      "compressor_frequency": {"name": "Frecuencia del compresor"},
-      "protection_state": {"name": "Estado de protección"},
+      "room_temperature": {
+        "name": "Temperatura"
+      },
+      "setpoint": {
+        "name": "Consigna"
+      },
+      "indoor_unit_temperature": {
+        "name": "Temperatura de la unidad interior"
+      },
+      "outdoor_air_temperature": {
+        "name": "Temperatura del aire exterior"
+      },
+      "compressor_frequency": {
+        "name": "Frecuencia del compresor"
+      },
+      "protection_state": {
+        "name": "Estado de protección"
+      },
+      "indoor_capacity": {
+        "name": "Potencia de la unidad interior"
+      },
+      "indoor_heat_exchanger_1_low_temp": {
+        "name": "Temperatura de impulsión unidad interior"
+      },
+      "outdoor_heat_exchanger_1_low_temp": {
+        "name": "Intercambiador exterior inferior"
+      },
+      "outdoor_heat_exchanger_1_high_temp": {
+        "name": "Intercambiador exterior superior"
+      },
+      "gateway_software_version": {
+        "name": "Versión de software del gateway"
+      },
       "operation_mode": {
         "name": "Modo",
         "state": {
@@ -139,6 +229,15 @@
           "high": "Alta",
           "powerful": "Potente"
         }
+      },
+      "indoor_unit_setpoint": {
+        "name": "Consigna unidad interior"
+      },
+      "indoor_unit_operation_mode": {
+        "name": "Modo unidad interior"
+      },
+      "indoor_unit_fan_speed": {
+        "name": "Ventilador unidad interior"
       }
     },
     "switch": {
@@ -147,6 +246,17 @@
         "state": {
           "on": "Activado",
           "off": "Desactivado"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Ajusta la frecuencia con la que se consulta la puerta de enlace para actualizarse.",
+        "data": {
+          "poll_interval": "Intervalo de sondeo (segundos)",
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)"
         }
       }
     }

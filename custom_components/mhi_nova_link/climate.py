@@ -1,4 +1,4 @@
-"""Climate platform for MHI Nova / S-Klima."""
+"""Implement the climate entity for NOVA_RC zones."""
 
 import logging
 from typing import Any
@@ -20,8 +20,8 @@ from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import SKlimaDataUpdateCoordinator
-from .entity import SKlimaZoneEntity
+from .coordinator import NovaRcDataUpdateCoordinator
+from .entity import NovaRcZoneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,22 +78,22 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the climate entities from the coordinator data."""
-    coordinator: SKlimaDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
 
     entities = [
-        SKlimaZoneClimate(coordinator, zone["zoneId"]) for zone in coordinator.data
+        NovaRcZoneClimate(coordinator, zone["zoneId"]) for zone in coordinator.data
     ]
     async_add_entities(entities)
 
 
-class SKlimaZoneClimate(SKlimaZoneEntity, ClimateEntity):
-    """Represent one S-Klima zone as a climate entity."""
+class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
+    """Represent one NOVA_RC zone as a climate entity."""
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_has_entity_name = True
     _attr_translation_key = "mhi_nova_zone"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the climate entity for a single zone."""
         super().__init__(coordinator, zone_id)
 

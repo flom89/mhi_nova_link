@@ -1,4 +1,4 @@
-"""Select platform for MHI Nova / S-Klima (louver control)."""
+"""Implement select entities for NOVA_RC airflow controls."""
 
 import logging
 
@@ -7,8 +7,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import SKlimaDataUpdateCoordinator
-from .entity import SKlimaZoneEntity
+from .coordinator import NovaRcDataUpdateCoordinator
+from .entity import NovaRcZoneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,27 +41,27 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the select entities for each zone."""
-    coordinator: SKlimaDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
 
     entities = []
     for zone in coordinator.data:
         zone_id = zone["zoneId"]
-        entities.append(SKlimaLouverSelect(coordinator, zone_id))
-        entities.append(SKlimaVaneSelect(coordinator, zone_id))
+        entities.append(NovaRcLouverSelect(coordinator, zone_id))
+        entities.append(NovaRcVaneSelect(coordinator, zone_id))
 
     async_add_entities(entities)
 
 
-class SKlimaBaseSelect(SKlimaZoneEntity, SelectEntity):
-    """Base implementation for S-Klima select entities."""
+class NovaRcBaseSelect(NovaRcZoneEntity, SelectEntity):
+    """Base implementation for NOVA_RC select entities."""
 
 
-class SKlimaLouverSelect(SKlimaBaseSelect):
+class NovaRcLouverSelect(NovaRcBaseSelect):
     """Select entity for the louver position."""
 
     _attr_translation_key = "louver_position"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_louver"
@@ -111,12 +111,12 @@ class SKlimaLouverSelect(SKlimaBaseSelect):
         await self.coordinator.async_request_refresh()
 
 
-class SKlimaVaneSelect(SKlimaBaseSelect):
+class NovaRcVaneSelect(NovaRcBaseSelect):
     """Select entity for the vane position."""
 
     _attr_translation_key = "vane_position"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_vane"

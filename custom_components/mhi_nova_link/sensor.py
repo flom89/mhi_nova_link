@@ -1,4 +1,4 @@
-"""Sensor platform for MHI Nova / S-Klima zones."""
+"""Implement sensor entities for NOVA_RC zones."""
 
 import inspect
 import logging
@@ -12,10 +12,13 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import SKlimaDataUpdateCoordinator
-from .entity import SKlimaZoneEntity
+from .coordinator import NovaRcDataUpdateCoordinator
+from .const import DOMAIN
+from .entity import NovaRcZoneEntity
 from .helpers import get_dataset_value, get_zone_time_series_datasets
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,26 +30,31 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the meaningful sensors from the coordinator data."""
-    coordinator: SKlimaDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
 
     entities: list[SensorEntity] = []
+    entities.append(NovaRcGatewaySoftwareVersionSensor(coordinator))
     for zone in coordinator.data:
         zone_id = zone["zoneId"]
-        entities.append(SKlimaTemperatureSensor(coordinator, zone_id))
-        entities.append(SKlimaSetpointSensor(coordinator, zone_id))
-        entities.append(SKlimaOperationModeSensor(coordinator, zone_id))
-        entities.append(SKlimaFanSpeedSensor(coordinator, zone_id))
-        entities.append(SKlimaOutdoorAirTemperatureSensor(coordinator, zone_id))
-        entities.append(SKlimaCompressorFrequencySensor(coordinator, zone_id))
-        entities.append(SKlimaProtectionStateSensor(coordinator, zone_id))
+        entities.append(NovaRcTemperatureSensor(coordinator, zone_id))
+        entities.append(NovaRcSetpointSensor(coordinator, zone_id))
+        entities.append(NovaRcOperationModeSensor(coordinator, zone_id))
+        entities.append(NovaRcFanSpeedSensor(coordinator, zone_id))
+        entities.append(NovaRcOutdoorAirTemperatureSensor(coordinator, zone_id))
+        entities.append(NovaRcCompressorFrequencySensor(coordinator, zone_id))
+        entities.append(NovaRcProtectionStateSensor(coordinator, zone_id))
+        entities.append(NovaRcIndoorCapacitySensor(coordinator, zone_id))
+        entities.append(NovaRcIndoorHeatExchanger1LowTempSensor(coordinator, zone_id))
+        entities.append(NovaRcOutdoorHeatExchanger1LowTempSensor(coordinator, zone_id))
+        entities.append(NovaRcOutdoorHeatExchanger1HighTempSensor(coordinator, zone_id))
 
     result = async_add_entities(entities)
     if inspect.isawaitable(result):
         await result
 
 
-class SKlimaBaseSensor(SKlimaZoneEntity, SensorEntity):
-    """Base implementation for S-Klima sensors."""
+class NovaRcBaseSensor(NovaRcZoneEntity, SensorEntity):
+    """Base implementation for NOVA_RC sensors."""
 
     @property
     def available(self) -> bool:
@@ -55,7 +63,55 @@ class SKlimaBaseSensor(SKlimaZoneEntity, SensorEntity):
         return True if available is None else bool(available)
 
 
-class SKlimaTemperatureSensor(SKlimaBaseSensor):
+class NovaRcGatewaySoftwareVersionSensor(
+    CoordinatorEntity[NovaRcDataUpdateCoordinator], SensorEntity
+):
+    """Gateway-level sensor for installed software version information."""
+
+    _attr_translation_key = "gateway_software_version"
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:package-up"
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
+        """Initialize the gateway software version sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.api.host}_gateway_software_version"
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return Home Assistant device metadata for the gateway info device."""
+        return {
+            "identifiers": {
+                (DOMAIN, f"{self.coordinator.config_entry.entry_id}_gateway_info")
+            },
+            "name": "Gateway",
+            "manufacturer": "STULZ GmbH",
+            "model": "CompTrol 4Web NOVA RC",
+        }
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the installed gateway software version."""
+        value = self.coordinator.gateway_update.get("installed_version")
+        return value if isinstance(value, str) and value else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional gateway software/update metadata."""
+        info = self.coordinator.gateway_update
+        attributes = {
+            "available_version": info.get("available_version"),
+            "update_available": info.get("update_available"),
+            "installed_bundle_description": info.get("installed_bundle_description"),
+            "installed_bundle_build": info.get("installed_bundle_build"),
+            "automatic_check": info.get("automatic_check"),
+            "automatic_install": info.get("automatic_install"),
+        }
+        return {key: value for key, value in attributes.items() if value is not None}
+
+
+class NovaRcTemperatureSensor(NovaRcBaseSensor):
     """Room temperature sensor."""
 
     _attr_translation_key = "room_temperature"
@@ -63,7 +119,7 @@ class SKlimaTemperatureSensor(SKlimaBaseSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the room-temperature sensor for a zone."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_temp"
@@ -74,7 +130,7 @@ class SKlimaTemperatureSensor(SKlimaBaseSensor):
         return self._zone_data.get("roomAirTemperature")
 
 
-class SKlimaSetpointSensor(SKlimaBaseSensor):
+class NovaRcSetpointSensor(NovaRcBaseSensor):
     """Setpoint sensor."""
 
     _attr_translation_key = "setpoint"
@@ -82,7 +138,7 @@ class SKlimaSetpointSensor(SKlimaBaseSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the setpoint sensor for a zone."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_setpoint"
@@ -93,13 +149,13 @@ class SKlimaSetpointSensor(SKlimaBaseSensor):
         return self._zone_data.get("setpoint")
 
 
-class SKlimaOperationModeSensor(SKlimaBaseSensor):
+class NovaRcOperationModeSensor(NovaRcBaseSensor):
     """Operation mode sensor."""
 
     _attr_translation_key = "operation_mode"
     _attr_icon = "mdi:thermostat-cog"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the operation mode sensor for a zone."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_mode"
@@ -133,13 +189,13 @@ class SKlimaOperationModeSensor(SKlimaBaseSensor):
         return mode_translation.get(raw_mode, raw_mode.lower() if raw_mode else None)
 
 
-class SKlimaFanSpeedSensor(SKlimaBaseSensor):
+class NovaRcFanSpeedSensor(NovaRcBaseSensor):
     """Fan speed sensor."""
 
     _attr_translation_key = "fan_speed"
     _attr_icon = "mdi:fan"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the fan-speed sensor for a zone."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_fan"
@@ -169,7 +225,7 @@ class SKlimaFanSpeedSensor(SKlimaBaseSensor):
         return fan_translation.get(raw_fan, raw_fan.lower() if raw_fan else None)
 
 
-class SKlimaIndoorUnitTemperatureSensor(SKlimaBaseSensor):
+class NovaRcIndoorUnitTemperatureSensor(NovaRcBaseSensor):
     """Temperature sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_temperature"
@@ -179,7 +235,7 @@ class SKlimaIndoorUnitTemperatureSensor(SKlimaBaseSensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
         indoor_unit_id: int,
     ) -> None:
@@ -212,7 +268,7 @@ class SKlimaIndoorUnitTemperatureSensor(SKlimaBaseSensor):
         return float(value) if isinstance(value, (int, float)) else None
 
 
-class SKlimaIndoorUnitSetpointSensor(SKlimaBaseSensor):
+class NovaRcIndoorUnitSetpointSensor(NovaRcBaseSensor):
     """Setpoint sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_setpoint"
@@ -222,7 +278,7 @@ class SKlimaIndoorUnitSetpointSensor(SKlimaBaseSensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
         indoor_unit_id: int,
     ) -> None:
@@ -248,14 +304,14 @@ class SKlimaIndoorUnitSetpointSensor(SKlimaBaseSensor):
         return float(value) if isinstance(value, (int, float)) else None
 
 
-class SKlimaIndoorUnitOperationModeSensor(SKlimaBaseSensor):
+class NovaRcIndoorUnitOperationModeSensor(NovaRcBaseSensor):
     """Operation mode sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_operation_mode"
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
         indoor_unit_id: int,
     ) -> None:
@@ -290,14 +346,14 @@ class SKlimaIndoorUnitOperationModeSensor(SKlimaBaseSensor):
         return mode_translation.get(raw_mode, raw_mode.lower() if raw_mode else None)
 
 
-class SKlimaIndoorUnitFanSpeedSensor(SKlimaBaseSensor):
+class NovaRcIndoorUnitFanSpeedSensor(NovaRcBaseSensor):
     """Fan speed sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_fan_speed"
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
         indoor_unit_id: int,
     ) -> None:
@@ -332,7 +388,7 @@ class SKlimaIndoorUnitFanSpeedSensor(SKlimaBaseSensor):
         return fan_translation.get(raw_fan, raw_fan.lower() if raw_fan else None)
 
 
-class SKlimaOutdoorAirTemperatureSensor(SKlimaBaseSensor):
+class NovaRcOutdoorAirTemperatureSensor(NovaRcBaseSensor):
     """Outdoor air temperature sensor derived from the time series payload."""
 
     _attr_translation_key = "outdoor_air_temperature"
@@ -340,7 +396,7 @@ class SKlimaOutdoorAirTemperatureSensor(SKlimaBaseSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the outdoor-air temperature sensor."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_outdoor_temp"
@@ -353,14 +409,14 @@ class SKlimaOutdoorAirTemperatureSensor(SKlimaBaseSensor):
         return float(value) if isinstance(value, (int, float)) else None
 
 
-class SKlimaCompressorFrequencySensor(SKlimaBaseSensor):
+class NovaRcCompressorFrequencySensor(NovaRcBaseSensor):
     """Compressor frequency sensor derived from the time series payload."""
 
     _attr_translation_key = "compressor_frequency"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "Hz"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the compressor-frequency sensor."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_compressor_freq"
@@ -375,12 +431,12 @@ class SKlimaCompressorFrequencySensor(SKlimaBaseSensor):
         return float(value) if isinstance(value, (int, float)) else None
 
 
-class SKlimaProtectionStateSensor(SKlimaBaseSensor):
+class NovaRcProtectionStateSensor(NovaRcBaseSensor):
     """Outdoor unit protection state sensor derived from the time series payload."""
 
     _attr_translation_key = "protection_state"
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the protection-state sensor."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_protection_state"
@@ -407,6 +463,101 @@ class SKlimaProtectionStateSensor(SKlimaBaseSensor):
         if isinstance(value, bool):
             return "normal" if value else "abnormal"
         return str(value) if value is not None else None
+
+
+class NovaRcIndoorCapacitySensor(NovaRcBaseSensor):
+    """Indoor unit capacity sensor derived from time-series payload."""
+
+    _attr_translation_key = "indoor_capacity"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "Hz"
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the indoor-capacity sensor."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_indoor_capacity"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the indoor capacity from the time-series payload."""
+        datasets = get_zone_time_series_datasets(self._zone_data)
+        value = get_dataset_value(datasets.get("iu_indication_capacity", {}))
+        return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcIndoorHeatExchanger1LowTempSensor(NovaRcBaseSensor):
+    """Indoor heat exchanger 1 low-site temperature sensor from time-series payload."""
+
+    _attr_translation_key = "indoor_heat_exchanger_1_low_temp"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the indoor heat exchanger 1 low-site temperature sensor."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = (
+            f"{coordinator.api.host}_zone_{zone_id}_indoor_heat_exchanger_1_low_temp"
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the indoor heat exchanger 1 low-site temperature."""
+        datasets = get_zone_time_series_datasets(self._zone_data)
+        value = get_dataset_value(
+            datasets.get("iu_indication_heat_exch1_temp_low_site", {})
+        )
+        return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcOutdoorHeatExchanger1LowTempSensor(NovaRcBaseSensor):
+    """Outdoor heat exchanger 1 low-site temperature sensor from time-series payload."""
+
+    _attr_translation_key = "outdoor_heat_exchanger_1_low_temp"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the outdoor heat exchanger 1 low-site temperature sensor."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = (
+            f"{coordinator.api.host}_zone_{zone_id}_outdoor_heat_exchanger_1_low_temp"
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the outdoor heat exchanger 1 low-site temperature."""
+        datasets = get_zone_time_series_datasets(self._zone_data)
+        value = get_dataset_value(
+            datasets.get("ou_indication_heat_exch1_temp_low_site", {})
+        )
+        return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcOutdoorHeatExchanger1HighTempSensor(NovaRcBaseSensor):
+    """Outdoor heat exchanger 1 high-site temperature sensor from time-series payload."""
+
+    _attr_translation_key = "outdoor_heat_exchanger_1_high_temp"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the outdoor heat exchanger 1 high-site temperature sensor."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = (
+            f"{coordinator.api.host}_zone_{zone_id}_outdoor_heat_exchanger_1_high_temp"
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the outdoor heat exchanger 1 high-site temperature."""
+        datasets = get_zone_time_series_datasets(self._zone_data)
+        value = get_dataset_value(
+            datasets.get("ou_indication_heat_exch1_temp_high_site", {})
+        )
+        return float(value) if isinstance(value, (int, float)) else None
 
 
 def _normalize_state_value(value: str) -> str:

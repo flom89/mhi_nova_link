@@ -1,4 +1,4 @@
-"""Data update coordinator for MHI Nova / S-Klima."""
+"""Coordinate periodic data updates for NOVA_RC."""
 
 from datetime import timedelta
 import logging
@@ -9,24 +9,25 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import CannotConnect, InvalidAuth, SKlimaApiClient
+from .api import CannotConnect, InvalidAuth, InvalidCertificate, NovaRcApiClient
 from .const import (
     CONF_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
     DOMAIN,
+    LEGACY_UPDATE_INTERVAL_ENV_VAR,
     UPDATE_INTERVAL_ENV_VAR,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SKlimaDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
+class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
     """Coordinate periodic data updates from the gateway."""
 
     def __init__(
         self,
         hass: HomeAssistant,
-        api: SKlimaApiClient,
+        api: NovaRcApiClient,
         entry: Any | None = None,
     ) -> None:
         """Initialize the coordinator with the configured poll interval."""
@@ -37,23 +38,32 @@ class SKlimaDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             update_interval=_get_update_interval(entry),
         )
         self.api = api
+        self.gpios: dict[str, bool] = {}
+        self.gateway_update: dict[str, Any] = {}
 
     async def _async_update_data(self) -> list[dict[str, Any]]:
         """Fetch the latest zone data from the GraphQL gateway."""
         try:
             data = await self.api.async_get_zones()
             notifications = await self.api.async_get_notifications()
+            gpios = await self.api.async_get_gpios()
+            gateway_update = await self.api.async_get_gateway_update_information()
         except InvalidAuth as err:
             raise ConfigEntryAuthFailed from err
+        except InvalidCertificate as err:
+            raise UpdateFailed(f"TLS certificate validation failed: {err}") from err
         except CannotConnect as err:
-            raise UpdateFailed(f"Fehler beim Laden der S-Klima Daten: {err}") from err
+            raise UpdateFailed(f"Fehler beim Laden der NOVA_RC Daten: {err}") from err
         except Exception as err:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected error while fetching S-Klima data")
+            _LOGGER.exception("Unexpected error while fetching NOVA_RC data")
             raise UpdateFailed(f"Unexpected error: {err}") from err
 
         if notifications:
             for zone in data:
                 zone["notifications"] = notifications
+
+        self.gpios = gpios
+        self.gateway_update = gateway_update
         return data
 
 
@@ -66,6 +76,8 @@ def _get_update_interval(entry: Any | None) -> timedelta:
 
     if raw_value is None:
         raw_value = os.getenv(UPDATE_INTERVAL_ENV_VAR)
+    if raw_value is None:
+        raw_value = os.getenv(LEGACY_UPDATE_INTERVAL_ENV_VAR)
 
     if raw_value is None:
         return timedelta(seconds=DEFAULT_POLL_INTERVAL)

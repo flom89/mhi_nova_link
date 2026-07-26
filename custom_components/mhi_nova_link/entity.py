@@ -1,14 +1,14 @@
-"""Shared entity helpers for MHI Nova zone-based entities."""
+"""Provide shared entity helpers for NOVA_RC zones."""
 
 from typing import Any
 
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import SKlimaDataUpdateCoordinator
+from .coordinator import NovaRcDataUpdateCoordinator
 
 
-class SKlimaZoneEntity(CoordinatorEntity[SKlimaDataUpdateCoordinator]):
+class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
     """Common base for zone-scoped entities in the custom integration.
 
     The integration is centered around gateway zones, so this shared base keeps the
@@ -17,7 +17,7 @@ class SKlimaZoneEntity(CoordinatorEntity[SKlimaDataUpdateCoordinator]):
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: SKlimaDataUpdateCoordinator, zone_id: int) -> None:
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the entity for a specific gateway zone."""
         super().__init__(coordinator)
         self.zone_id = zone_id
@@ -45,9 +45,9 @@ class SKlimaZoneEntity(CoordinatorEntity[SKlimaDataUpdateCoordinator]):
                     f"{self.coordinator.config_entry.entry_id}_{self.zone_id}",
                 )
             },
-            "name": zone_name,
-            "manufacturer": "flom89",
-            "model": "S-Klima CompTrol 4Web NOVA RC | Custom Integration",
+            "name": f"{zone_name}",
+            "manufacturer": "STULZ GmbH",
+            "model": "CompTrol 4Web NOVA RC",
             "sw_version": "NOVA RC Software 3.2.5",
         }
 

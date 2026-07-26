@@ -1,4 +1,4 @@
-"""Binary sensors for MHI NovaLink."""
+"""Implement binary sensor entities for NOVA_RC."""
 
 import inspect
 import logging
@@ -11,10 +11,12 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import SKlimaDataUpdateCoordinator
-from .entity import SKlimaZoneEntity
+from .const import DOMAIN
+from .coordinator import NovaRcDataUpdateCoordinator
+from .entity import NovaRcZoneEntity
 from .helpers import dataset_is_on, get_zone_time_series_datasets
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,23 +28,29 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the binary sensors."""
-    coordinator: SKlimaDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
 
-    entities: list[BinarySensorEntity] = []
+    entities: list[BinarySensorEntity] = [
+        NovaRcFreeCoolingBinarySensor(coordinator),
+        NovaRcFreeCoolingActiveBinarySensor(coordinator),
+        NovaRcSystemStopBinarySensor(coordinator),
+        NovaRcSystemFaultBinarySensor(coordinator),
+        NovaRcGatewayUpdateAvailableBinarySensor(coordinator),
+    ]
     for zone in coordinator.data:
         zone_id = zone.get("zoneId")
         if zone_id is None:
             continue
 
-        entities.append(SKlimaAvailableBinarySensor(coordinator, zone_id))
-        entities.append(SKlimaNotificationsBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcAvailableBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcNotificationsBinarySensor(coordinator, zone_id))
 
         for indoor_unit in zone.get("indoorUnits", []) or []:
             indoor_unit_id = indoor_unit.get("indoorUnitId")
             if indoor_unit_id is None:
                 continue
             entities.append(
-                SKlimaIndoorUnitRunningBinarySensor(
+                NovaRcIndoorUnitRunningBinarySensor(
                     coordinator, zone_id, indoor_unit_id
                 )
             )
@@ -52,11 +60,105 @@ async def async_setup_entry(
         await result
 
 
-class SKlimaBaseBinarySensor(SKlimaZoneEntity, BinarySensorEntity):
+class NovaRcBaseBinarySensor(NovaRcZoneEntity, BinarySensorEntity):
     """Base implementation for zone binary sensors."""
 
 
-class SKlimaRunningBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcGatewayBinarySensor(
+    CoordinatorEntity[NovaRcDataUpdateCoordinator], BinarySensorEntity
+):
+    """Base implementation for gateway-level GPIO binary sensors."""
+
+    _attr_has_entity_name = True
+    _gpio_function: str
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
+        """Initialize a gateway-level GPIO binary sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = (
+            f"{coordinator.api.host}_gateway_gpio_{self._gpio_function.lower()}"
+        )
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return Home Assistant device metadata for the gateway."""
+        return {
+            "identifiers": {
+                (DOMAIN, f"{self.coordinator.config_entry.entry_id}_gateway")
+            },
+            "name": "Digital IOs",
+            "manufacturer": "STULZ GmbH",
+            "model": "CompTrol 4Web NOVA RC",
+        }
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether the GPIO function is active."""
+        return bool(self.coordinator.gpios.get(self._gpio_function, False))
+
+
+class NovaRcGatewayUpdateAvailableBinarySensor(
+    CoordinatorEntity[NovaRcDataUpdateCoordinator], BinarySensorEntity
+):
+    """Gateway-level binary sensor indicating whether a software update is available."""
+
+    _attr_translation_key = "gateway_update_available"
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
+        """Initialize the gateway update-availability sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.api.host}_gateway_update_available"
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return Home Assistant device metadata for the gateway info device."""
+        return {
+            "identifiers": {
+                (DOMAIN, f"{self.coordinator.config_entry.entry_id}_gateway_info")
+            },
+            "name": "Gateway",
+            "manufacturer": "STULZ GmbH",
+            "model": "CompTrol 4Web NOVA RC",
+        }
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether the gateway reports an available software update."""
+        return bool(self.coordinator.gateway_update.get("update_available", False))
+
+
+class NovaRcFreeCoolingBinarySensor(NovaRcGatewayBinarySensor):
+    """Gateway free cooling request state."""
+
+    _attr_translation_key = "sequencing_stop"
+    _gpio_function = "FREE_COOLING"
+
+
+class NovaRcFreeCoolingActiveBinarySensor(NovaRcGatewayBinarySensor):
+    """Gateway free cooling active state."""
+
+    _attr_translation_key = "sequencing_stop_active"
+    _gpio_function = "FREE_COOLING_ACTIVE"
+
+
+class NovaRcSystemStopBinarySensor(NovaRcGatewayBinarySensor):
+    """Gateway system stop state."""
+
+    _attr_translation_key = "system_stop"
+    _gpio_function = "SYSTEM_STOP"
+
+
+class NovaRcSystemFaultBinarySensor(NovaRcGatewayBinarySensor):
+    """Gateway system fault state."""
+
+    _attr_translation_key = "system_fault"
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _gpio_function = "SYSTEM_FAULT"
+
+
+class NovaRcRunningBinarySensor(NovaRcBaseBinarySensor):
     """Zone is running."""
 
     _attr_translation_key = "running"
@@ -64,7 +166,7 @@ class SKlimaRunningBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the running state sensor."""
@@ -77,7 +179,7 @@ class SKlimaRunningBinarySensor(SKlimaBaseBinarySensor):
         return self._zone_data.get("running", False)
 
 
-class SKlimaAvailableBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcAvailableBinarySensor(NovaRcBaseBinarySensor):
     """Zone is available."""
 
     _attr_translation_key = "available"
@@ -86,7 +188,7 @@ class SKlimaAvailableBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the availability sensor."""
@@ -99,14 +201,14 @@ class SKlimaAvailableBinarySensor(SKlimaBaseBinarySensor):
         return self._zone_data.get("available", False)
 
 
-class SKlima3DAutoBinarySensor(SKlimaBaseBinarySensor):
+class NovaRc3DAutoBinarySensor(NovaRcBaseBinarySensor):
     """3D auto mode."""
 
     _attr_translation_key = "three_d_auto"
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the 3D auto state sensor."""
@@ -119,14 +221,14 @@ class SKlima3DAutoBinarySensor(SKlimaBaseBinarySensor):
         return self._zone_data.get("flap3dAuto", False)
 
 
-class SKlimaTemperatureRangeBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcTemperatureRangeBinarySensor(NovaRcBaseBinarySensor):
     """Temperature range is enabled."""
 
     _attr_translation_key = "temperature_range"
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the temperature range sensor."""
@@ -139,7 +241,7 @@ class SKlimaTemperatureRangeBinarySensor(SKlimaBaseBinarySensor):
         return self._zone_data.get("temperatureRangeEnable", False)
 
 
-class SKlimaCriticalErrorBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcCriticalErrorBinarySensor(NovaRcBaseBinarySensor):
     """Critical error."""
 
     _attr_translation_key = "critical_error"
@@ -148,7 +250,7 @@ class SKlimaCriticalErrorBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the critical error sensor."""
@@ -162,7 +264,7 @@ class SKlimaCriticalErrorBinarySensor(SKlimaBaseBinarySensor):
         return error.get("criticalCount", 0) > 0
 
 
-class SKlimaMaintenanceBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcMaintenanceBinarySensor(NovaRcBaseBinarySensor):
     """Maintenance required."""
 
     _attr_translation_key = "maintenance_required"
@@ -171,7 +273,7 @@ class SKlimaMaintenanceBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the maintenance sensor."""
@@ -185,14 +287,14 @@ class SKlimaMaintenanceBinarySensor(SKlimaBaseBinarySensor):
         return error.get("maintenanceCount", 0) > 0
 
 
-class SKlimaCompressorBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcCompressorBinarySensor(NovaRcBaseBinarySensor):
     """Compressor activity state."""
 
     _attr_translation_key = "compressor_active"
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the compressor activity binary sensor."""
@@ -209,14 +311,14 @@ class SKlimaCompressorBinarySensor(SKlimaBaseBinarySensor):
         return dataset_is_on("compressor_active", dataset)
 
 
-class SKlimaDefrostingBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcDefrostingBinarySensor(NovaRcBaseBinarySensor):
     """Defrosting activity state."""
 
     _attr_translation_key = "defrosting_active"
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the defrosting binary sensor."""
@@ -233,7 +335,7 @@ class SKlimaDefrostingBinarySensor(SKlimaBaseBinarySensor):
         return dataset_is_on("defrosting_active", dataset)
 
 
-class SKlimaFilterBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcFilterBinarySensor(NovaRcBaseBinarySensor):
     """Filter replacement reminder."""
 
     _attr_translation_key = "filter_sign"
@@ -242,7 +344,7 @@ class SKlimaFilterBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the filter reminder binary sensor."""
@@ -259,7 +361,7 @@ class SKlimaFilterBinarySensor(SKlimaBaseBinarySensor):
         return dataset_is_on("filter_sign", dataset)
 
 
-class SKlimaIndoorUnitRunningBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcIndoorUnitRunningBinarySensor(NovaRcBaseBinarySensor):
     """Running state for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_running"
@@ -267,7 +369,7 @@ class SKlimaIndoorUnitRunningBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
         indoor_unit_id: int,
     ) -> None:
@@ -292,7 +394,7 @@ class SKlimaIndoorUnitRunningBinarySensor(SKlimaBaseBinarySensor):
         return bool(value)
 
 
-class SKlimaIndoorUnitFilterBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcIndoorUnitFilterBinarySensor(NovaRcBaseBinarySensor):
     """Filter reminder for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_filter_sign"
@@ -301,7 +403,7 @@ class SKlimaIndoorUnitFilterBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
         indoor_unit_id: int,
     ) -> None:
@@ -326,7 +428,7 @@ class SKlimaIndoorUnitFilterBinarySensor(SKlimaBaseBinarySensor):
         return bool(value)
 
 
-class SKlimaNotificationsBinarySensor(SKlimaBaseBinarySensor):
+class NovaRcNotificationsBinarySensor(NovaRcBaseBinarySensor):
     """Gateway notifications present for the zone."""
 
     _attr_translation_key = "notifications"
@@ -335,7 +437,7 @@ class SKlimaNotificationsBinarySensor(SKlimaBaseBinarySensor):
 
     def __init__(
         self,
-        coordinator: SKlimaDataUpdateCoordinator,
+        coordinator: NovaRcDataUpdateCoordinator,
         zone_id: int,
     ) -> None:
         """Initialize the notifications binary sensor."""
