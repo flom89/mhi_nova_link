@@ -2,6 +2,8 @@
 
 ![MHI Nova logo](custom_components/mhi_nova_link/brand/logo.png)
 
+![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-red)
+
 This repository folder contains a custom Home Assistant integration for using Mitsubishi Heavy Industries Air Conditioners connected to a CompTrol 4Web NOVA RC via Home Assistant.
 
 ## Features
@@ -86,6 +88,15 @@ pytest -q custom_components/mhi_nova_link/tests
 ## Restriction
 
 Please consider reviewing the terms and conditions of STULZ S-Klima regarding permitted usage of CompTrol 4Web NOVA RC.
+
+## License
+
+This project is licensed under PolyForm Noncommercial 1.0.0.
+
+- Non-commercial use, modification, and sharing are permitted.
+- Commercial use is not permitted without separate permission from the copyright holder.
+
+See the full license text in LICENSE.
 
 ## Notes
 
