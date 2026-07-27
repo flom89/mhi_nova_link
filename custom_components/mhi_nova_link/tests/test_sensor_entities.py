@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 
 from homeassistant.const import Platform
+from homeassistant.const import UnitOfPower
 
 
 @pytest.fixture(name="integration_module")
@@ -69,6 +71,18 @@ def _load_entity_module() -> object:
     import custom_components.mhi_nova_link.entity as entity_module  # noqa: PLC0415
 
     return entity_module
+
+
+def _load_select_module() -> object:
+    """Import the select module after the custom-components path is configured."""
+    integration_dir = Path(__file__).resolve().parents[1]
+    config_dir = integration_dir.parent.parent
+    if str(config_dir) not in sys.path:
+        sys.path.insert(0, str(config_dir))
+
+    import custom_components.mhi_nova_link.select as select_module  # noqa: PLC0415
+
+    return select_module
 
 
 def test_integration_loads_sensor_and_binary_sensor_platforms() -> None:
@@ -218,6 +232,8 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
         ("entity", "binary_sensor", "system_stop", "name"),
         ("entity", "binary_sensor", "system_fault", "name"),
         ("entity", "sensor", "gateway_software_version", "name"),
+        ("entity", "select", "louver_position", "name"),
+        ("entity", "select", "vane_position", "name"),
         ("entity", "sensor", "indoor_unit_temperature", "name"),
         ("entity", "sensor", "indoor_unit_setpoint", "name"),
         ("entity", "sensor", "indoor_unit_operation_mode", "name"),
@@ -506,6 +522,36 @@ def test_indoor_unit_temperature_sensor_reads_direct_room_temperature(
     assert sensor.native_value == 19.5
 
 
+def test_indoor_capacity_sensor_uses_kw_unit(integration_module: object) -> None:
+    """The indoor capacity sensor should expose deci-kW values in kW."""
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 2,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "iu_indication_capacity",
+                            "reference": "/indoor_unit/2",
+                            "data": [{"value": 15.0}],
+                        }
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    sensor = integration_module.NovaRcIndoorCapacitySensor(coordinator, 2)
+
+    assert sensor.native_unit_of_measurement == UnitOfPower.KILO_WATT
+    assert sensor.native_value == 1.5
+
+
 def test_get_dataset_value_uses_latest_timestamped_point() -> None:
     """Dataset helpers should choose the newest known datapoint when timestamps are present."""
     helpers_module = _load_helpers_module()
@@ -784,6 +830,92 @@ def test_update_query_requests_installed_version_and_available_release() -> None
     assert "automaticCheck" in query
 
 
+def test_get_zone_query_requests_airflow_and_patch_options() -> None:
+    """The targeted GetZone query should request airflow and patch option fields."""
+    graphql_module = _load_graphql_module()
+
+    query = graphql_module.GET_ZONE_QUERY
+
+    assert "query GetZone($zoneId: Int!)" in query
+    assert "louverPosition" in query
+    assert "vanePosition" in query
+    assert "patchOptions" in query
+
+
+def test_louver_select_returns_none_when_direct_zone_value_missing() -> None:
+    """Louver select should not use time-series values when the direct zone value is missing."""
+    select_module = _load_select_module()
+
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "louver_position",
+                            "reference": "/indoor_unit/1",
+                            "data": [
+                                {
+                                    "value": "${dataSets.nova.enumeratedOptions.louver_position.POSITION_3}"
+                                }
+                            ],
+                        }
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    entity = select_module.NovaRcLouverSelect(coordinator, 1)
+
+    assert entity.current_option is None
+
+
+def test_vane_select_returns_none_when_direct_zone_value_missing() -> None:
+    """Vane select should not use time-series values when the direct zone value is missing."""
+    select_module = _load_select_module()
+
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "vane_position",
+                            "reference": "/indoor_unit/1",
+                            "data": [{"value": 5}],
+                            "options": {
+                                "options": [
+                                    {
+                                        "value": 5,
+                                        "label": "${dataSets.nova.enumeratedOptions.vane_position.WIDE}",
+                                    }
+                                ]
+                            },
+                        }
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    entity = select_module.NovaRcVaneSelect(coordinator, 1)
+
+    assert entity.current_option is None
+
+
 def test_normalize_gateway_update_payload_extracts_versions_and_flags() -> None:
     """Gateway update payload normalization should expose software and update status."""
     api_module = _load_api_helpers()
@@ -889,3 +1021,57 @@ def test_normalize_ssl_fingerprint_rejects_invalid_length() -> None:
 
     with pytest.raises(ValueError):
         api_module.normalize_ssl_fingerprint("abcd")
+
+
+@pytest.mark.asyncio
+async def test_wait_for_zone_airflow_values_stops_polling_after_values_arrive(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Polling should stop immediately once louver and vane values are available."""
+    api_module = _load_api_helpers()
+
+    client = api_module.NovaRcApiClient("gateway", SimpleNamespace())
+    client.async_get_zone = AsyncMock(
+        side_effect=[
+            {"zoneId": 1, "louverPosition": None, "vanePosition": None},
+            {"zoneId": 1, "louverPosition": "POSITION_3", "vanePosition": "WIDE"},
+            {"zoneId": 1, "louverPosition": "POSITION_4", "vanePosition": "WIDE"},
+        ]
+    )
+
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(api_module.asyncio, "sleep", sleep_mock)
+
+    await client.async_wait_for_zone_airflow_values(
+        zone_id=1, timeout_seconds=60, interval_seconds=2
+    )
+
+    assert client.async_get_zone.await_count == 2
+    sleep_mock.assert_awaited_once_with(2)
+
+
+@pytest.mark.asyncio
+async def test_wait_for_zone_airflow_values_returns_without_sleep_when_immediately_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No timer interval should run when airflow values are already present."""
+    api_module = _load_api_helpers()
+
+    client = api_module.NovaRcApiClient("gateway", SimpleNamespace())
+    client.async_get_zone = AsyncMock(
+        return_value={
+            "zoneId": 1,
+            "louverPosition": "POSITION_3",
+            "vanePosition": "WIDE",
+        }
+    )
+
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(api_module.asyncio, "sleep", sleep_mock)
+
+    await client.async_wait_for_zone_airflow_values(
+        zone_id=1, timeout_seconds=60, interval_seconds=2
+    )
+
+    client.async_get_zone.assert_awaited_once()
+    sleep_mock.assert_not_awaited()

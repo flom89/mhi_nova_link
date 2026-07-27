@@ -169,10 +169,10 @@
     },
     "select": {
       "louver_position": {
-        "name": "Lüftungsposition"
+        "name": "Luftleitlamellen"
       },
       "vane_position": {
-        "name": "Lamellenposition"
+        "name": "Pendellamellen"
       }
     },
     "sensor": {
@@ -256,7 +256,9 @@
         "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
         "data": {
           "poll_interval": "Abfrageintervall (Sekunden)",
-          "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)"
+          "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)",
+          "username": "Benutzername",
+          "password": "Passwort"
         }
       }
     }

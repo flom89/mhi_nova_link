@@ -140,6 +140,98 @@ fragment GpioSimple on Gpio {
 }
 """
 
+GET_ZONE_QUERY = """
+query GetZone($zoneId: Int!) {
+  xybus {
+    zone(zoneId: $zoneId) {
+      ...ZoneDetail
+      __typename
+    }
+    __typename
+  }
+}
+
+fragment ZoneDetail on XYBusZone {
+  zoneId
+  displayName
+  indoorUnits {
+    ...IndoorUnit
+    __typename
+  }
+  controllingMode
+  controllingModeChangeProgress
+  unitNoMain
+  unitNoSub
+  setpoint
+  roomAirTemperature
+  running
+  operationMode
+  temperatureRangeEnable
+  temperatureRangeHeating {
+    lower
+    upper
+    __typename
+  }
+  temperatureRangeCooling {
+    lower
+    upper
+    __typename
+  }
+  operationModePermission {
+    auto
+    cooling
+    heating
+    dry
+    __typename
+  }
+  fanSpeed
+  louverPosition
+  vanePosition
+  flap3dAuto
+  manualOperationTimeout {
+    totalSeconds
+    __typename
+  }
+  patchOptions {
+    ...ZonePatchOptions
+    __typename
+  }
+  __typename
+}
+
+fragment IndoorUnit on IndoorUnit {
+  indoorUnitId
+  displayName
+  state {
+    running
+    roomAirTemperature
+    __typename
+  }
+  __typename
+}
+
+fragment ZonePatchOptions on ZonePatchOptions {
+  operationMode
+  temperatureRangeEnable
+  operationModePermission
+  running
+  fanSpeed
+  setpoint
+  setpointRange {
+    lower
+    upper
+    __typename
+  }
+  fanSpeedRange
+  louverPosition
+  vanePosition
+  flap3dAuto
+  temperatureRangeCooling
+  temperatureRangeHeating
+  __typename
+}
+"""
+
 GET_UPDATE_CLOUD_SETTINGS_QUERY = """
 query GetUpdateCloudSettings {
   system {
