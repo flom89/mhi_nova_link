@@ -314,6 +314,10 @@ async def test_setup_and_unload_entry(
         assert await integration_module.async_setup_entry(hass, entry)
         client_cls.assert_called_once()
         assert client_cls.call_args.kwargs["ssl_fingerprint"] == "bb" * 32
+        client.async_login.assert_awaited_once_with(
+            username="user",
+            password="secret",
+        )
         assert entry.title == "CompTrol 4Web NOVA RC (gateway.local)"
         assert entry.entry_id in hass.data[integration_module.DOMAIN]
         assert refresh_mock.await_count == 1
@@ -368,3 +372,77 @@ async def test_setup_auto_pins_fingerprint_when_missing(
         assert entry.data[CONF_SSL_FINGERPRINT] == "dd" * 32
         assert entry.entry_id in hass.data[integration_module.DOMAIN]
         assert refresh_mock.await_count == 1
+
+
+async def test_setup_uses_username_and_password_from_options(
+    integration_module: object,
+    hass: DummyHass,
+) -> None:
+    """Setup should use credentials from options when they are configured."""
+    entry = DummyConfigEntry(
+        domain=integration_module.DOMAIN,
+        data={
+            CONF_HOST: "gateway.local",
+            CONF_USERNAME: "old-user",
+            CONF_PASSWORD: "old-secret",
+            CONF_SSL_FINGERPRINT: "aa" * 32,
+        },
+    )
+    entry.options = {
+        CONF_USERNAME: "new-user",
+        CONF_PASSWORD: "new-secret",
+        CONF_SSL_FINGERPRINT: "aa" * 32,
+    }
+    entry.add_to_hass(hass)
+
+    with (
+        patch(
+            "custom_components.mhi_nova_link.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch("custom_components.mhi_nova_link.NovaRcApiClient") as client_cls,
+        patch(
+            "custom_components.mhi_nova_link.coordinator.NovaRcDataUpdateCoordinator.async_config_entry_first_refresh",
+            new_callable=AsyncMock,
+        ),
+    ):
+        client = client_cls.return_value
+        client.async_login = AsyncMock(return_value=True)
+
+        assert await integration_module.async_setup_entry(hass, entry)
+        client.async_login.assert_awaited_once_with(
+            username="new-user",
+            password="new-secret",
+        )
+
+
+async def test_options_flow_accepts_updated_credentials(
+    config_flow_module: object,
+    hass: DummyHass,
+) -> None:
+    """Options flow should store updated gateway credentials."""
+    entry = SimpleNamespace(
+        options={},
+        data={
+            CONF_HOST: "gateway.local",
+            CONF_USERNAME: "old-user",
+            CONF_PASSWORD: "old-secret",
+            CONF_SSL_FINGERPRINT: "",
+        },
+    )
+
+    flow = config_flow_module.NovaRcOptionsFlow(entry)
+    flow.hass = hass
+
+    result = await flow.async_step_init(
+        {
+            "poll_interval": 10,
+            CONF_SSL_FINGERPRINT: "",
+            CONF_USERNAME: "new-user",
+            CONF_PASSWORD: "new-secret",
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_USERNAME] == "new-user"
+    assert result["data"][CONF_PASSWORD] == "new-secret"

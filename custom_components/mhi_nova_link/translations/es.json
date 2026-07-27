@@ -169,10 +169,10 @@
     },
     "select": {
       "louver_position": {
-        "name": "Posición de persiana"
+        "name": "Lamas de guía de aire"
       },
       "vane_position": {
-        "name": "Posición de aletas"
+        "name": "Lamas oscilantes"
       }
     },
     "sensor": {
@@ -256,7 +256,9 @@
         "description": "Ajusta la frecuencia con la que se consulta la puerta de enlace para actualizarse.",
         "data": {
           "poll_interval": "Intervalo de sondeo (segundos)",
-          "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)"
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)",
+          "username": "Nombre de usuario",
+          "password": "Contraseña"
         }
       }
     }

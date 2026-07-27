@@ -17,6 +17,7 @@ from .graphql import (
     GET_NOTIFICATIONS_QUERY,
     GET_TIME_SERIES_QUERY,
     GET_UPDATE_CLOUD_SETTINGS_QUERY,
+    GET_ZONE_QUERY,
     GET_ZONES_QUERY,
     SET_ZONE_PATCH_MUTATION,
 )
@@ -361,6 +362,14 @@ class NovaRcApiClient:
         return None
 
     @staticmethod
+    def _zone_has_airflow_values(zone: dict[str, Any]) -> bool:
+        """Return whether a zone already reports both airflow selector values."""
+        return (
+            zone.get("louverPosition") is not None
+            and zone.get("vanePosition") is not None
+        )
+
+    @staticmethod
     def _build_headers() -> dict[str, str]:
         """Build standard GraphQL HTTP headers."""
         return {
@@ -430,6 +439,79 @@ class NovaRcApiClient:
             raise CannotConnect(f"Connection error: {err}") from err
         except asyncio.TimeoutError as err:
             raise CannotConnect("Timeout while fetching zones") from err
+
+    async def async_get_zone(self, zone_id: int) -> dict[str, Any] | None:
+        """Fetch one zone payload with full detail."""
+        try:
+            async with self.session.post(
+                self.endpoint,
+                json={
+                    "query": GET_ZONE_QUERY,
+                    "operationName": "GetZone",
+                    "variables": {"zoneId": int(zone_id)},
+                },
+                headers=self._build_headers(),
+                auth=self._build_auth(),
+                timeout=10,
+                ssl=self._ssl_context,
+            ) as response:
+                text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "GetZone")
+                if response.status != 200:
+                    _LOGGER.debug("GetZone failed for zone %s: %s", zone_id, text)
+                    return None
+
+                data = await response.json()
+                if "errors" in data:
+                    _LOGGER.debug(
+                        "GetZone GraphQL errors for zone %s: %s",
+                        zone_id,
+                        data.get("errors"),
+                    )
+                    return None
+
+                zone = data.get("data", {}).get("xybus", {}).get("zone")
+                if isinstance(zone, dict) and zone.get("__typename") == "XYBusZone":
+                    return zone
+                return None
+
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            _LOGGER.debug("GetZone request failed for zone %s: %s", zone_id, err)
+            return None
+
+    async def async_wait_for_zone_airflow_values(
+        self,
+        zone_id: int,
+        timeout_seconds: int = 60,
+        interval_seconds: int = 2,
+    ) -> None:
+        """Poll GetZone until airflow values are present or timeout is reached."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout_seconds
+
+        while loop.time() < deadline:
+            zone = await self.async_get_zone(zone_id)
+            if zone and self._zone_has_airflow_values(zone):
+                _LOGGER.debug("Airflow values became available for zone %s", zone_id)
+                return
+
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                break
+
+            await asyncio.sleep(min(interval_seconds, remaining))
+
+        _LOGGER.debug(
+            "Airflow values were not available for zone %s after %s seconds",
+            zone_id,
+            timeout_seconds,
+        )
 
     async def async_get_notifications(self) -> dict[str, Any]:
         """Fetch active gateway notifications and errors."""
@@ -619,6 +701,7 @@ class NovaRcApiClient:
         louver_position: str | None = None,
         vane_position: str | None = None,
         flap3d_auto: bool | None = None,
+        wait_for_airflow_after_start: bool = False,
     ) -> bool:
         """Change settings for a specific zone via a patch mutation."""
         patch_data: dict[str, Any] = {}
@@ -684,6 +767,10 @@ class NovaRcApiClient:
                     patch_data,
                     job,
                 )
+
+                if running is True and wait_for_airflow_after_start:
+                    await self.async_wait_for_zone_airflow_values(zone_id)
+
                 return True
 
         except (

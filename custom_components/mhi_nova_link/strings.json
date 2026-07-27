@@ -35,7 +35,9 @@
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
           "poll_interval": "Polling interval (seconds)",
-          "ssl_fingerprint": "SSL fingerprint (SHA256, optional)"
+          "ssl_fingerprint": "SSL fingerprint (SHA256, optional)",
+          "username": "Username",
+          "password": "Password"
         }
       }
     }
@@ -179,8 +181,8 @@
       }
     },
     "select": {
-      "louver_position": {"name": "Louver position"},
-      "vane_position": {"name": "Vane position"}
+      "louver_position": {"name": "Air guide louver"},
+      "vane_position": {"name": "Swing louver"}
     },
     "sensor": {
       "room_temperature": {"name": "Temperature"},

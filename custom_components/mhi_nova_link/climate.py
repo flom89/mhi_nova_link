@@ -223,12 +223,16 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Turn the HVAC mode on or off."""
+        was_running = bool(self._zone_data.get("running"))
         if hvac_mode == HVACMode.OFF:
             await self.coordinator.api.async_set_zone_state(self.zone_id, running=False)
         else:
             mhi_mode = HVAC_MODE_REVERSE_MAP.get(hvac_mode)
             await self.coordinator.api.async_set_zone_state(
-                self.zone_id, running=True, operation_mode=mhi_mode
+                self.zone_id,
+                running=True,
+                operation_mode=mhi_mode,
+                wait_for_airflow_after_start=not was_running,
             )
         await self.coordinator.async_request_refresh()
 

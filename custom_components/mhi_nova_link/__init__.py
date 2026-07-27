@@ -30,6 +30,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, title=expected_title)
 
     session = async_get_clientsession(hass)
+    username = entry.options.get(CONF_USERNAME, entry.data[CONF_USERNAME])
+    password = entry.options.get(CONF_PASSWORD, entry.data[CONF_PASSWORD])
     ssl_fingerprint = entry.options.get(
         CONF_SSL_FINGERPRINT,
         entry.data.get(CONF_SSL_FINGERPRINT),
@@ -42,8 +44,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     try:
         await api.async_login(
-            username=entry.data[CONF_USERNAME],
-            password=entry.data[CONF_PASSWORD],
+            username=username,
+            password=password,
         )
     except InvalidAuth as err:
         raise ConfigEntryNotReady("Authentication failed") from err
@@ -61,8 +63,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ssl_fingerprint=discovered_fingerprint,
             )
             await api.async_login(
-                username=entry.data[CONF_USERNAME],
-                password=entry.data[CONF_PASSWORD],
+                username=username,
+                password=password,
             )
         except InvalidAuth as retry_err:
             raise ConfigEntryNotReady("Authentication failed") from retry_err

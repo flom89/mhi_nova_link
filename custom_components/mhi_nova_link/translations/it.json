@@ -169,10 +169,10 @@
     },
     "select": {
       "louver_position": {
-        "name": "Posizione lamelle"
+        "name": "Lamelle di guida aria"
       },
       "vane_position": {
-        "name": "Posizione alette"
+        "name": "Lamelle oscillanti"
       }
     },
     "sensor": {
@@ -256,7 +256,9 @@
         "description": "Regola la frequenza con cui il gateway viene interrogato per gli aggiornamenti.",
         "data": {
           "poll_interval": "Intervallo di polling (secondi)",
-          "ssl_fingerprint": "Fingerprint SSL (SHA256, opzionale)"
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opzionale)",
+          "username": "Nome utente",
+          "password": "Password"
         }
       }
     }

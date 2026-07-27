@@ -167,6 +167,14 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
             CONF_SSL_FINGERPRINT,
             self._config_entry.data.get(CONF_SSL_FINGERPRINT, ""),
         )
+        default_username = self._config_entry.options.get(
+            CONF_USERNAME,
+            self._config_entry.data.get(CONF_USERNAME, ""),
+        )
+        default_password = self._config_entry.options.get(
+            CONF_PASSWORD,
+            self._config_entry.data.get(CONF_PASSWORD, ""),
+        )
 
         return self.async_show_form(
             step_id="init",
@@ -182,6 +190,14 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_SSL_FINGERPRINT,
                         default=default_ssl_fingerprint,
+                    ): str,
+                    vol.Optional(
+                        CONF_USERNAME,
+                        default=default_username,
+                    ): str,
+                    vol.Optional(
+                        CONF_PASSWORD,
+                        default=default_password,
                     ): str,
                 }
             ),

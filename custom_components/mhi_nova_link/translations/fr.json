@@ -169,10 +169,10 @@
     },
     "select": {
       "louver_position": {
-        "name": "Position des lames"
+        "name": "Lames de guidage d'air"
       },
       "vane_position": {
-        "name": "Position des ailettes"
+        "name": "Ailettes oscillantes"
       }
     },
     "sensor": {
@@ -256,7 +256,9 @@
         "description": "Ajustez la fréquence à laquelle la passerelle est interrogée pour les mises à jour.",
         "data": {
           "poll_interval": "Intervalle d'interrogation (secondes)",
-          "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)"
+          "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)",
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe"
         }
       }
     }

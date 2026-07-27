@@ -10,7 +10,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -470,7 +470,7 @@ class NovaRcIndoorCapacitySensor(NovaRcBaseSensor):
 
     _attr_translation_key = "indoor_capacity"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = "Hz"
+    _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
 
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the indoor-capacity sensor."""
@@ -482,7 +482,11 @@ class NovaRcIndoorCapacitySensor(NovaRcBaseSensor):
         """Return the indoor capacity from the time-series payload."""
         datasets = get_zone_time_series_datasets(self._zone_data)
         value = get_dataset_value(datasets.get("iu_indication_capacity", {}))
-        return float(value) if isinstance(value, (int, float)) else None
+        if not isinstance(value, (int, float)):
+            return None
+
+        # Gateway reports indoor capacity in deci-kW (e.g. 15.0 means 1.5 kW).
+        return float(value) / 10.0
 
 
 class NovaRcIndoorHeatExchanger1LowTempSensor(NovaRcBaseSensor):
