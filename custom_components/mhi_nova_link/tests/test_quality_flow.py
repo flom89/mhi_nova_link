@@ -437,6 +437,7 @@ async def test_options_flow_accepts_updated_credentials(
     result = await flow.async_step_init(
         {
             "poll_interval": 10,
+            "time_series_poll_interval": 60,
             CONF_SSL_FINGERPRINT: "",
             CONF_USERNAME: "new-user",
             CONF_PASSWORD: "new-secret",
@@ -446,3 +447,4 @@ async def test_options_flow_accepts_updated_credentials(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_USERNAME] == "new-user"
     assert result["data"][CONF_PASSWORD] == "new-secret"
+    assert result["data"]["time_series_poll_interval"] == 60

@@ -5,6 +5,7 @@ import binascii
 from datetime import UTC, datetime, timedelta
 import hashlib
 import logging
+import os
 import ssl
 from typing import Any
 from urllib.parse import urlsplit
@@ -12,6 +13,11 @@ from urllib.parse import urlsplit
 import aiohttp
 from aiohttp import client_exceptions as aiohttp_exceptions
 
+from .const import (
+    DEFAULT_TIME_SERIES_POLL_INTERVAL,
+    LEGACY_TIME_SERIES_UPDATE_INTERVAL_ENV_VAR,
+    TIME_SERIES_UPDATE_INTERVAL_ENV_VAR,
+)
 from .graphql import (
     GET_GPIOS_QUERY,
     GET_NOTIFICATIONS_QUERY,
@@ -107,6 +113,31 @@ def _raise_if_auth_rejected(status: int, response_text: str, operation: str) -> 
             "Authentication error in %s (%s): %s", operation, status, response_text
         )
         raise InvalidAuth("Authentication rejected.")
+
+
+def _get_time_series_update_interval(configured_interval: Any) -> int:
+    """Return the configured time-series update interval in seconds."""
+    raw_value = configured_interval
+
+    if raw_value is None:
+        raw_value = os.getenv(TIME_SERIES_UPDATE_INTERVAL_ENV_VAR)
+    if raw_value is None:
+        raw_value = os.getenv(LEGACY_TIME_SERIES_UPDATE_INTERVAL_ENV_VAR)
+
+    if raw_value is None:
+        return DEFAULT_TIME_SERIES_POLL_INTERVAL
+
+    try:
+        interval = int(raw_value)
+    except TypeError, ValueError:
+        _LOGGER.warning(
+            "Ignoring invalid time-series update interval %r; using %s seconds",
+            raw_value,
+            DEFAULT_TIME_SERIES_POLL_INTERVAL,
+        )
+        return DEFAULT_TIME_SERIES_POLL_INTERVAL
+
+    return max(interval, 1)
 
 
 def _format_utc_timestamp(timestamp: datetime) -> str:
@@ -296,6 +327,7 @@ class NovaRcApiClient:
         host: str,
         session: aiohttp.ClientSession,
         ssl_fingerprint: str | None = None,
+        time_series_poll_interval: int | None = DEFAULT_TIME_SERIES_POLL_INTERVAL,
     ) -> None:
         """Initialize the client."""
         self.host = host
@@ -315,6 +347,37 @@ class NovaRcApiClient:
             self._ssl_context = aiohttp.Fingerprint(
                 binascii.unhexlify(normalized_fingerprint)
             )
+
+        configured_ts_interval = _get_time_series_update_interval(
+            time_series_poll_interval
+        )
+        self._time_series_update_interval = timedelta(seconds=configured_ts_interval)
+        self._time_series_last_fetch: dict[int, datetime] = {}
+        self._time_series_cache: dict[int, dict[str, Any]] = {}
+
+    def _get_cached_time_series(self, zone_id: int) -> dict[str, Any] | None:
+        """Return cached time-series payload for a zone."""
+        return self._time_series_cache.get(zone_id)
+
+    def _set_cached_time_series(
+        self,
+        zone_id: int,
+        time_series_payload: dict[str, Any],
+    ) -> None:
+        """Persist normalized time-series payload for a zone."""
+        self._time_series_cache[zone_id] = time_series_payload
+
+    def _should_refresh_time_series(self, zone_id: int) -> bool:
+        """Return whether time-series data should be refreshed for a zone."""
+        last_fetch = self._time_series_last_fetch.get(zone_id)
+        if last_fetch is None:
+            return True
+
+        return datetime.now(UTC) - last_fetch >= self._time_series_update_interval
+
+    def _touch_time_series_fetch(self, zone_id: int) -> None:
+        """Record the latest successful time-series fetch attempt time."""
+        self._time_series_last_fetch[zone_id] = datetime.now(UTC)
 
     async def async_get_tls_fingerprint(self) -> str:
         """Return the SHA256 fingerprint of the gateway's presented TLS certificate."""
@@ -437,7 +500,7 @@ class NovaRcApiClient:
             raise InvalidCertificate("TLS certificate validation failed") from err
         except aiohttp.ClientError as err:
             raise CannotConnect(f"Connection error: {err}") from err
-        except asyncio.TimeoutError as err:
+        except TimeoutError as err:
             raise CannotConnect("Timeout while fetching zones") from err
 
     async def async_get_zone(self, zone_id: int) -> dict[str, Any] | None:
@@ -481,7 +544,7 @@ class NovaRcApiClient:
             aiohttp_exceptions.ClientConnectorSSLError,
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug("GetZone request failed for zone %s: %s", zone_id, err)
             return None
 
@@ -547,7 +610,7 @@ class NovaRcApiClient:
             aiohttp_exceptions.ClientConnectorSSLError,
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug("Notification request failed: %s", err)
             return {}
 
@@ -585,7 +648,7 @@ class NovaRcApiClient:
             aiohttp_exceptions.ClientConnectorSSLError,
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug("GPIO request failed: %s", err)
             return {}
 
@@ -625,13 +688,23 @@ class NovaRcApiClient:
             aiohttp_exceptions.ClientConnectorSSLError,
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug("Gateway update-info request failed: %s", err)
             return {}
 
     async def _attach_time_series_data(self, zone: dict[str, Any]) -> None:
         """Fetch and attach time-series datasets for a zone when supported by the gateway."""
         if not isinstance(zone, dict):
+            return
+
+        zone_id = zone.get("zoneId")
+        if not isinstance(zone_id, int):
+            return
+
+        cached_payload = self._get_cached_time_series(zone_id)
+        if not self._should_refresh_time_series(zone_id):
+            if cached_payload is not None:
+                zone["timeSeries"] = cached_payload
             return
 
         identifiers = build_time_series_identifiers(zone)
@@ -665,6 +738,8 @@ class NovaRcApiClient:
                         zone.get("zoneId"),
                         text,
                     )
+                    if cached_payload is not None:
+                        zone["timeSeries"] = cached_payload
                     return
 
                 data = await response.json()
@@ -674,11 +749,17 @@ class NovaRcApiClient:
                         zone.get("zoneId"),
                         data.get("errors"),
                     )
+                    if cached_payload is not None:
+                        zone["timeSeries"] = cached_payload
                     return
 
                 datasets = normalize_time_series_payload(data)
                 if datasets:
-                    zone["timeSeries"] = {"dataSets": list(datasets.values())}
+                    payload = {"dataSets": list(datasets.values())}
+                    zone["timeSeries"] = payload
+                    self._set_cached_time_series(zone_id, payload)
+
+                self._touch_time_series_fetch(zone_id)
 
         except (
             aiohttp_exceptions.ServerFingerprintMismatch,
@@ -686,10 +767,12 @@ class NovaRcApiClient:
             aiohttp_exceptions.ClientConnectorSSLError,
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug(
                 "Time-series request failed for zone %s: %s", zone.get("zoneId"), err
             )
+            if cached_payload is not None:
+                zone["timeSeries"] = cached_payload
 
     async def async_set_zone_state(
         self,
@@ -779,6 +862,6 @@ class NovaRcApiClient:
             aiohttp_exceptions.ClientConnectorSSLError,
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
-        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as err:
+        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
             _LOGGER.error("Failed to send mutation for zone %s: %s", zone_id, err)
             return False

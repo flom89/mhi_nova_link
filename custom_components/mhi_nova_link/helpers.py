@@ -115,15 +115,35 @@ def dataset_is_on(dataset_id: str, dataset: Mapping[str, Any]) -> bool:
             for option in options:
                 if not isinstance(option, dict):
                     continue
-                label = str(option.get("label", "")).lower()
-                if label in {"active", "enabled", "on", "open", "true"}:
+                label = _normalize_enum_token(str(option.get("label", "")))
+                if label in {
+                    "active",
+                    "enabled",
+                    "on",
+                    "open",
+                    "true",
+                    "yes",
+                    "ja",
+                    "aktiv",
+                    "ein",
+                }:
                     return value == option.get("value")
-                if label in {"inactive", "disabled", "off", "closed", "false"}:
+                if label in {
+                    "inactive",
+                    "disabled",
+                    "off",
+                    "closed",
+                    "false",
+                    "no",
+                    "nein",
+                    "inaktiv",
+                    "aus",
+                }:
                     return value == option.get("value")
         return bool(value)
 
     if isinstance(value, str):
-        normalized = value.strip().lower()
+        normalized = _normalize_enum_token(value)
         if normalized in {
             "active",
             "enabled",
@@ -134,6 +154,8 @@ def dataset_is_on(dataset_id: str, dataset: Mapping[str, Any]) -> bool:
             "ja",
             "yes",
             "y",
+            "aktiv",
+            "ein",
         }:
             return True
         if normalized in {
@@ -146,6 +168,8 @@ def dataset_is_on(dataset_id: str, dataset: Mapping[str, Any]) -> bool:
             "nein",
             "no",
             "n",
+            "inaktiv",
+            "aus",
         }:
             return False
 
@@ -168,3 +192,13 @@ def _iter_time_series_payloads(zone: Mapping[str, Any]) -> list[dict[str, Any]]:
             payloads.append(nested)
 
     return payloads
+
+
+def _normalize_enum_token(value: str) -> str:
+    """Normalize enum-like strings from gateways/options to a comparable token."""
+    normalized = value.strip().lower()
+    if normalized.startswith("${") and normalized.endswith("}"):
+        normalized = normalized[2:-1].strip().lower()
+    if "." in normalized:
+        normalized = normalized.rsplit(".", 1)[-1]
+    return normalized

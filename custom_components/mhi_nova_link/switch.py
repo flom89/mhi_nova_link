@@ -1,5 +1,6 @@
 """Implement switch entities for NOVA_RC controls."""
 
+import inspect
 import logging
 from typing import Any
 
@@ -22,10 +23,16 @@ async def async_setup_entry(
     """Set up the 3D auto switch for each zone."""
     coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
 
-    entities = [
-        NovaRc3DAutoSwitch(coordinator, zone["zoneId"]) for zone in coordinator.data
-    ]
-    async_add_entities(entities)
+    entities: list[SwitchEntity] = []
+    for zone in coordinator.data:
+        zone_id = zone.get("zoneId")
+        if zone_id is None:
+            continue
+        entities.append(NovaRc3DAutoSwitch(coordinator, zone_id))
+
+    result = async_add_entities(entities)
+    if inspect.isawaitable(result):
+        await result
 
 
 class NovaRc3DAutoSwitch(NovaRcZoneEntity, SwitchEntity):

@@ -14,7 +14,8 @@
       "init": {
         "description": "Ajustez la fréquence à laquelle la passerelle est interrogée pour les mises à jour.",
         "data": {
-          "poll_interval": "Intervalle d'interrogation (secondes)"
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval"
         }
       }
     },
@@ -74,31 +75,24 @@
         }
       },
       "compressor_active": {
-        "name": "Compressor active",
+        "name": "TS_Compresseur actif",
         "state": {
-          "on": "Active",
-          "off": "Inactive"
+          "on": "Actif",
+          "off": "Inactif"
         }
       },
       "defrosting_active": {
-        "name": "Defrosting",
+        "name": "TS_Dégivrage",
         "state": {
-          "on": "Active",
-          "off": "Inactive"
-        }
-      },
-      "filter_sign": {
-        "name": "Filter reminder",
-        "state": {
-          "on": "Required",
-          "off": "OK"
+          "on": "Actif",
+          "off": "Inactif"
         }
       },
       "notifications": {
-        "name": "Active notifications",
+        "name": "Notifications actives",
         "state": {
-          "on": "Present",
-          "off": "None"
+          "on": "Présentes",
+          "off": "Aucune"
         }
       },
       "indoor_unit_running": {
@@ -182,29 +176,41 @@
       "setpoint": {
         "name": "Consigne"
       },
+      "cooling_temperature_min": {
+        "name": "Température minimale refroidissement"
+      },
+      "cooling_temperature_max": {
+        "name": "Température maximale refroidissement"
+      },
+      "heating_temperature_min": {
+        "name": "Température minimale chauffage"
+      },
+      "heating_temperature_max": {
+        "name": "Température maximale chauffage"
+      },
       "indoor_unit_temperature": {
         "name": "Température de l'unité intérieure"
       },
       "outdoor_air_temperature": {
-        "name": "Température de l'air extérieur"
+        "name": "TS_Température de l'air extérieur"
       },
       "compressor_frequency": {
-        "name": "Fréquence du compresseur"
+        "name": "TS_Fréquence du compresseur"
       },
       "protection_state": {
-        "name": "État de protection"
+        "name": "TS_État de protection"
       },
       "indoor_capacity": {
-        "name": "Puissance unité intérieure"
+        "name": "TS_Puissance unité intérieure"
       },
       "indoor_heat_exchanger_1_low_temp": {
-        "name": "Température de soufflage unité intérieure"
+        "name": "TS_Température de soufflage unité intérieure"
       },
       "outdoor_heat_exchanger_1_low_temp": {
-        "name": "Échangeur extérieur bas"
+        "name": "TS_Échangeur extérieur bas"
       },
       "outdoor_heat_exchanger_1_high_temp": {
-        "name": "Échangeur extérieur haut"
+        "name": "TS_Échangeur extérieur haut"
       },
       "gateway_software_version": {
         "name": "Version logicielle de la passerelle"
@@ -255,7 +261,8 @@
       "init": {
         "description": "Ajustez la fréquence à laquelle la passerelle est interrogée pour les mises à jour.",
         "data": {
-          "poll_interval": "Intervalle d'interrogation (secondes)",
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)",
           "username": "Nom d'utilisateur",
           "password": "Mot de passe"

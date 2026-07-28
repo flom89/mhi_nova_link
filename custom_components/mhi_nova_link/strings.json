@@ -14,7 +14,8 @@
       "init": {
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
-          "poll_interval": "Polling interval (seconds)"
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval"
         }
       }
     },
@@ -34,7 +35,8 @@
       "init": {
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
-          "poll_interval": "Polling interval (seconds)",
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "SSL fingerprint (SHA256, optional)",
           "username": "Username",
           "password": "Password"
@@ -87,24 +89,17 @@
         }
       },
       "compressor_active": {
-        "name": "Compressor active",
+        "name": "TS_Compressor active",
         "state": {
           "on": "Active",
           "off": "Inactive"
         }
       },
       "defrosting_active": {
-        "name": "Defrosting",
+        "name": "TS_Defrosting",
         "state": {
           "on": "Active",
           "off": "Inactive"
-        }
-      },
-      "filter_sign": {
-        "name": "Filter reminder",
-        "state": {
-          "on": "Required",
-          "off": "OK"
         }
       },
       "notifications": {
@@ -187,17 +182,21 @@
     "sensor": {
       "room_temperature": {"name": "Temperature"},
       "setpoint": {"name": "Setpoint"},
+      "cooling_temperature_min": {"name": "Cooling temperature minimum"},
+      "cooling_temperature_max": {"name": "Cooling temperature maximum"},
+      "heating_temperature_min": {"name": "Heating temperature minimum"},
+      "heating_temperature_max": {"name": "Heating temperature maximum"},
       "indoor_unit_temperature": {"name": "Indoor unit temperature"},
       "indoor_unit_setpoint": {"name": "Indoor unit setpoint"},
       "indoor_unit_operation_mode": {"name": "Indoor unit mode"},
       "indoor_unit_fan_speed": {"name": "Indoor unit fan"},
-      "outdoor_air_temperature": {"name": "Outdoor air temperature"},
-      "compressor_frequency": {"name": "Compressor frequency"},
-      "protection_state": {"name": "Protection state"},
-      "indoor_capacity": {"name": "Indoor unit capacity"},
-      "indoor_heat_exchanger_1_low_temp": {"name": "Indoor unit discharge temperature"},
-      "outdoor_heat_exchanger_1_low_temp": {"name": "Outdoor heat exchanger bottom temperature"},
-      "outdoor_heat_exchanger_1_high_temp": {"name": "Outdoor heat exchanger top temperature"},
+      "outdoor_air_temperature": {"name": "TS_Outdoor air temperature"},
+      "compressor_frequency": {"name": "TS_Compressor frequency"},
+      "protection_state": {"name": "TS_Protection state"},
+      "indoor_capacity": {"name": "TS_Indoor unit capacity"},
+      "indoor_heat_exchanger_1_low_temp": {"name": "TS_Indoor unit discharge temperature"},
+      "outdoor_heat_exchanger_1_low_temp": {"name": "TS_Outdoor heat exchanger bottom temperature"},
+      "outdoor_heat_exchanger_1_high_temp": {"name": "TS_Outdoor heat exchanger top temperature"},
       "gateway_software_version": {"name": "Gateway software version"},
       "operation_mode": {
         "name": "Mode",
