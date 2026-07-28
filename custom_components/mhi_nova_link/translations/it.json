@@ -14,7 +14,8 @@
       "init": {
         "description": "Regola la frequenza con cui il gateway viene interrogato per gli aggiornamenti.",
         "data": {
-          "poll_interval": "Intervallo di polling (secondi)"
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval"
         }
       }
     },
@@ -74,31 +75,24 @@
         }
       },
       "compressor_active": {
-        "name": "Compressore attivo",
+        "name": "TS_Compressore attivo",
         "state": {
           "on": "Attivo",
           "off": "Inattivo"
         }
       },
       "defrosting_active": {
-        "name": "Sbrinamento",
+        "name": "TS_Sbrinamento",
         "state": {
           "on": "Attivo",
           "off": "Inattivo"
         }
       },
-      "filter_sign": {
-        "name": "Promemoria filtro",
-        "state": {
-          "on": "Richiesto",
-          "off": "OK"
-        }
-      },
       "notifications": {
-        "name": "Active notifications",
+        "name": "Notifiche attive",
         "state": {
-          "on": "Present",
-          "off": "None"
+          "on": "Presenti",
+          "off": "Nessuna"
         }
       },
       "indoor_unit_running": {
@@ -182,29 +176,41 @@
       "setpoint": {
         "name": "Setpoint"
       },
+      "cooling_temperature_min": {
+        "name": "Temperatura minima raffrescamento"
+      },
+      "cooling_temperature_max": {
+        "name": "Temperatura massima raffrescamento"
+      },
+      "heating_temperature_min": {
+        "name": "Temperatura minima riscaldamento"
+      },
+      "heating_temperature_max": {
+        "name": "Temperatura massima riscaldamento"
+      },
       "indoor_unit_temperature": {
         "name": "Temperatura dell'unità interna"
       },
       "outdoor_air_temperature": {
-        "name": "Temperatura dell'aria esterna"
+        "name": "TS_Temperatura dell'aria esterna"
       },
       "compressor_frequency": {
-        "name": "Frequenza del compressore"
+        "name": "TS_Frequenza del compressore"
       },
       "protection_state": {
-        "name": "Stato di protezione"
+        "name": "TS_Stato di protezione"
       },
       "indoor_capacity": {
-        "name": "Potenza unità interna"
+        "name": "TS_Potenza unità interna"
       },
       "indoor_heat_exchanger_1_low_temp": {
-        "name": "Temperatura mandata unità interna"
+        "name": "TS_Temperatura mandata unità interna"
       },
       "outdoor_heat_exchanger_1_low_temp": {
-        "name": "Scambiatore esterno inferiore"
+        "name": "TS_Scambiatore esterno inferiore"
       },
       "outdoor_heat_exchanger_1_high_temp": {
-        "name": "Scambiatore esterno superiore"
+        "name": "TS_Scambiatore esterno superiore"
       },
       "gateway_software_version": {
         "name": "Versione software del gateway"
@@ -255,7 +261,8 @@
       "init": {
         "description": "Regola la frequenza con cui il gateway viene interrogato per gli aggiornamenti.",
         "data": {
-          "poll_interval": "Intervallo di polling (secondi)",
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "Fingerprint SSL (SHA256, opzionale)",
           "username": "Nome utente",
           "password": "Password"

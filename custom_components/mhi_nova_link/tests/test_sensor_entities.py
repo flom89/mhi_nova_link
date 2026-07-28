@@ -8,8 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from homeassistant.const import Platform
-from homeassistant.const import UnitOfPower
+from homeassistant.const import Platform, UnitOfPower
 
 
 @pytest.fixture(name="integration_module")
@@ -83,6 +82,30 @@ def _load_select_module() -> object:
     import custom_components.mhi_nova_link.select as select_module  # noqa: PLC0415
 
     return select_module
+
+
+def _load_switch_module() -> object:
+    """Import the switch module after the custom-components path is configured."""
+    integration_dir = Path(__file__).resolve().parents[1]
+    config_dir = integration_dir.parent.parent
+    if str(config_dir) not in sys.path:
+        sys.path.insert(0, str(config_dir))
+
+    import custom_components.mhi_nova_link.switch as switch_module  # noqa: PLC0415
+
+    return switch_module
+
+
+def _load_binary_sensor_module() -> object:
+    """Import the binary sensor module after the custom-components path setup."""
+    integration_dir = Path(__file__).resolve().parents[1]
+    config_dir = integration_dir.parent.parent
+    if str(config_dir) not in sys.path:
+        sys.path.insert(0, str(config_dir))
+
+    import custom_components.mhi_nova_link.binary_sensor as binary_sensor_module  # noqa: PLC0415
+
+    return binary_sensor_module
 
 
 def test_integration_loads_sensor_and_binary_sensor_platforms() -> None:
@@ -239,6 +262,10 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
         ("entity", "sensor", "indoor_unit_operation_mode", "name"),
         ("entity", "sensor", "indoor_unit_fan_speed", "name"),
         ("entity", "sensor", "indoor_capacity", "name"),
+        ("entity", "sensor", "cooling_temperature_min", "name"),
+        ("entity", "sensor", "cooling_temperature_max", "name"),
+        ("entity", "sensor", "heating_temperature_min", "name"),
+        ("entity", "sensor", "heating_temperature_max", "name"),
         ("entity", "sensor", "indoor_heat_exchanger_1_low_temp", "name"),
         ("entity", "sensor", "outdoor_heat_exchanger_1_low_temp", "name"),
         ("entity", "sensor", "outdoor_heat_exchanger_1_high_temp", "name"),
@@ -336,7 +363,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
 
-    assert len(added_entities) == 12
+    assert len(added_entities) == 16
     assert any(
         isinstance(entity, integration_module.NovaRcGatewaySoftwareVersionSensor)
         for entity in added_entities
@@ -357,6 +384,79 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
         isinstance(entity, integration_module.NovaRcFanSpeedSensor)
         for entity in added_entities
     )
+    assert not any(
+        isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
+        for entity in added_entities
+    )
+
+
+@pytest.mark.asyncio
+async def test_setup_entry_creates_indoor_unit_sensors_for_multi_indoor_zone(
+    integration_module: object,
+) -> None:
+    """Indoor-unit sensors should only be added for zones with multiple indoor units."""
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "displayName": "Gallery",
+                "indoorUnits": [
+                    {
+                        "indoorUnitId": 7,
+                        "displayName": "Gallery Unit 1",
+                        "state": {"roomAirTemperature": 21.5, "running": True},
+                    },
+                    {
+                        "indoorUnitId": 8,
+                        "displayName": "Gallery Unit 2",
+                        "state": {"roomAirTemperature": 22.1, "running": True},
+                    },
+                    {
+                        "indoorUnitId": 8,
+                        "displayName": "Gallery Unit 2 duplicate",
+                        "state": {"roomAirTemperature": 22.1, "running": True},
+                    },
+                ],
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+    hass = SimpleNamespace(data={"mhi_nova": {"entry-id": coordinator}})
+    entry = SimpleNamespace(domain="mhi_nova", entry_id="entry-id")
+
+    added_entities: list[object] = []
+
+    async def add_entities(entities: list[object]) -> None:
+        added_entities.extend(entities)
+
+    await integration_module.async_setup_entry(hass, entry, add_entities)
+
+    assert any(
+        isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, integration_module.NovaRcIndoorUnitSetpointSensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, integration_module.NovaRcIndoorUnitOperationModeSensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, integration_module.NovaRcIndoorUnitFanSpeedSensor)
+        for entity in added_entities
+    )
+
+    indoor_temp_entities = [
+        entity
+        for entity in added_entities
+        if isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
+    ]
+    assert len(indoor_temp_entities) == 2
 
 
 @pytest.mark.asyncio
@@ -418,6 +518,76 @@ async def test_setup_entry_creates_time_series_sensors(
 
 
 @pytest.mark.asyncio
+async def test_select_setup_entry_creates_zone_select_entities() -> None:
+    """Select platform setup should create louver and vane entities per zone."""
+    select_module = _load_select_module()
+
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "displayName": "Gallery",
+                "indoorUnits": [],
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+    hass = SimpleNamespace(data={"mhi_nova": {"entry-id": coordinator}})
+    entry = SimpleNamespace(domain="mhi_nova", entry_id="entry-id")
+
+    added_entities: list[object] = []
+
+    async def add_entities(entities: list[object]) -> None:
+        added_entities.extend(entities)
+
+    await select_module.async_setup_entry(hass, entry, add_entities)
+
+    assert len(added_entities) == 2
+    assert any(
+        isinstance(entity, select_module.NovaRcLouverSelect)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, select_module.NovaRcVaneSelect) for entity in added_entities
+    )
+
+
+@pytest.mark.asyncio
+async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
+    """Switch platform setup should create one 3D auto switch per zone."""
+    switch_module = _load_switch_module()
+
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "displayName": "Gallery",
+                "indoorUnits": [],
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+    hass = SimpleNamespace(data={"mhi_nova": {"entry-id": coordinator}})
+    entry = SimpleNamespace(domain="mhi_nova", entry_id="entry-id")
+
+    added_entities: list[object] = []
+
+    async def add_entities(entities: list[object]) -> None:
+        added_entities.extend(entities)
+
+    await switch_module.async_setup_entry(hass, entry, add_entities)
+
+    assert len(added_entities) == 1
+    assert isinstance(added_entities[0], switch_module.NovaRc3DAutoSwitch)
+
+
+@pytest.mark.asyncio
 async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> None:
     """The binary sensor setup should expose per-indoor-unit running state."""
     integration_dir = Path(__file__).resolve().parents[1]
@@ -458,7 +628,35 @@ async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> Non
     await binary_sensor_module.async_setup_entry(hass, entry, add_entities)
 
     assert any(
+        isinstance(entity, binary_sensor_module.NovaRcRunningBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
         isinstance(entity, binary_sensor_module.NovaRcAvailableBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRc3DAutoBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRcTemperatureRangeBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRcCriticalErrorBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRcMaintenanceBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRcCompressorBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRcDefrostingBinarySensor)
         for entity in added_entities
     )
     assert any(
@@ -467,6 +665,10 @@ async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> Non
     )
     assert any(
         isinstance(entity, binary_sensor_module.NovaRcIndoorUnitRunningBinarySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, binary_sensor_module.NovaRcIndoorUnitFilterBinarySensor)
         for entity in added_entities
     )
     assert any(
@@ -552,6 +754,36 @@ def test_indoor_capacity_sensor_uses_kw_unit(integration_module: object) -> None
     assert sensor.native_value == 1.5
 
 
+def test_temperature_range_sensors_read_cooling_and_heating_bounds(
+    integration_module: object,
+) -> None:
+    """Temperature range sensors should expose cooling and heating min/max values."""
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 2,
+                "indoorUnits": [],
+                "temperatureRangeCooling": {"lower": 18, "upper": 24},
+                "temperatureRangeHeating": {"lower": 20, "upper": 30},
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    cooling_min = integration_module.NovaRcCoolingTemperatureMinSensor(coordinator, 2)
+    cooling_max = integration_module.NovaRcCoolingTemperatureMaxSensor(coordinator, 2)
+    heating_min = integration_module.NovaRcHeatingTemperatureMinSensor(coordinator, 2)
+    heating_max = integration_module.NovaRcHeatingTemperatureMaxSensor(coordinator, 2)
+
+    assert cooling_min.native_value == 18.0
+    assert cooling_max.native_value == 24.0
+    assert heating_min.native_value == 20.0
+    assert heating_max.native_value == 30.0
+
+
 def test_get_dataset_value_uses_latest_timestamped_point() -> None:
     """Dataset helpers should choose the newest known datapoint when timestamps are present."""
     helpers_module = _load_helpers_module()
@@ -574,6 +806,80 @@ def test_dataset_is_on_parses_yes_no_labels() -> None:
     assert not helpers_module.dataset_is_on(
         "compressor_active", {"data": {"value": "Nein"}}
     )
+
+
+def test_compressor_binary_sensor_uses_frequency_fallback_when_active_flag_is_false() -> (
+    None
+):
+    """Compressor should be considered active when frequency is above zero."""
+    binary_sensor_module = _load_binary_sensor_module()
+
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "compressor_active",
+                            "reference": "/indoor_unit/1",
+                            "data": [{"value": False}],
+                        },
+                        {
+                            "id": "ou_indication_compressor_frequency",
+                            "reference": "/outdoor_unit/1",
+                            "data": [{"value": 35}],
+                        },
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    entity = binary_sensor_module.NovaRcCompressorBinarySensor(coordinator, 1)
+
+    assert entity.is_on
+
+
+def test_compressor_binary_sensor_stays_off_when_frequency_is_zero() -> None:
+    """Compressor should stay off when active flag is false and frequency is zero."""
+    binary_sensor_module = _load_binary_sensor_module()
+
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "compressor_active",
+                            "reference": "/indoor_unit/1",
+                            "data": [{"value": False}],
+                        },
+                        {
+                            "id": "ou_indication_compressor_frequency",
+                            "reference": "/outdoor_unit/1",
+                            "data": [{"value": 0}],
+                        },
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    entity = binary_sensor_module.NovaRcCompressorBinarySensor(coordinator, 1)
+
+    assert not entity.is_on
 
 
 def test_protection_state_sensor_parses_nested_normal_value(
@@ -715,10 +1021,10 @@ def test_protection_state_sensor_uses_option_label_when_numeric_value_is_present
     assert sensor.native_value == "low_pressure_protection_control"
 
 
-def test_indoor_unit_temperature_sensor_reads_time_series_dataset_when_direct_value_missing(
+def test_indoor_unit_temperature_sensor_returns_none_when_direct_value_missing(
     integration_module: object,
 ) -> None:
-    """The indoor unit temperature sensor should fall back to the time-series dataset."""
+    """Indoor unit temperature should not fall back to time-series when zone data is missing."""
     coordinator = SimpleNamespace(
         data=[
             {
@@ -749,13 +1055,13 @@ def test_indoor_unit_temperature_sensor_reads_time_series_dataset_when_direct_va
 
     sensor = integration_module.NovaRcIndoorUnitTemperatureSensor(coordinator, 2, 7)
 
-    assert sensor.native_value == 18.2
+    assert sensor.native_value is None
 
 
-def test_operation_mode_sensor_reads_time_series_dataset_when_zone_value_missing(
+def test_operation_mode_sensor_returns_none_when_zone_value_missing(
     integration_module: object,
 ) -> None:
-    """The operation mode sensor should fall back to the time-series payload."""
+    """Operation mode should not fall back to time-series when zone data is missing."""
     coordinator = SimpleNamespace(
         data=[
             {
@@ -780,7 +1086,7 @@ def test_operation_mode_sensor_reads_time_series_dataset_when_zone_value_missing
 
     sensor = integration_module.NovaRcOperationModeSensor(coordinator, 1)
 
-    assert sensor.native_value == "cooling"
+    assert sensor.native_value is None
 
 
 def test_normalize_time_series_payload_collects_datasets_by_id() -> None:

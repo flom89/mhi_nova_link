@@ -1,5 +1,6 @@
 """Implement select entities for NOVA_RC airflow controls."""
 
+import inspect
 import logging
 
 from homeassistant.components.select import SelectEntity
@@ -43,13 +44,17 @@ async def async_setup_entry(
     """Set up the select entities for each zone."""
     coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
 
-    entities = []
+    entities: list[SelectEntity] = []
     for zone in coordinator.data:
-        zone_id = zone["zoneId"]
+        zone_id = zone.get("zoneId")
+        if zone_id is None:
+            continue
         entities.append(NovaRcLouverSelect(coordinator, zone_id))
         entities.append(NovaRcVaneSelect(coordinator, zone_id))
 
-    async_add_entities(entities)
+    result = async_add_entities(entities)
+    if inspect.isawaitable(result):
+        await result
 
 
 class NovaRcBaseSelect(NovaRcZoneEntity, SelectEntity):

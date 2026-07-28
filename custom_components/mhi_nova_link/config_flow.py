@@ -19,7 +19,9 @@ from .api import (
 from .const import (
     CONF_POLL_INTERVAL,
     CONF_SSL_FINGERPRINT,
+    CONF_TIME_SERIES_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
+    DEFAULT_TIME_SERIES_POLL_INTERVAL,
     DOMAIN,
 )
 
@@ -185,6 +187,13 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                         default=self._config_entry.options.get(
                             CONF_POLL_INTERVAL,
                             DEFAULT_POLL_INTERVAL,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+                    vol.Optional(
+                        CONF_TIME_SERIES_POLL_INTERVAL,
+                        default=self._config_entry.options.get(
+                            CONF_TIME_SERIES_POLL_INTERVAL,
+                            DEFAULT_TIME_SERIES_POLL_INTERVAL,
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1)),
                     vol.Optional(

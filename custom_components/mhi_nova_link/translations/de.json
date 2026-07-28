@@ -14,7 +14,8 @@
       "init": {
         "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
         "data": {
-          "poll_interval": "Abfrageintervall (Sekunden)"
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval"
         }
       }
     },
@@ -74,24 +75,17 @@
         }
       },
       "compressor_active": {
-        "name": "Kompressor aktiv",
+        "name": "TS_Kompressor aktiv",
         "state": {
           "on": "Aktiv",
           "off": "Inaktiv"
         }
       },
       "defrosting_active": {
-        "name": "Abtauung",
+        "name": "TS_Abtauung",
         "state": {
           "on": "Aktiv",
           "off": "Inaktiv"
-        }
-      },
-      "filter_sign": {
-        "name": "Filterhinweis",
-        "state": {
-          "on": "Erforderlich",
-          "off": "OK"
         }
       },
       "notifications": {
@@ -182,29 +176,41 @@
       "setpoint": {
         "name": "Sollwert"
       },
+      "cooling_temperature_min": {
+        "name": "Kühlen Temperatur Minimum"
+      },
+      "cooling_temperature_max": {
+        "name": "Kühlen Temperatur Maximum"
+      },
+      "heating_temperature_min": {
+        "name": "Heizen Temperatur Minimum"
+      },
+      "heating_temperature_max": {
+        "name": "Heizen Temperatur Maximum"
+      },
       "indoor_unit_temperature": {
         "name": "Innengerät-Temperatur"
       },
       "outdoor_air_temperature": {
-        "name": "Außenlufttemperatur"
+        "name": "TS_Außenlufttemperatur"
       },
       "compressor_frequency": {
-        "name": "Kompressorfrequenz"
+        "name": "TS_Kompressorfrequenz"
       },
       "protection_state": {
-        "name": "Schutzstatus"
+        "name": "TS_Schutzstatus"
       },
       "indoor_capacity": {
-        "name": "Innengeräteleistung"
+        "name": "TS_Innengeräteleistung"
       },
       "indoor_heat_exchanger_1_low_temp": {
-        "name": "Innengerät Auswurftemperatur"
+        "name": "TS_Innengerät Auswurftemperatur"
       },
       "outdoor_heat_exchanger_1_low_temp": {
-        "name": "Wärmetauscher Außen Unten"
+        "name": "TS_Wärmetauscher Außen Unten"
       },
       "outdoor_heat_exchanger_1_high_temp": {
-        "name": "Wärmetauscher Außen Oben"
+        "name": "TS_Wärmetauscher Außen Oben"
       },
       "gateway_software_version": {
         "name": "Gateway-Softwareversion"
@@ -255,7 +261,8 @@
       "init": {
         "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
         "data": {
-          "poll_interval": "Abfrageintervall (Sekunden)",
+          "poll_interval": "ZoneQueries Polling Interval",
+          "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)",
           "username": "Benutzername",
           "password": "Passwort"

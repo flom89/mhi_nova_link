@@ -16,8 +16,8 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import NovaRcDataUpdateCoordinator
 from .const import DOMAIN
+from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
 from .helpers import get_dataset_value, get_zone_time_series_datasets
 
@@ -35,9 +35,16 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
     entities.append(NovaRcGatewaySoftwareVersionSensor(coordinator))
     for zone in coordinator.data:
-        zone_id = zone["zoneId"]
+        zone_id = zone.get("zoneId")
+        if zone_id is None:
+            continue
+
         entities.append(NovaRcTemperatureSensor(coordinator, zone_id))
         entities.append(NovaRcSetpointSensor(coordinator, zone_id))
+        entities.append(NovaRcCoolingTemperatureMinSensor(coordinator, zone_id))
+        entities.append(NovaRcCoolingTemperatureMaxSensor(coordinator, zone_id))
+        entities.append(NovaRcHeatingTemperatureMinSensor(coordinator, zone_id))
+        entities.append(NovaRcHeatingTemperatureMaxSensor(coordinator, zone_id))
         entities.append(NovaRcOperationModeSensor(coordinator, zone_id))
         entities.append(NovaRcFanSpeedSensor(coordinator, zone_id))
         entities.append(NovaRcOutdoorAirTemperatureSensor(coordinator, zone_id))
@@ -47,6 +54,36 @@ async def async_setup_entry(
         entities.append(NovaRcIndoorHeatExchanger1LowTempSensor(coordinator, zone_id))
         entities.append(NovaRcOutdoorHeatExchanger1LowTempSensor(coordinator, zone_id))
         entities.append(NovaRcOutdoorHeatExchanger1HighTempSensor(coordinator, zone_id))
+
+        indoor_unit_ids: list[int] = []
+        for indoor_unit in zone.get("indoorUnits", []) or []:
+            indoor_unit_id = indoor_unit.get("indoorUnitId")
+            if not isinstance(indoor_unit_id, int):
+                continue
+            if indoor_unit_id in indoor_unit_ids:
+                continue
+            indoor_unit_ids.append(indoor_unit_id)
+
+        # If one indoor unit is mapped 1:1 to a zone, zone-level sensors already
+        # cover the same metrics and would look duplicated in the frontend.
+        if len(indoor_unit_ids) <= 1:
+            continue
+
+        for indoor_unit_id in indoor_unit_ids:
+            entities.append(
+                NovaRcIndoorUnitTemperatureSensor(coordinator, zone_id, indoor_unit_id)
+            )
+            entities.append(
+                NovaRcIndoorUnitSetpointSensor(coordinator, zone_id, indoor_unit_id)
+            )
+            entities.append(
+                NovaRcIndoorUnitOperationModeSensor(
+                    coordinator, zone_id, indoor_unit_id
+                )
+            )
+            entities.append(
+                NovaRcIndoorUnitFanSpeedSensor(coordinator, zone_id, indoor_unit_id)
+            )
 
     result = async_add_entities(entities)
     if inspect.isawaitable(result):
@@ -149,6 +186,86 @@ class NovaRcSetpointSensor(NovaRcBaseSensor):
         return self._zone_data.get("setpoint")
 
 
+class NovaRcCoolingTemperatureMinSensor(NovaRcBaseSensor):
+    """Cooling minimum temperature boundary."""
+
+    _attr_translation_key = "cooling_temperature_min"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the cooling minimum temperature sensor for a zone."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_cooling_temp_min"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the cooling minimum temperature."""
+        value = (self._zone_data.get("temperatureRangeCooling") or {}).get("lower")
+        return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcCoolingTemperatureMaxSensor(NovaRcBaseSensor):
+    """Cooling maximum temperature boundary."""
+
+    _attr_translation_key = "cooling_temperature_max"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the cooling maximum temperature sensor for a zone."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_cooling_temp_max"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the cooling maximum temperature."""
+        value = (self._zone_data.get("temperatureRangeCooling") or {}).get("upper")
+        return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcHeatingTemperatureMinSensor(NovaRcBaseSensor):
+    """Heating minimum temperature boundary."""
+
+    _attr_translation_key = "heating_temperature_min"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the heating minimum temperature sensor for a zone."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_heating_temp_min"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the heating minimum temperature."""
+        value = (self._zone_data.get("temperatureRangeHeating") or {}).get("lower")
+        return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcHeatingTemperatureMaxSensor(NovaRcBaseSensor):
+    """Heating maximum temperature boundary."""
+
+    _attr_translation_key = "heating_temperature_max"
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the heating maximum temperature sensor for a zone."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_heating_temp_max"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the heating maximum temperature."""
+        value = (self._zone_data.get("temperatureRangeHeating") or {}).get("upper")
+        return float(value) if isinstance(value, (int, float)) else None
+
+
 class NovaRcOperationModeSensor(NovaRcBaseSensor):
     """Operation mode sensor."""
 
@@ -169,15 +286,7 @@ class NovaRcOperationModeSensor(NovaRcBaseSensor):
 
         raw_mode = data.get("operationMode")
         if raw_mode is None:
-            datasets = get_zone_time_series_datasets(data)
-            dataset = datasets.get("operation_mode")
-            if dataset is None:
-                return None
-            value = get_dataset_value(dataset)
-            if isinstance(value, str):
-                raw_mode = value
-            elif isinstance(value, (int, float)):
-                raw_mode = str(value)
+            return None
 
         mode_translation = {
             "COOLING": "cooling",
@@ -205,15 +314,7 @@ class NovaRcFanSpeedSensor(NovaRcBaseSensor):
         """Return the mapped fan speed state for the zone."""
         raw_fan = self._zone_data.get("fanSpeed")
         if raw_fan is None:
-            datasets = get_zone_time_series_datasets(self._zone_data)
-            dataset = datasets.get("fan_speed")
-            if dataset is None:
-                return None
-            value = get_dataset_value(dataset)
-            if isinstance(value, str):
-                raw_fan = value
-            elif isinstance(value, (int, float)):
-                raw_fan = str(value)
+            return None
 
         fan_translation = {
             "LOW": "low",
@@ -259,11 +360,7 @@ class NovaRcIndoorUnitTemperatureSensor(NovaRcBaseSensor):
             value = self._indoor_unit_data.get("roomAirTemperature")
 
         if value is None:
-            datasets = get_zone_time_series_datasets(self._zone_data)
-            dataset = datasets.get("iu_room_air_temperature")
-            if not dataset:
-                return None
-            value = get_dataset_value(dataset)
+            return None
 
         return float(value) if isinstance(value, (int, float)) else None
 

@@ -11,13 +11,13 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
-from .helpers import dataset_is_on, get_zone_time_series_datasets
+from .helpers import dataset_is_on, get_dataset_value, get_zone_time_series_datasets
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,17 +42,33 @@ async def async_setup_entry(
         if zone_id is None:
             continue
 
+        entities.append(NovaRcRunningBinarySensor(coordinator, zone_id))
         entities.append(NovaRcAvailableBinarySensor(coordinator, zone_id))
+        entities.append(NovaRc3DAutoBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcTemperatureRangeBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcCriticalErrorBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcMaintenanceBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcCompressorBinarySensor(coordinator, zone_id))
+        entities.append(NovaRcDefrostingBinarySensor(coordinator, zone_id))
         entities.append(NovaRcNotificationsBinarySensor(coordinator, zone_id))
 
+        indoor_unit_ids: list[int] = []
         for indoor_unit in zone.get("indoorUnits", []) or []:
             indoor_unit_id = indoor_unit.get("indoorUnitId")
-            if indoor_unit_id is None:
+            if not isinstance(indoor_unit_id, int):
                 continue
+            if indoor_unit_id in indoor_unit_ids:
+                continue
+            indoor_unit_ids.append(indoor_unit_id)
+
+        for indoor_unit_id in indoor_unit_ids:
             entities.append(
                 NovaRcIndoorUnitRunningBinarySensor(
                     coordinator, zone_id, indoor_unit_id
                 )
+            )
+            entities.append(
+                NovaRcIndoorUnitFilterBinarySensor(coordinator, zone_id, indoor_unit_id)
             )
 
     result = async_add_entities(entities)
@@ -306,9 +322,16 @@ class NovaRcCompressorBinarySensor(NovaRcBaseBinarySensor):
         """Return whether the compressor is currently active."""
         datasets = get_zone_time_series_datasets(self._zone_data)
         dataset = datasets.get("compressor_active")
-        if not dataset:
+
+        if dataset and dataset_is_on("compressor_active", dataset):
+            return True
+
+        frequency_dataset = datasets.get("ou_indication_compressor_frequency")
+        if not frequency_dataset:
             return False
-        return dataset_is_on("compressor_active", dataset)
+
+        frequency = get_dataset_value(frequency_dataset)
+        return isinstance(frequency, (int, float)) and frequency > 0
 
 
 class NovaRcDefrostingBinarySensor(NovaRcBaseBinarySensor):
@@ -333,32 +356,6 @@ class NovaRcDefrostingBinarySensor(NovaRcBaseBinarySensor):
         if not dataset:
             return False
         return dataset_is_on("defrosting_active", dataset)
-
-
-class NovaRcFilterBinarySensor(NovaRcBaseBinarySensor):
-    """Filter replacement reminder."""
-
-    _attr_translation_key = "filter_sign"
-    _attr_device_class = BinarySensorDeviceClass.PROBLEM
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    def __init__(
-        self,
-        coordinator: NovaRcDataUpdateCoordinator,
-        zone_id: int,
-    ) -> None:
-        """Initialize the filter reminder binary sensor."""
-        super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_filter"
-
-    @property
-    def is_on(self) -> bool:
-        """Return whether the filter reminder is active."""
-        datasets = get_zone_time_series_datasets(self._zone_data)
-        dataset = datasets.get("filter_sign")
-        if not dataset:
-            return False
-        return dataset_is_on("filter_sign", dataset)
 
 
 class NovaRcIndoorUnitRunningBinarySensor(NovaRcBaseBinarySensor):
