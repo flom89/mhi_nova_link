@@ -195,10 +195,16 @@
         "name": "TS_Außenlufttemperatur"
       },
       "compressor_frequency": {
-        "name": "TS_Kompressorfrequenz"
+        "name": "TS_Verdichterfrequenz"
+      },
+      "compressor_current": {
+        "name": "TS_Verdichterstrom"
+      },
+      "compressor_power": {
+        "name": "TS_Verdichterleistung"
       },
       "protection_state": {
-        "name": "TS_Schutzstatus"
+        "name": "TS_Verdichterschutzstatus"
       },
       "indoor_capacity": {
         "name": "TS_Innengeräteleistung"

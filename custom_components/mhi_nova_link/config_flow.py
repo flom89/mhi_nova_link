@@ -111,8 +111,6 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 except Exception:  # pylint: disable=broad-except
                     _LOGGER.exception("Unexpected error during config flow")
                     errors["base"] = "unknown"
-                else:
-                    pass
 
                 if not errors:
                     await self.async_set_unique_id(user_input[CONF_HOST])

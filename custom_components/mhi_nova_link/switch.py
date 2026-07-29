@@ -1,7 +1,6 @@
 """Implement switch entities for NOVA_RC controls."""
 
 import inspect
-import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
@@ -11,8 +10,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(

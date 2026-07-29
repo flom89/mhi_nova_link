@@ -5,8 +5,9 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import CannotConnect, InvalidAuth, InvalidCertificate, NovaRcApiClient
 from .const import (
@@ -104,7 +105,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     try:
         await coordinator.async_config_entry_first_refresh()
-    except Exception as err:  # pylint: disable=broad-except
+    except ConfigEntryAuthFailed as err:
+        raise ConfigEntryNotReady("Authentication failed") from err
+    except UpdateFailed as err:
         raise ConfigEntryNotReady("Unable to initialize coordinator") from err
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

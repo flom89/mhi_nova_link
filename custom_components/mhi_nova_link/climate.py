@@ -1,6 +1,5 @@
 """Implement the climate entity for NOVA_RC zones."""
 
-import logging
 from typing import Any
 
 from homeassistant.components.climate import (
@@ -22,8 +21,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 # Map gateway mode names to Home Assistant HVAC modes.
 HVAC_MODE_MAP = {

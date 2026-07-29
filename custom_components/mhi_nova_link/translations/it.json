@@ -200,6 +200,12 @@
       "protection_state": {
         "name": "TS_Stato di protezione"
       },
+        "compressor_current": {
+          "name": "TS_Corrente compressore"
+        },
+        "compressor_power": {
+          "name": "TS_Potenza compressore"
+        },
       "indoor_capacity": {
         "name": "TS_Potenza unità interna"
       },

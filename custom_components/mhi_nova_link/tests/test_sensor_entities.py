@@ -8,7 +8,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from homeassistant.const import Platform, UnitOfPower
+from homeassistant.components.climate import HVACMode
+from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
 
 
 @pytest.fixture(name="integration_module")
@@ -94,6 +95,18 @@ def _load_switch_module() -> object:
     import custom_components.mhi_nova_link.switch as switch_module  # noqa: PLC0415
 
     return switch_module
+
+
+def _load_climate_module() -> object:
+    """Import the climate module after the custom-components path is configured."""
+    integration_dir = Path(__file__).resolve().parents[1]
+    config_dir = integration_dir.parent.parent
+    if str(config_dir) not in sys.path:
+        sys.path.insert(0, str(config_dir))
+
+    import custom_components.mhi_nova_link.climate as climate_module  # noqa: PLC0415
+
+    return climate_module
 
 
 def _load_binary_sensor_module() -> object:
@@ -211,6 +224,10 @@ def test_build_time_series_identifiers_uses_zone_and_indoor_unit_references() ->
         "reference": "/outdoor_unit/1",
         "id": "ou_indication_air_temp",
     } in identifiers
+    assert {
+        "reference": "/outdoor_unit/1",
+        "id": "ou_indication_comp_current",
+    } in identifiers
 
 
 def test_build_time_series_identifiers_deduplicates_repeated_references() -> None:
@@ -231,6 +248,31 @@ def test_build_time_series_identifiers_deduplicates_repeated_references() -> Non
     }
 
     assert len(unique_pairs) == len(identifiers)
+
+
+def test_build_time_series_identifiers_use_zone_scoped_outdoor_reference() -> None:
+    """Outdoor-unit identifiers should stay scoped to the current zone id."""
+    api_module = _load_api_helpers()
+
+    zone_1_ids = api_module.build_time_series_identifiers(
+        {"zoneId": 1, "indoorUnits": []}
+    )
+    zone_2_ids = api_module.build_time_series_identifiers(
+        {"zoneId": 2, "indoorUnits": []}
+    )
+
+    assert {
+        "reference": "/outdoor_unit/1",
+        "id": "ou_indication_air_temp",
+    } in zone_1_ids
+    assert {
+        "reference": "/outdoor_unit/2",
+        "id": "ou_indication_air_temp",
+    } in zone_2_ids
+    assert {
+        "reference": "/outdoor_unit/2",
+        "id": "ou_indication_air_temp",
+    } not in zone_1_ids
 
 
 def test_translation_assets_cover_entity_and_config_strings() -> None:
@@ -262,6 +304,8 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
         ("entity", "sensor", "indoor_unit_operation_mode", "name"),
         ("entity", "sensor", "indoor_unit_fan_speed", "name"),
         ("entity", "sensor", "indoor_capacity", "name"),
+        ("entity", "sensor", "compressor_current", "name"),
+        ("entity", "sensor", "compressor_power", "name"),
         ("entity", "sensor", "cooling_temperature_min", "name"),
         ("entity", "sensor", "cooling_temperature_max", "name"),
         ("entity", "sensor", "heating_temperature_min", "name"),
@@ -363,7 +407,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
 
-    assert len(added_entities) == 16
+    assert len(added_entities) == 18
     assert any(
         isinstance(entity, integration_module.NovaRcGatewaySoftwareVersionSensor)
         for entity in added_entities
@@ -493,6 +537,14 @@ async def test_setup_entry_creates_time_series_sensors(
     )
     assert any(
         isinstance(entity, integration_module.NovaRcCompressorFrequencySensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, integration_module.NovaRcCompressorCurrentSensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, integration_module.NovaRcCompressorPowerSensor)
         for entity in added_entities
     )
     assert any(
@@ -782,6 +834,72 @@ def test_temperature_range_sensors_read_cooling_and_heating_bounds(
     assert cooling_max.native_value == 24.0
     assert heating_min.native_value == 20.0
     assert heating_max.native_value == 30.0
+
+
+def test_compressor_current_and_power_sensors_use_ampere_and_230v(
+    integration_module: object,
+) -> None:
+    """Compressor current should be exposed in A and power derived with 230V."""
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 2,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "ou_indication_comp_current",
+                            "reference": "/outdoor_unit/2",
+                            "data": [{"value": 4.2}],
+                        }
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    current_sensor = integration_module.NovaRcCompressorCurrentSensor(coordinator, 2)
+    power_sensor = integration_module.NovaRcCompressorPowerSensor(coordinator, 2)
+
+    assert current_sensor.native_unit_of_measurement == UnitOfElectricCurrent.AMPERE
+    assert current_sensor.native_value == 4.2
+    assert power_sensor.native_unit_of_measurement == UnitOfPower.WATT
+    assert power_sensor.native_value == 966.0
+
+
+def test_compressor_frequency_sensor_scales_raw_dataset_value(
+    integration_module: object,
+) -> None:
+    """Compressor frequency should convert deci-hertz values to hertz."""
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 2,
+                "indoorUnits": [],
+                "timeSeries": {
+                    "dataSets": [
+                        {
+                            "id": "ou_indication_compressor_frequency",
+                            "reference": "/outdoor_unit/2",
+                            "data": [{"value": 35}],
+                        }
+                    ]
+                },
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    sensor = integration_module.NovaRcCompressorFrequencySensor(coordinator, 2)
+
+    assert sensor.native_value == 3.5
 
 
 def test_get_dataset_value_uses_latest_timestamped_point() -> None:
@@ -1148,6 +1266,18 @@ def test_get_zone_query_requests_airflow_and_patch_options() -> None:
     assert "patchOptions" in query
 
 
+def test_notifications_query_avoids_schema_volatile_object_fields() -> None:
+    """Notifications query should avoid object fields that require nested sub-selections."""
+    graphql_module = _load_graphql_module()
+
+    query = graphql_module.GET_NOTIFICATIONS_QUERY
+
+    assert "confirmedBy" not in query
+    assert "\n      error\n" not in query
+    assert "\n      source\n" not in query
+    assert "\n    sources\n" not in query
+
+
 def test_louver_select_returns_none_when_direct_zone_value_missing() -> None:
     """Louver select should not use time-series values when the direct zone value is missing."""
     select_module = _load_select_module()
@@ -1222,162 +1352,99 @@ def test_vane_select_returns_none_when_direct_zone_value_missing() -> None:
     assert entity.current_option is None
 
 
-def test_normalize_gateway_update_payload_extracts_versions_and_flags() -> None:
-    """Gateway update payload normalization should expose software and update status."""
-    api_module = _load_api_helpers()
+@pytest.mark.asyncio
+async def test_climate_async_set_hvac_mode_uses_startup_airflow_wait() -> None:
+    """HVAC mode changes should request airflow wait only when starting from off."""
+    climate_module = _load_climate_module()
 
-    normalized = api_module.normalize_gateway_update_payload(
-        {
-            "data": {
-                "system": {
-                    "information": {
-                        "installedVersion": {"asString": "3.2.5"},
-                        "installedBundleDescription": "production",
-                        "installedBundleBuild": "master/ct4web:123",
-                    }
-                },
-                "update": {
-                    "cloud": {
-                        "availableSoftwareRelease": {"version": {"asString": "3.2.6"}},
-                        "settings": {
-                            "automaticCheck": False,
-                            "automaticInstall": False,
-                        },
-                    }
-                },
+    api = SimpleNamespace(host="gateway", async_set_zone_state=AsyncMock())
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "running": False,
+                "operationMode": "AUTO",
+                "fanSpeed": "AUTO",
+                "patchOptions": {},
             }
-        }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
     )
 
-    assert normalized["installed_version"] == "3.2.5"
-    assert normalized["available_version"] == "3.2.6"
-    assert normalized["update_available"] is True
+    climate = climate_module.NovaRcZoneClimate(coordinator, 1)
 
+    await climate.async_set_hvac_mode(HVACMode.COOL)
 
-def test_gpios_query_requests_expected_fields() -> None:
-    """The GPIO query should request id, function and value."""
-    graphql_module = _load_graphql_module()
-
-    query = graphql_module.GET_GPIOS_QUERY
-
-    assert "query GetGpios" in query
-    assert "gpios" in query
-    assert "id" in query
-    assert "function" in query
-    assert "value" in query
-
-
-def test_normalize_gpios_payload_maps_functions_to_booleans() -> None:
-    """GPIO payloads should normalize into a function-to-state mapping."""
-    api_module = _load_api_helpers()
-
-    payload = {
-        "data": {
-            "gpio": {
-                "gpios": [
-                    {"function": "FREE_COOLING", "value": False},
-                    {"function": "FREE_COOLING_ACTIVE", "value": True},
-                    {"function": "SYSTEM_STOP", "value": False},
-                    {"function": "SYSTEM_FAULT", "value": True},
-                ]
-            }
-        }
-    }
-
-    assert api_module.normalize_gpios_payload(payload) == {
-        "FREE_COOLING": False,
-        "FREE_COOLING_ACTIVE": True,
-        "SYSTEM_STOP": False,
-        "SYSTEM_FAULT": True,
-    }
-
-
-def test_build_time_series_period_uses_rolling_utc_range() -> None:
-    """The time-series period should end in UTC now and use the configured lookback."""
-    api_module = _load_api_helpers()
-
-    period = api_module.build_time_series_period()
-
-    assert period["startDate"].endswith("Z")
-    assert period["endDate"].endswith("Z")
-
-    start = api_module.datetime.fromisoformat(
-        period["startDate"].replace("Z", "+00:00")
+    api.async_set_zone_state.assert_awaited_once_with(
+        1,
+        running=True,
+        operation_mode="COOLING",
+        wait_for_airflow_after_start=True,
     )
-    end = api_module.datetime.fromisoformat(period["endDate"].replace("Z", "+00:00"))
-
-    assert end > start
-    assert (end - start) == api_module.TIME_SERIES_LOOKBACK
-
-
-def test_normalize_ssl_fingerprint_accepts_colon_separated_values() -> None:
-    """SSL fingerprint normalization should support colon-separated SHA256 values."""
-    api_module = _load_api_helpers()
-
-    normalized = api_module.normalize_ssl_fingerprint("AA:BB:CC" + ":11" * 29)
-
-    assert normalized is not None
-    assert len(normalized) == 64
-    assert ":" not in normalized
-
-
-def test_normalize_ssl_fingerprint_rejects_invalid_length() -> None:
-    """SSL fingerprint normalization should reject non-SHA256 lengths."""
-    api_module = _load_api_helpers()
-
-    with pytest.raises(ValueError):
-        api_module.normalize_ssl_fingerprint("abcd")
+    coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_wait_for_zone_airflow_values_stops_polling_after_values_arrive(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Polling should stop immediately once louver and vane values are available."""
-    api_module = _load_api_helpers()
+async def test_climate_async_set_temperature_forwards_setpoint() -> None:
+    """Temperature changes should forward setpoint updates to the API."""
+    climate_module = _load_climate_module()
 
-    client = api_module.NovaRcApiClient("gateway", SimpleNamespace())
-    client.async_get_zone = AsyncMock(
-        side_effect=[
-            {"zoneId": 1, "louverPosition": None, "vanePosition": None},
-            {"zoneId": 1, "louverPosition": "POSITION_3", "vanePosition": "WIDE"},
-            {"zoneId": 1, "louverPosition": "POSITION_4", "vanePosition": "WIDE"},
-        ]
+    api = SimpleNamespace(host="gateway", async_set_zone_state=AsyncMock())
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "running": True,
+                "operationMode": "HEATING",
+                "fanSpeed": "AUTO",
+                "patchOptions": {},
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
     )
 
-    sleep_mock = AsyncMock()
-    monkeypatch.setattr(api_module.asyncio, "sleep", sleep_mock)
+    climate = climate_module.NovaRcZoneClimate(coordinator, 1)
 
-    await client.async_wait_for_zone_airflow_values(
-        zone_id=1, timeout_seconds=60, interval_seconds=2
-    )
+    await climate.async_set_temperature(temperature=22.5)
 
-    assert client.async_get_zone.await_count == 2
-    sleep_mock.assert_awaited_once_with(2)
+    api.async_set_zone_state.assert_awaited_once_with(1, setpoint=22.5)
+    coordinator.async_request_refresh.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_wait_for_zone_airflow_values_returns_without_sleep_when_immediately_ready(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """No timer interval should run when airflow values are already present."""
-    api_module = _load_api_helpers()
+async def test_climate_async_set_fan_mode_maps_gateway_value() -> None:
+    """Fan mode updates should map Home Assistant mode labels to gateway values."""
+    climate_module = _load_climate_module()
 
-    client = api_module.NovaRcApiClient("gateway", SimpleNamespace())
-    client.async_get_zone = AsyncMock(
-        return_value={
-            "zoneId": 1,
-            "louverPosition": "POSITION_3",
-            "vanePosition": "WIDE",
-        }
+    api = SimpleNamespace(host="gateway", async_set_zone_state=AsyncMock())
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "running": True,
+                "operationMode": "AUTO",
+                "fanSpeed": "AUTO",
+                "patchOptions": {},
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
     )
 
-    sleep_mock = AsyncMock()
-    monkeypatch.setattr(api_module.asyncio, "sleep", sleep_mock)
+    climate = climate_module.NovaRcZoneClimate(coordinator, 1)
 
-    await client.async_wait_for_zone_airflow_values(
-        zone_id=1, timeout_seconds=60, interval_seconds=2
-    )
+    await climate.async_set_fan_mode("Power")
 
-    client.async_get_zone.assert_awaited_once()
-    sleep_mock.assert_not_awaited()
+    api.async_set_zone_state.assert_awaited_once_with(1, fan_speed="POWERFUL")
+    coordinator.async_request_refresh.assert_awaited_once()

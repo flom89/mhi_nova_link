@@ -1,7 +1,6 @@
 """Implement sensor entities for NOVA_RC zones."""
 
 import inspect
-import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -10,7 +9,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfPower, UnitOfTemperature
+from homeassistant.const import UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -20,8 +19,6 @@ from .const import DOMAIN
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
 from .helpers import get_dataset_value, get_zone_time_series_datasets
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -49,6 +46,8 @@ async def async_setup_entry(
         entities.append(NovaRcFanSpeedSensor(coordinator, zone_id))
         entities.append(NovaRcOutdoorAirTemperatureSensor(coordinator, zone_id))
         entities.append(NovaRcCompressorFrequencySensor(coordinator, zone_id))
+        entities.append(NovaRcCompressorCurrentSensor(coordinator, zone_id))
+        entities.append(NovaRcCompressorPowerSensor(coordinator, zone_id))
         entities.append(NovaRcProtectionStateSensor(coordinator, zone_id))
         entities.append(NovaRcIndoorCapacitySensor(coordinator, zone_id))
         entities.append(NovaRcIndoorHeatExchanger1LowTempSensor(coordinator, zone_id))
@@ -525,7 +524,53 @@ class NovaRcCompressorFrequencySensor(NovaRcBaseSensor):
         value = get_dataset_value(
             datasets.get("ou_indication_compressor_frequency", {})
         )
+        return float(value) / 10.0 if isinstance(value, (int, float)) else None
+
+
+class NovaRcCompressorCurrentSensor(NovaRcBaseSensor):
+    """Compressor current sensor derived from the time series payload."""
+
+    _attr_translation_key = "compressor_current"
+    _attr_device_class = SensorDeviceClass.CURRENT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the compressor-current sensor."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = (
+            f"{coordinator.api.host}_zone_{zone_id}_compressor_current"
+        )
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the compressor current from the time-series payload."""
+        datasets = get_zone_time_series_datasets(self._zone_data)
+        value = get_dataset_value(datasets.get("ou_indication_comp_current", {}))
         return float(value) if isinstance(value, (int, float)) else None
+
+
+class NovaRcCompressorPowerSensor(NovaRcBaseSensor):
+    """Compressor power estimate from current multiplied by 230V."""
+
+    _attr_translation_key = "compressor_power"
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
+        """Initialize the compressor-power sensor."""
+        super().__init__(coordinator, zone_id)
+        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_compressor_power"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return estimated compressor power in watts based on 230V line voltage."""
+        datasets = get_zone_time_series_datasets(self._zone_data)
+        current = get_dataset_value(datasets.get("ou_indication_comp_current", {}))
+        if not isinstance(current, (int, float)):
+            return None
+        return float(current) * 230.0
 
 
 class NovaRcProtectionStateSensor(NovaRcBaseSensor):
