@@ -192,6 +192,8 @@
       "indoor_unit_fan_speed": {"name": "Indoor unit fan"},
       "outdoor_air_temperature": {"name": "TS_Outdoor air temperature"},
       "compressor_frequency": {"name": "TS_Compressor frequency"},
+      "compressor_current": {"name": "TS_Compressor current"},
+      "compressor_power": {"name": "TS_Compressor power"},
       "protection_state": {"name": "TS_Protection state"},
       "indoor_capacity": {"name": "TS_Indoor unit capacity"},
       "indoor_heat_exchanger_1_low_temp": {"name": "TS_Indoor unit discharge temperature"},

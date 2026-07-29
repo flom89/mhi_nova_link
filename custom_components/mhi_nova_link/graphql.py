@@ -101,13 +101,10 @@ query GetNotifications {
   notification {
     notifications(filter: {} orders: [{ by: NOTIFICATION_ID, direction: ASC }] page: { limit: 20, offset: 0 }) {
       notificationId
-      confirmedBy
       creationDate
       confirmationDate
-      error
       priority
       active
-      source
     }
     errors(onlyActive: true) {
       name
@@ -116,7 +113,6 @@ query GetNotifications {
       priority
     }
     notificationCount(filter: {})
-    sources
   }
 }
 """

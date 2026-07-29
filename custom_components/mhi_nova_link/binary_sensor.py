@@ -1,7 +1,6 @@
 """Implement binary sensor entities for NOVA_RC."""
 
 import inspect
-import logging
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
@@ -18,8 +17,6 @@ from .const import DOMAIN
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
 from .helpers import dataset_is_on, get_dataset_value, get_zone_time_series_datasets
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(

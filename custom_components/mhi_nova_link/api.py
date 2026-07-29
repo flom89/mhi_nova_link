@@ -57,6 +57,7 @@ DEFAULT_TIME_SERIES_DATASET_IDS = {
     "ou_indication_eev1",
     "ou_indication_eev2",
     "ou_indication_compressor_frequency",
+    "ou_indication_comp_current",
     "ou_indication_protection_state_comp",
     "iu_indication_eev1",
     "iu_indication_heat_exch3_temp_low_site",
@@ -711,6 +712,15 @@ class NovaRcApiClient:
         if not identifiers:
             return
 
+        requested_outdoor_ids = sorted(
+            {
+                identifier["id"]
+                for identifier in identifiers
+                if identifier.get("reference") == f"/outdoor_unit/{zone_id}"
+                and isinstance(identifier.get("id"), str)
+            }
+        )
+
         payload = {
             "query": GET_TIME_SERIES_QUERY,
             "operationName": "GetData",
@@ -754,6 +764,63 @@ class NovaRcApiClient:
                     return
 
                 datasets = normalize_time_series_payload(data)
+                if _LOGGER.isEnabledFor(logging.DEBUG):
+                    returned_outdoor_datasets = sorted(
+                        f"{dataset.get('reference')}::{dataset_id}"
+                        for dataset_id, dataset in datasets.items()
+                        if isinstance(dataset, dict)
+                        and isinstance(dataset.get("reference"), str)
+                        and dataset["reference"].startswith("/outdoor_unit/")
+                    )
+                    outdoor_samples: list[dict[str, Any]] = []
+                    identifiers_with_data: list[str] = []
+                    for dataset_id, dataset in datasets.items():
+                        if not isinstance(dataset, dict):
+                            continue
+                        if dataset.get("reference") != f"/outdoor_unit/{zone_id}":
+                            continue
+                        points = dataset.get("data")
+                        if not isinstance(points, list) or not points:
+                            continue
+
+                        last_point = next(
+                            (
+                                point
+                                for point in reversed(points)
+                                if isinstance(point, dict)
+                            ),
+                            None,
+                        )
+                        if last_point is None:
+                            continue
+
+                        identifiers_with_data.append(dataset_id)
+                        outdoor_samples.append(
+                            {
+                                "id": dataset_id,
+                                "points": len(points),
+                                "lastTimestamp": last_point.get("timestamp"),
+                                "lastValue": last_point.get("value"),
+                            }
+                        )
+
+                    identifiers_without_data = sorted(
+                        set(requested_outdoor_ids) - set(identifiers_with_data)
+                    )
+                    _LOGGER.debug(
+                        "Time-series outdoor datasets for zone %s requested=%s returned=%s",
+                        zone_id,
+                        requested_outdoor_ids,
+                        returned_outdoor_datasets,
+                    )
+                    _LOGGER.debug(
+                        "Time-series outdoor datasets with data for zone %s identifiers=%s samples=%s missing_data=%s",
+                        zone_id,
+                        sorted(identifiers_with_data),
+                        outdoor_samples,
+                        identifiers_without_data,
+                    )
+
                 if datasets:
                     payload = {"dataSets": list(datasets.values())}
                     zone["timeSeries"] = payload

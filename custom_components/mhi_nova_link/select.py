@@ -1,7 +1,6 @@
 """Implement select entities for NOVA_RC airflow controls."""
 
 import inspect
-import logging
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
@@ -10,8 +9,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 # Position mapping (gateway values to UI text)
 LOUVER_MAP = {

@@ -197,6 +197,12 @@
       "compressor_frequency": {
         "name": "TS_Frecuencia del compresor"
       },
+      "compressor_current": {
+        "name": "TS_Corriente del compresor"
+      },
+      "compressor_power": {
+        "name": "TS_Potencia del compresor"
+      },
       "protection_state": {
         "name": "TS_Estado de protección"
       },

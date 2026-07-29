@@ -2,25 +2,31 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
 ### Added
 - Added a separate timeseries polling interval option (`time_series_poll_interval`).
-- Added cooling/heating temperature boundary sensors (min/max) per zone.
+- Added cooling and heating temperature boundary sensors (min/max) per zone.
 - Added indoor-unit sensors (temperature, setpoint, operation mode, fan speed) for zones with multiple indoor units.
-- Added broader regression coverage for sensor/select/switch/binary-sensor setup and option handling.
+- Added compressor current and derived compressor power sensors.
+- Added broader regression coverage for sensor, select, switch, binary sensor, config flow, and climate command behavior.
 
 ### Changed
 - Time-series fetching is now throttled and cached per zone, decoupled from zone query polling.
-- Polling option labels are now clearer in the UI: `ZoneQueries Polling Interval` and `Timeseries Polling Interval`.
-- Zone-level mode/fan/indoor-temperature sensors now use zone query values only (no TS fallback).
-- Compressor activity now falls back to compressor frequency when direct TS active state is unavailable.
-- Select and switch platform setup now validates zone IDs and supports awaitable entity registration.
-- TS-derived entity labels are consistently prefixed with `TS_` in translation assets.
-
-### Removed
-- Removed obsolete zone-level TS filter reminder binary sensor to avoid duplicate diagnostics.
-- Removed obsolete translation keys for the retired zone-level TS filter reminder sensor.
+- Polling option labels were clarified in the UI (`ZoneQueries Polling Interval`, `Timeseries Polling Interval`).
+- Zone-level mode, fan, and indoor-temperature sensors now rely on zone payload values only (no TS fallback).
+- Select and switch setup now validates zone IDs and supports awaitable entity registration.
+- Coordinator startup refresh now handles expected coordinator exceptions explicitly.
 
 ### Fixed
-- Avoided duplicate indoor-unit entities by deduplicating indoor unit IDs during setup.
-- Improved enum/token normalization for TS boolean parsing (including localized and templated values).
-- Updated static-analysis compatibility and import/exception hygiene in touched modules.
+- Compressor frequency sensor values are now scaled correctly by dividing raw values by 10.
+- Compressor active state now falls back to compressor frequency when direct TS active state is unavailable.
+- Duplicate indoor-unit entities are prevented by deduplicating indoor unit IDs during setup.
+- Enum/token normalization for TS boolean parsing was improved (including localized and templated values).
+- Removed a no-op `else: pass` branch from the config flow.
+- Manifest dependency metadata now matches the current aiohttp-based implementation.
+
+### Removed
+- Removed obsolete zone-level TS filter reminder binary sensor and its translation keys.
+- Removed unused OutdoorUnit reverse-engineering query paths and schema fallback code.
+- Removed unused module-level logger declarations in platform modules.
