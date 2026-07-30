@@ -9,7 +9,6 @@ import pytest
 
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.helpers import frame
 
 CONF_SSL_FINGERPRINT = "ssl_fingerprint"
 
@@ -66,7 +65,6 @@ class DummyHass(SimpleNamespace):
         super().__init__(data={}, config_entries=DummyConfigEntries())
         self.loop_thread_id = 0
         self.loop = SimpleNamespace(_thread_id=0, call_soon_threadsafe=lambda cb: cb())
-        frame._hass.hass = self  # noqa: SLF001
 
 
 @pytest.fixture(name="hass")

@@ -84,7 +84,7 @@ def _get_update_interval(entry: Any | None) -> timedelta:
 
     try:
         interval = int(raw_value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         _LOGGER.warning(
             "Ignoring invalid %s value %r; using %s seconds",
             CONF_POLL_INTERVAL,

@@ -12,3 +12,6 @@ dependencies = []
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
