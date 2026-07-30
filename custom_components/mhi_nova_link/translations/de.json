@@ -26,6 +26,7 @@
         }
       }
     },
+    "error": {
       "cannot_connect": "Verbindung zum Gateway fehlgeschlagen. Prüfe die IP-Adresse.",
       "invalid_auth": "Ungültiger Benutzername oder Passwort.",
       "invalid_ssl_fingerprint": "TLS-Zertifikatsprüfung fehlgeschlagen. Prüfe den hinterlegten Fingerprint.",
