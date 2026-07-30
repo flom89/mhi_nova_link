@@ -532,7 +532,7 @@ async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
         ),
         patch(
             "custom_components.mhi_nova_link.async_send_analytics_ping",
-            return_value=AsyncMock(),
+            return_value=object(),
         ),
     ):
         client = client_cls.return_value
