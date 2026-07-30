@@ -26,6 +26,7 @@
         }
       }
     },
+    "error": {
       "cannot_connect": "Failed to connect to the gateway. Check the IP address.",
       "invalid_auth": "Invalid username or password.",
       "invalid_ssl_fingerprint": "TLS certificate validation failed. Verify the configured fingerprint.",
