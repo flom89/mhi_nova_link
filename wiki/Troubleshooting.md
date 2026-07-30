@@ -122,6 +122,20 @@ logger:
 
 After restarting Home Assistant, check **Settings → System → Logs** for detailed messages from `custom_components.mhi_nova_link`.
 
+### Telemetry diagnostics
+
+If telemetry is enabled, startup logs can include one of these messages:
+
+- `Telemetry ping sent (status <2xx>)` (debug)
+- `Telemetry ping rejected (status <code>): <response>` (warning)
+- `Telemetry ping request failed (non-critical, ignored)` (warning)
+
+If no telemetry log line appears:
+
+1. Confirm `analytics_opt_in` is enabled in integration options.
+2. Keep debug logging enabled for `custom_components.mhi_nova_link`.
+3. Reload or restart Home Assistant to trigger a fresh setup ping.
+
 ---
 
 ## Reporting Issues

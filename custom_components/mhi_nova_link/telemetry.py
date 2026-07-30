@@ -1,12 +1,12 @@
 """Send anonymous opt-in telemetry pings for the MHI Nova Link integration."""
 
-from __future__ import annotations
-
 import json
 import logging
 from pathlib import Path
 
-import homeassistant
+from aiohttp import ClientError
+
+from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -23,7 +23,7 @@ def _get_integration_version() -> str:
     manifest_path = Path(__file__).parent / "manifest.json"
     try:
         return json.loads(manifest_path.read_text(encoding="utf-8"))["version"]
-    except Exception:  # pylint: disable=broad-except
+    except OSError, json.JSONDecodeError, KeyError, TypeError:
         return "unknown"
 
 
@@ -31,12 +31,12 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
     """Send a single anonymous telemetry ping.
 
     The payload contains only:
-    - ``integration_version`` – the version declared in manifest.json
-    - ``ha_version`` – the running Home Assistant version
-    - ``anonymous_id`` – a random UUID generated at first setup; never
+        - ``integration_version`` - the version declared in manifest.json
+        - ``ha_version`` - the running Home Assistant version
+        - ``anonymous_id`` - a random UUID generated at first setup; never
       linked to any personal data
 
-    Any network or server error is silently swallowed so this call never
+    Any network or server error is logged and swallowed so this call never
     affects the integration's normal operation.
     """
     import os  # noqa: PLC0415
@@ -48,7 +48,7 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
     integration_version = await hass.async_add_executor_job(_get_integration_version)
     payload = {
         "integration_version": integration_version,
-        "ha_version": homeassistant.__version__,
+        "ha_version": HA_VERSION,
         "anonymous_id": anonymous_id,
     }
     try:
@@ -65,8 +65,15 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
             headers=headers,
             timeout=10,
         ) as resp:
-            _LOGGER.debug(
-                "Telemetry ping sent (status %s)", resp.status
+            if 200 <= resp.status < 300:
+                _LOGGER.debug("Telemetry ping sent (status %s)", resp.status)
+                return
+
+            response_preview = (await resp.text()).strip()[:500]
+            _LOGGER.warning(
+                "Telemetry ping rejected (status %s): %s",
+                resp.status,
+                response_preview or "<empty response>",
             )
-    except Exception:  # pylint: disable=broad-except
-        _LOGGER.debug("Telemetry ping failed (non-critical, ignored)")
+    except ClientError, TimeoutError, OSError:
+        _LOGGER.warning("Telemetry ping request failed (non-critical, ignored)")

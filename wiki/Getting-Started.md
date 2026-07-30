@@ -11,7 +11,7 @@ This page covers everything you need to install and configure **MHI Nova Link** 
 | Requirement | Details |
 |---|---|
 | Home Assistant | Current release with custom integration support |
-| Python | ≥ 3.13 (provided by Home Assistant) |
+| Python | ≥ 3.14 (provided by Home Assistant) |
 | Gateway | CompTrol 4Web NOVA RC, reachable on the local network via HTTPS |
 | Gateway user account | A dedicated user account on the gateway for Home Assistant |
 | HACS *(optional)* | Recommended for easy installation and future updates |
@@ -77,6 +77,9 @@ After setup, the following options can be changed at any time under **Settings �
 | `ssl_fingerprint` | – | Manually set or override the SHA256 fingerprint |
 | `username` | – | Update the gateway username |
 | `password` | – | Update the gateway password |
+| `analytics_opt_in` | `false` | Enable anonymous installation telemetry |
+
+When enabled, telemetry sends only integration version, Home Assistant version, and an anonymous random ID.
 
 ### Environment Variables (advanced)
 
