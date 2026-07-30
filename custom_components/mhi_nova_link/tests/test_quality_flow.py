@@ -65,6 +65,12 @@ class DummyHass(SimpleNamespace):
         super().__init__(data={}, config_entries=DummyConfigEntries())
         self.loop_thread_id = 0
         self.loop = SimpleNamespace(_thread_id=0, call_soon_threadsafe=lambda cb: cb())
+        self.created_tasks: list[object] = []
+
+    def async_create_task(self, coro: object) -> object:
+        """Capture created tasks for verification in tests."""
+        self.created_tasks.append(coro)
+        return coro
 
 
 @pytest.fixture(name="hass")
@@ -459,3 +465,81 @@ async def test_options_flow_accepts_updated_credentials(
     assert result["data"][CONF_USERNAME] == "new-user"
     assert result["data"][CONF_PASSWORD] == "new-secret"
     assert result["data"]["time_series_poll_interval"] == 60
+
+
+async def test_options_flow_generates_analytics_id_when_enabling_tracking(
+    config_flow_module: object,
+    hass: DummyHass,
+) -> None:
+    """Enabling analytics in options should persist an anonymous ID."""
+    entry = SimpleNamespace(
+        options={},
+        data={
+            CONF_HOST: "gateway.local",
+            CONF_USERNAME: "user",
+            CONF_PASSWORD: "secret",
+            CONF_SSL_FINGERPRINT: "",
+            config_flow_module.CONF_ANALYTICS_OPT_IN: False,
+        },
+    )
+
+    flow = config_flow_module.NovaRcOptionsFlow(entry)
+    flow.hass = hass
+
+    result = await flow.async_step_init(
+        {
+            "poll_interval": 10,
+            "time_series_poll_interval": 60,
+            CONF_SSL_FINGERPRINT: "",
+            CONF_USERNAME: "user",
+            CONF_PASSWORD: "secret",
+            config_flow_module.CONF_ANALYTICS_OPT_IN: True,
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][config_flow_module.CONF_ANALYTICS_OPT_IN] is True
+    assert result["data"][config_flow_module.ANALYTICS_ANONYMOUS_ID_KEY]
+
+
+async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
+    integration_module: object,
+    hass: DummyHass,
+) -> None:
+    """Setup should backfill an anonymous ID if analytics are enabled without one."""
+    entry = DummyConfigEntry(
+        domain=integration_module.DOMAIN,
+        data={
+            CONF_HOST: "gateway.local",
+            CONF_USERNAME: "user",
+            CONF_PASSWORD: "secret",
+            CONF_SSL_FINGERPRINT: "aa" * 32,
+            integration_module.CONF_ANALYTICS_OPT_IN: True,
+        },
+    )
+    entry.options = {integration_module.CONF_ANALYTICS_OPT_IN: True}
+    entry.add_to_hass(hass)
+
+    with (
+        patch(
+            "custom_components.mhi_nova_link.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch("custom_components.mhi_nova_link.NovaRcApiClient") as client_cls,
+        patch(
+            "custom_components.mhi_nova_link.coordinator.NovaRcDataUpdateCoordinator.async_config_entry_first_refresh",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "custom_components.mhi_nova_link.async_send_analytics_ping",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+    ):
+        client = client_cls.return_value
+        client.async_login = AsyncMock(return_value=True)
+
+        assert await integration_module.async_setup_entry(hass, entry)
+        assert integration_module.ANALYTICS_ANONYMOUS_ID_KEY in entry.data
+        assert entry.data[integration_module.ANALYTICS_ANONYMOUS_ID_KEY]
+        assert hass.created_tasks

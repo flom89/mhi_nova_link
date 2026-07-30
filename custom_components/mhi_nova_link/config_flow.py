@@ -194,6 +194,16 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                     entry_data[CONF_SSL_FINGERPRINT] = ssl_fingerprint
                 else:
                     entry_data.pop(CONF_SSL_FINGERPRINT, None)
+                if entry_data.get(CONF_ANALYTICS_OPT_IN):
+                    anonymous_id = self._config_entry.options.get(
+                        ANALYTICS_ANONYMOUS_ID_KEY,
+                        self._config_entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
+                    )
+                    entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = (
+                        anonymous_id or str(uuid.uuid4())
+                    )
+                else:
+                    entry_data.pop(ANALYTICS_ANONYMOUS_ID_KEY, None)
 
                 return self.async_create_entry(title="", data=entry_data)
 
