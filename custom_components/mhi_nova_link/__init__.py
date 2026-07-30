@@ -1,6 +1,7 @@
 """Set up the NOVA_RC integration."""
 
 import logging
+import uuid
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
@@ -120,7 +121,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     opt_in = entry.options.get(
         CONF_ANALYTICS_OPT_IN, entry.data.get(CONF_ANALYTICS_OPT_IN)
     )
-    anonymous_id = entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY)
+    anonymous_id = entry.options.get(
+        ANALYTICS_ANONYMOUS_ID_KEY,
+        entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
+    )
+    if opt_in and not anonymous_id:
+        anonymous_id = str(uuid.uuid4())
+        updated_data = dict(entry.data)
+        updated_data[ANALYTICS_ANONYMOUS_ID_KEY] = anonymous_id
+        hass.config_entries.async_update_entry(entry, data=updated_data)
     if opt_in and anonymous_id:
         hass.async_create_task(async_send_analytics_ping(hass, anonymous_id))
 
