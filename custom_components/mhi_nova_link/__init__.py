@@ -117,12 +117,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    if entry.data.get(CONF_ANALYTICS_OPT_IN) and entry.data.get(
-        ANALYTICS_ANONYMOUS_ID_KEY
-    ):
-        hass.async_create_task(
-            async_send_analytics_ping(hass, entry.data[ANALYTICS_ANONYMOUS_ID_KEY])
-        )
+    opt_in = entry.options.get(
+        CONF_ANALYTICS_OPT_IN, entry.data.get(CONF_ANALYTICS_OPT_IN)
+    )
+    anonymous_id = entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY)
+    if opt_in and anonymous_id:
+        hass.async_create_task(async_send_analytics_ping(hass, anonymous_id))
 
     return True
 
