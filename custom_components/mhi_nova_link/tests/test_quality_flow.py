@@ -109,7 +109,7 @@ async def test_config_flow_creates_entry_when_login_succeeds(
     config_flow_module: object,
     hass: DummyHass,
 ) -> None:
-    """A successful login should create a config entry."""
+    """A successful login should proceed to the analytics step and then create a config entry."""
     with (
         patch(
             "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
@@ -137,8 +137,15 @@ async def test_config_flow_creates_entry_when_login_succeeds(
             }
         )
 
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "CompTrol 4Web NOVA RC (gateway.local)"
+    # The user step should now redirect to the analytics step
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "analytics"
+
+    # Submit the analytics step (opting out)
+    result2 = await flow.async_step_analytics({config_flow_module.CONF_ANALYTICS_OPT_IN: False})
+    assert result2["type"] is FlowResultType.CREATE_ENTRY
+    assert result2["title"] == "CompTrol 4Web NOVA RC (gateway.local)"
+    assert result2["data"][config_flow_module.CONF_ANALYTICS_OPT_IN] is False
 
 
 async def test_config_flow_returns_form_for_invalid_auth(
@@ -276,8 +283,14 @@ async def test_config_flow_auto_pins_fingerprint_for_self_signed_gateway(
             }
         )
 
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_SSL_FINGERPRINT] == "cc" * 32
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "analytics"
+
+    result2 = await flow.async_step_analytics(
+        {config_flow_module.CONF_ANALYTICS_OPT_IN: False}
+    )
+    assert result2["type"] is FlowResultType.CREATE_ENTRY
+    assert result2["data"][CONF_SSL_FINGERPRINT] == "cc" * 32
 
 
 async def test_setup_and_unload_entry(

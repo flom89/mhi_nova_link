@@ -11,6 +11,13 @@
           "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)"
         }
       },
+      "analytics": {
+        "title": "Estadísticas de uso anónimas",
+        "description": "Ayuda a mejorar MHI Nova Link compartiendo datos de uso anónimos. Solo se envían la versión de la integración, la versión de Home Assistant y un ID anónimo generado aleatoriamente. Nunca se recopilan datos personales ni información del dispositivo.",
+        "data": {
+          "analytics_opt_in": "Compartir estadísticas de uso anónimas"
+        }
+      },
       "init": {
         "description": "Ajusta la frecuencia con la que se consulta la puerta de enlace para actualizarse.",
         "data": {
@@ -271,7 +278,8 @@
           "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)",
           "username": "Nombre de usuario",
-          "password": "Contraseña"
+          "password": "Contraseña",
+          "analytics_opt_in": "Compartir estadísticas de uso anónimas"
         }
       }
     }

@@ -2,6 +2,7 @@
 
 import logging
 from typing import Any
+import uuid
 
 import voluptuous as vol
 
@@ -17,6 +18,8 @@ from .api import (
     normalize_ssl_fingerprint,
 )
 from .const import (
+    ANALYTICS_ANONYMOUS_ID_KEY,
+    CONF_ANALYTICS_OPT_IN,
     CONF_POLL_INTERVAL,
     CONF_SSL_FINGERPRINT,
     CONF_TIME_SERIES_POLL_INTERVAL,
@@ -41,6 +44,10 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for NOVA_RC."""
 
     VERSION = 1
+
+    def __init__(self) -> None:
+        """Initialise the config flow."""
+        self._pending_entry_data: dict[str, Any] = {}
 
     @staticmethod
     def async_get_options_flow(
@@ -122,15 +129,40 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     else:
                         entry_data.pop(CONF_SSL_FINGERPRINT, None)
 
-                    return self.async_create_entry(
-                        title=f"CompTrol 4Web NOVA RC ({user_input[CONF_HOST]})",
-                        data=entry_data,
-                    )
+                    self._pending_entry_data = entry_data
+                    return await self.async_step_analytics()
 
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
+        )
+
+    async def async_step_analytics(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Ask whether the user wants to share anonymous usage analytics."""
+        if user_input is not None:
+            entry_data = dict(self._pending_entry_data)
+            if user_input.get(CONF_ANALYTICS_OPT_IN, False):
+                entry_data[CONF_ANALYTICS_OPT_IN] = True
+                entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = str(uuid.uuid4())
+            else:
+                entry_data[CONF_ANALYTICS_OPT_IN] = False
+
+            host = entry_data[CONF_HOST]
+            return self.async_create_entry(
+                title=f"CompTrol 4Web NOVA RC ({host})",
+                data=entry_data,
+            )
+
+        return self.async_show_form(
+            step_id="analytics",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_ANALYTICS_OPT_IN, default=False): bool,
+                }
+            ),
         )
 
 
@@ -206,6 +238,13 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                         CONF_PASSWORD,
                         default=default_password,
                     ): str,
+                    vol.Optional(
+                        CONF_ANALYTICS_OPT_IN,
+                        default=self._config_entry.options.get(
+                            CONF_ANALYTICS_OPT_IN,
+                            self._config_entry.data.get(CONF_ANALYTICS_OPT_IN, False),
+                        ),
+                    ): bool,
                 }
             ),
             errors=errors,

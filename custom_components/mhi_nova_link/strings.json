@@ -11,6 +11,13 @@
           "ssl_fingerprint": "SSL fingerprint (SHA256, optional)"
         }
       },
+      "analytics": {
+        "title": "Anonymous usage statistics",
+        "description": "Help improve MHI Nova Link by sharing anonymous usage data. Only the integration version, Home Assistant version, and a randomly generated anonymous ID are sent. No personal data or device information is ever collected.",
+        "data": {
+          "analytics_opt_in": "Share anonymous usage statistics"
+        }
+      },
       "init": {
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
@@ -39,7 +46,8 @@
           "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "SSL fingerprint (SHA256, optional)",
           "username": "Username",
-          "password": "Password"
+          "password": "Password",
+          "analytics_opt_in": "Share anonymous usage statistics"
         }
       }
     }
