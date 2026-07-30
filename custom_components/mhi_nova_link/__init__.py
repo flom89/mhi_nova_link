@@ -11,12 +11,15 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import CannotConnect, InvalidAuth, InvalidCertificate, NovaRcApiClient
 from .const import (
+    ANALYTICS_ANONYMOUS_ID_KEY,
+    CONF_ANALYTICS_OPT_IN,
     CONF_SSL_FINGERPRINT,
     CONF_TIME_SERIES_POLL_INTERVAL,
     DEFAULT_TIME_SERIES_POLL_INTERVAL,
     DOMAIN,
 )
 from .coordinator import NovaRcDataUpdateCoordinator
+from .telemetry import async_send_analytics_ping
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +116,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    if entry.data.get(CONF_ANALYTICS_OPT_IN) and entry.data.get(
+        ANALYTICS_ANONYMOUS_ID_KEY
+    ):
+        hass.async_create_task(
+            async_send_analytics_ping(hass, entry.data[ANALYTICS_ANONYMOUS_ID_KEY])
+        )
+
     return True
 
 

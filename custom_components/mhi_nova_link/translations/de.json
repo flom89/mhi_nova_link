@@ -11,6 +11,13 @@
           "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)"
         }
       },
+      "analytics": {
+        "title": "Anonyme Nutzungsstatistiken",
+        "description": "Hilf dabei, MHI Nova Link zu verbessern, indem du anonyme Nutzungsdaten teilst. Es werden ausschließlich die Integrationsversion, die Home-Assistant-Version und eine zufällig generierte anonyme ID übermittelt. Persönliche Daten oder Geräteinformationen werden niemals erfasst.",
+        "data": {
+          "analytics_opt_in": "Anonyme Nutzungsstatistiken teilen"
+        }
+      },
       "init": {
         "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
         "data": {
@@ -19,7 +26,6 @@
         }
       }
     },
-    "error": {
       "cannot_connect": "Verbindung zum Gateway fehlgeschlagen. Prüfe die IP-Adresse.",
       "invalid_auth": "Ungültiger Benutzername oder Passwort.",
       "invalid_ssl_fingerprint": "TLS-Zertifikatsprüfung fehlgeschlagen. Prüfe den hinterlegten Fingerprint.",
@@ -271,7 +277,8 @@
           "time_series_poll_interval": "Timeseries Polling Interval",
           "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)",
           "username": "Benutzername",
-          "password": "Passwort"
+          "password": "Passwort",
+          "analytics_opt_in": "Anonyme Nutzungsstatistiken teilen"
         }
       }
     }
