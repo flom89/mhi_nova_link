@@ -9,5 +9,5 @@
   "iot_class": "local_polling",
   "loggers": ["custom_components.mhi_nova_link"],
   "logo": "logo.png",
-  "version": "1.0.0"
+  "version": "1.0.4"
 }
