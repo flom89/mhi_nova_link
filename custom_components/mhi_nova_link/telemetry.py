@@ -45,8 +45,9 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
         _LOGGER.debug("Telemetry disabled via environment variable")
         return
 
+    integration_version = await hass.async_add_executor_job(_get_integration_version)
     payload = {
-        "integration_version": _get_integration_version(),
+        "integration_version": integration_version,
         "ha_version": homeassistant.__version__,
         "anonymous_id": anonymous_id,
     }
