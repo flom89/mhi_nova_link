@@ -130,7 +130,7 @@ def _get_time_series_update_interval(configured_interval: Any) -> int:
 
     try:
         interval = int(raw_value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         _LOGGER.warning(
             "Ignoring invalid time-series update interval %r; using %s seconds",
             raw_value,
