@@ -10,7 +10,7 @@ import homeassistant
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import ANALYTICS_PING_URL
+from .const import ANALYTICS_PING_URL, ANALYTICS_SUPABASE_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,9 +52,16 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
     }
     try:
         session = async_get_clientsession(hass)
+        headers = {
+            "apikey": ANALYTICS_SUPABASE_KEY,
+            "Authorization": f"******",
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+        }
         async with session.post(
             ANALYTICS_PING_URL,
             json=payload,
+            headers=headers,
             timeout=10,
         ) as resp:
             _LOGGER.debug(
