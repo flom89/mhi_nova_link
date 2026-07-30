@@ -1,70 +1,72 @@
-# Architektur & Projektstruktur
+# Architecture & Project Structure
 
-Diese Seite beschreibt den Aufbau des Repositories, die Kernkomponenten der Integration und den Datenfluss zwischen Gateway und Home Assistant.
+This page describes the repository layout, the core components of the integration, and the data flow between the gateway and Home Assistant.
+
+> **Deutsch:** Diese Seite beschreibt den Aufbau des Repositories, die Kernkomponenten und den Datenfluss zwischen Gateway und Home Assistant.
 
 ---
 
-## Repository-Struktur
+## Repository Structure
 
 ```
 mhi_nova_link/
 ├── custom_components/
-│   └── mhi_nova_link/           # Haupt-Integrationspaket
-│       ├── __init__.py          # Einstiegspunkt: Setup & Teardown der Integration
-│       ├── api.py               # HTTPS/GraphQL-Client für das NOVA RC-Gateway
-│       ├── binary_sensor.py     # Binary Sensor-Entitäten
-│       ├── climate.py           # Climate-Entitäten (Steuerung pro Zone)
-│       ├── config_flow.py       # Config Flow & Options Flow (HA-UI-Einrichtung)
-│       ├── const.py             # Konstanten & Konfigurationsschlüssel
-│       ├── coordinator.py       # DataUpdateCoordinator (zyklisches Polling)
-│       ├── entity.py            # Gemeinsame Basisklasse für alle Entitäten
-│       ├── graphql.py           # GraphQL-Abfragen und Mutationen
-│       ├── helpers.py           # Hilfsfunktionen
-│       ├── icons.json           # Entitäts-Icons
-│       ├── manifest.json        # HA-Integrationsmanifest (Domain, Version, IoT-Klasse)
-│       ├── pyproject.toml       # Build-Konfiguration (setuptools)
-│       ├── requirements.txt     # Python-Abhängigkeiten (leer – keine extra deps)
-│       ├── select.py            # Select-Entitäten (Lamellen)
-│       ├── sensor.py            # Sensor-Entitäten (Temperatur, Kompressor etc.)
-│       ├── strings.json         # UI-Texte (Englisch, Basis-Übersetzung)
-│       ├── switch.py            # Switch-Entitäten (3D Auto)
-│       ├── brand/               # Marken-Assets (Logo)
-│       ├── translations/        # Lokalisierungen
-│       │   ├── de.json          # Deutsch
-│       │   ├── en.json          # Englisch
-│       │   ├── es.json          # Spanisch
-│       │   ├── fr.json          # Französisch
-│       │   └── it.json          # Italienisch
-│       └── tests/               # Integrationstests
+│   └── mhi_nova_link/           # Main integration package
+│       ├── __init__.py          # Entry point: integration setup & teardown
+│       ├── api.py               # HTTPS/GraphQL client for the NOVA RC gateway
+│       ├── binary_sensor.py     # Binary sensor entities
+│       ├── climate.py           # Climate entities (per-zone control)
+│       ├── config_flow.py       # Config Flow & Options Flow (HA UI setup)
+│       ├── const.py             # Constants & configuration keys
+│       ├── coordinator.py       # DataUpdateCoordinator (periodic polling)
+│       ├── entity.py            # Shared base class for all entities
+│       ├── graphql.py           # GraphQL queries and mutations
+│       ├── helpers.py           # Utility functions
+│       ├── icons.json           # Entity icons
+│       ├── manifest.json        # HA integration manifest (domain, version, IoT class)
+│       ├── pyproject.toml       # Build configuration (setuptools)
+│       ├── requirements.txt     # Python dependencies (empty – no extra deps)
+│       ├── select.py            # Select entities (louvers)
+│       ├── sensor.py            # Sensor entities (temperature, compressor, etc.)
+│       ├── strings.json         # UI strings (English, base translation)
+│       ├── switch.py            # Switch entities (3D Auto)
+│       ├── brand/               # Brand assets (logo)
+│       ├── translations/        # Localisations
+│       │   ├── de.json          # German / Deutsch
+│       │   ├── en.json          # English
+│       │   ├── es.json          # Spanish / Español
+│       │   ├── fr.json          # French / Français
+│       │   └── it.json          # Italian / Italiano
+│       └── tests/               # Integration tests
 │           ├── __init__.py
 │           ├── test_quality_flow.py
 │           ├── test_sensor_entities.py
 │           └── test_smoke.py
-├── wiki/                        # Diese Wiki-Dokumentation
-├── CHANGELOG.md                 # Versionshistorie
+├── wiki/                        # This wiki documentation
+├── CHANGELOG.md                 # Version history
 ├── LICENSE                      # GNU GPL v3.0
-├── README.md                    # Kurzdokumentation
-├── SECURITY.md                  # Sicherheitsrichtlinie
-└── hacs.json                    # HACS-Metadaten
+├── README.md                    # Quick-start documentation
+├── SECURITY.md                  # Security policy
+└── hacs.json                    # HACS metadata
 ```
 
 ---
 
-## Verwendete Technologien & Frameworks
+## Technologies & Frameworks
 
-| Technologie | Zweck |
+| Technology | Purpose |
 |---|---|
-| **Home Assistant Core** | Integrationsplattform, Lifecycle, Entitäts-Registry |
-| **Python ≥ 3.13** | Implementierungssprache |
-| **aiohttp** | Asynchroner HTTP-Client für HTTPS-Kommunikation mit dem Gateway |
-| **GraphQL** | Abfrageprotokoll des CompTrol 4Web NOVA RC-Gateways |
-| **voluptuous** | Schema-Validierung für Config/Options Flow |
-| **pytest** | Test-Framework |
-| **HACS** | Verwaltung und Verteilung der Custom Integration |
+| **Home Assistant Core** | Integration platform, lifecycle, entity registry |
+| **Python ≥ 3.13** | Implementation language |
+| **aiohttp** | Asynchronous HTTP client for HTTPS communication with the gateway |
+| **GraphQL** | Query protocol of the CompTrol 4Web NOVA RC gateway |
+| **voluptuous** | Schema validation for Config/Options Flow |
+| **pytest** | Test framework |
+| **HACS** | Distribution and management of the custom integration |
 
 ---
 
-## Komponentenübersicht
+## Component Overview
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -74,10 +76,10 @@ mhi_nova_link/
 │  │  Config Flow  │    │  DataUpdateCoordinator   │   │
 │  │ (config_flow) │    │    (coordinator.py)      │   │
 │  └──────┬───────┘    └────────────┬─────────────┘   │
-│         │                         │ periodisches     │
-│         │                         │ Polling          │
+│         │                         │ periodic         │
+│         │                         │ polling          │
 │  ┌──────▼─────────────────────────▼─────────────┐   │
-│  │              NovaRcApiClient (api.py)         │   │
+│  │            NovaRcApiClient (api.py)           │   │
 │  │   • async_login()                            │   │
 │  │   • async_get_zones()                        │   │
 │  │   • async_get_time_series()                  │   │
@@ -87,48 +89,48 @@ mhi_nova_link/
 │  │   • async_set_zone_patch()                   │   │
 │  └──────────────────────┬────────────────────────┘  │
 │                          │ HTTPS + GraphQL            │
-└──────────────────────────┼─────────────────────────-─┘
+└──────────────────────────┼────────────────────────────┘
                            │
            ┌───────────────▼──────────────┐
            │  CompTrol 4Web NOVA RC        │
-           │  (lokales Gateway)            │
+           │  (local gateway)              │
            └───────────────────────────────┘
 ```
 
 ---
 
-## Datenfluss
+## Data Flow
 
-1. **Einrichtung:** Der Config Flow (`config_flow.py`) nimmt Host, Benutzername, Passwort und optionalen SSL-Fingerabdruck entgegen. Der `NovaRcApiClient` führt einen Login-Aufruf durch, um die Verbindung zu validieren. Bei unbekannten selbstsignierten Zertifikaten wird der Fingerabdruck automatisch ermittelt und gespeichert.
+1. **Setup:** The Config Flow (`config_flow.py`) collects the host, username, password, and optional SSL fingerprint. The `NovaRcApiClient` performs a login call to validate the connection. For unknown self-signed certificates the fingerprint is discovered and stored automatically.
 
-2. **Initialisierung:** `__init__.py` erstellt den `NovaRcApiClient` und den `NovaRcDataUpdateCoordinator`. Alle Plattformmodule (`climate`, `sensor`, `binary_sensor`, `select`, `switch`) registrieren ihre Entitäten beim Coordinator.
+2. **Initialisation:** `__init__.py` creates the `NovaRcApiClient` and the `NovaRcDataUpdateCoordinator`. All platform modules (`climate`, `sensor`, `binary_sensor`, `select`, `switch`) register their entities with the coordinator.
 
-3. **Polling (ZoneQueries):** Der Coordinator ruft im konfigurierten Intervall (`poll_interval`, Standard 15 s) folgende Endpunkte ab:
-   - `async_get_zones()` – Zonenzustände (Temperatur, Sollwert, Modus etc.)
-   - `async_get_notifications()` – aktive Systembenachrichtigungen
-   - `async_get_gpios()` – Digital-IO-Zustände
-   - `async_get_gateway_update_information()` – Gateway-Softwareversion & Update-Status
+3. **Polling – ZoneQueries:** The coordinator fetches data at the configured interval (`poll_interval`, default 15 s):
+   - `async_get_zones()` – zone states (temperature, setpoint, mode, etc.)
+   - `async_get_notifications()` – active system notifications
+   - `async_get_gpios()` – Digital I/O states
+   - `async_get_gateway_update_information()` – gateway software version & update status
 
-4. **Polling (Timeseries):** Zeitreihendaten werden separat und gedrosselt abgefragt (`time_series_poll_interval`, Standard 60 s). Die Daten werden pro Zone gecacht, um redundante Anfragen zu vermeiden.
+4. **Polling – Timeseries:** Time-series data is fetched separately and throttled (`time_series_poll_interval`, default 60 s). Results are cached per zone to avoid redundant requests.
 
-5. **Steuerung:** Schreiboperationen (z. B. Sollwertänderung, Moduswechsel) werden über `async_set_zone_patch()` als GraphQL-Mutation an das Gateway gesendet.
+5. **Control:** Write operations (e.g. setpoint change, mode switch) are sent to the gateway as GraphQL mutations via `async_set_zone_patch()`.
 
-6. **Entitäten:** Jede Entität erbt von der gemeinsamen Basisklasse (`entity.py`) und konsumiert die vom Coordinator bereitgestellten Daten.
-
----
-
-## IoT-Klasse
-
-Die Integration ist als **`local_polling`** klassifiziert: Sie fragt das Gateway aktiv und lokal ab und ist daher nicht auf externe Cloud-Dienste angewiesen.
+6. **Entities:** Each entity inherits from the shared base class (`entity.py`) and consumes data provided by the coordinator.
 
 ---
 
-## Entitäts-Übersicht
+## IoT Class
 
-| Plattform | Beispiel-Entitäten |
+The integration is classified as **`local_polling`**: it actively polls the gateway on the local network and does not depend on any external cloud services.
+
+---
+
+## Entity Overview
+
+| Platform | Example entities |
 |---|---|
-| `climate` | Klimazone (Temperatur, Modus, Lüfterstufe) |
-| `sensor` | Raumtemperatur, Sollwert, Außentemperatur, Kompressorfrequenz, Strom, Leistung, Gateway-Softwareversion, Temperaturgrenzen |
-| `binary_sensor` | Kompressor aktiv, Abtauen aktiv, Gateway-Update verfügbar, Benachrichtigungen aktiv, Digital-IO-Zustände |
-| `select` | Luftführungslamelle, Schwenklamelle |
+| `climate` | Climate zone (temperature, mode, fan speed) |
+| `sensor` | Room temperature, setpoint, outdoor temperature, compressor frequency, current, power, gateway software version, temperature limits |
+| `binary_sensor` | Compressor active, defrosting active, gateway update available, active notifications, Digital I/O states |
+| `select` | Air guide louver, swing louver |
 | `switch` | 3D Auto |

@@ -1,43 +1,47 @@
-# MHI Nova Link – Übersicht
+# MHI Nova Link – Overview
 
 ![MHI Nova Logo](../custom_components/mhi_nova_link/brand/logo.png)
 
-**MHI Nova Link** ist eine benutzerdefinierte [Home Assistant](https://www.home-assistant.io/)-Integration, die Mitsubishi Heavy Industries (MHI) Klimaanlagen über das **CompTrol 4Web NOVA RC**-Gateway einbindet. Die Kommunikation erfolgt verschlüsselt über eine lokale HTTPS-Verbindung – ohne Cloud-Abhängigkeit.
+**MHI Nova Link** is a custom [Home Assistant](https://www.home-assistant.io/) integration that connects Mitsubishi Heavy Industries (MHI) air conditioners via a **CompTrol 4Web NOVA RC** gateway. All communication is encrypted over a local HTTPS connection — no cloud dependency required.
 
-> ⚠️ Diese Integration ist experimentell. Nutzung auf eigene Gefahr. Es sind keine Karten oder GUI-Elemente enthalten.
+> ⚠️ This integration is experimental. Use at your own risk. No cards or GUI elements are included.
 
 ---
 
-## Hauptfeatures
+## Key Features
 
-| Feature | Beschreibung |
+| Feature | Description |
 |---|---|
-| Lokale HTTPS-Verbindung | Kommuniziert direkt mit dem Gateway im Heimnetzwerk via SSL/TLS |
-| Automatisches TLS-Fingerprint-Pinning | Erkennt und pinnt selbstsignierte Gateway-Zertifikate automatisch |
-| Climate-Entitäten | Steuert Temperatur, Betriebsmodus und Lüfter pro Zone |
-| Sensor-Entitäten | Raumtemperatur, Sollwert, Außentemperatur, Kompressor-Werte u. v. m. |
-| Binary Sensor-Entitäten | Digital-IO-Zustände, Kompressor-/Abtaustatus, Gatewaywarnungen |
-| Select-Entitäten | Lamellen- und Schwenklamellenposition |
-| Switch-Entitäten | 3D Auto-Modus |
-| Mehrsprachig | Übersetzungen für Englisch, Deutsch, Italienisch, Spanisch und Französisch |
-| Config Flow & Options Flow | Einfache Einrichtung und Anpassung direkt über die HA-Oberfläche |
-| HACS-kompatibel | Kann als Custom Repository über HACS installiert werden |
+| Local HTTPS connection | Communicates directly with the gateway on the local network via SSL/TLS |
+| Automatic TLS fingerprint pinning | Discovers and pins self-signed gateway certificates automatically |
+| Climate entities | Controls temperature, operation mode, and fan speed per zone |
+| Sensor entities | Room temperature, setpoint, outdoor temperature, compressor values, and more |
+| Binary sensor entities | Digital I/O states, compressor/defrost status, gateway alerts |
+| Select entities | Air guide louver and swing louver position |
+| Switch entities | 3D Auto mode |
+| Multilingual | Translations for English, German, Italian, Spanish, and French |
+| Config Flow & Options Flow | Easy setup and configuration directly from the HA UI |
+| HACS-compatible | Can be installed as a custom repository via HACS |
 
 ---
 
-## Zielgruppe & Anwendungsfälle
+## Target Audience & Use Cases
 
-- **Heimautomatisierungs-Enthusiasten**, die MHI-Klimaanlagen vollständig in Home Assistant integrieren möchten.
-- **Gebäudemanager**, die mehrere Klimazonen zentral überwachen und steuern wollen.
-- **Entwickler**, die eine lokale, datenschutzfreundliche Alternative zu Cloud-basierten Herstellerlösungen suchen.
+- **Home automation enthusiasts** who want to fully integrate MHI air conditioners into Home Assistant.
+- **Building managers** who need centralised monitoring and control of multiple climate zones.
+- **Developers** looking for a local, privacy-friendly alternative to manufacturer cloud solutions.
 
-Die Integration richtet sich an alle, die ein **CompTrol 4Web NOVA RC**-Gateway von STULZ S-Klima betreiben und dessen Klimazonen über Home Assistant automatisieren wollen.
+This integration is intended for anyone operating a **CompTrol 4Web NOVA RC** gateway by STULZ S-Klima and wanting to automate their climate zones through Home Assistant.
 
 ---
 
-## Weitere Wiki-Seiten
+> **Deutsch / German:** MHI Nova Link ist eine benutzerdefinierte Home Assistant-Integration für Mitsubishi Heavy Industries Klimaanlagen über das CompTrol 4Web NOVA RC-Gateway. Die Kommunikation erfolgt lokal über HTTPS – ohne Cloud-Abhängigkeit.
 
-- [Erste Schritte (Getting Started)](Getting-Started.md)
-- [Architektur & Projektstruktur](Architecture.md)
-- [Entwickler-Guide (Contributing)](Contributing.md)
+---
+
+## Wiki Pages
+
+- [Getting Started](Getting-Started.md)
+- [Architecture & Project Structure](Architecture.md)
+- [Developer Guide (Contributing)](Contributing.md)
 - [Troubleshooting & FAQ](Troubleshooting.md)

@@ -1,104 +1,106 @@
-# Erste Schritte (Getting Started)
+# Getting Started
 
-Diese Seite beschreibt alle notwendigen Schritte, um **MHI Nova Link** in Home Assistant zu installieren und zu konfigurieren.
+This page covers everything you need to install and configure **MHI Nova Link** in Home Assistant.
+
+> **Deutsch:** Diese Seite beschreibt Installation und Konfiguration von MHI Nova Link in Home Assistant.
 
 ---
 
-## Systemvoraussetzungen
+## System Requirements
 
-| Voraussetzung | Details |
+| Requirement | Details |
 |---|---|
-| Home Assistant | Aktuelle Version mit Unterstützung für Custom Integrations |
-| Python | ≥ 3.13 (wird von Home Assistant bereitgestellt) |
-| Gateway | CompTrol 4Web NOVA RC, im lokalen Netzwerk erreichbar via HTTPS |
-| Gateway-Benutzer | Dediziertes Benutzerkonto auf dem Gateway für Home Assistant |
-| HACS *(optional)* | Empfohlen für einfache Installation und Updates |
+| Home Assistant | Current release with custom integration support |
+| Python | ≥ 3.13 (provided by Home Assistant) |
+| Gateway | CompTrol 4Web NOVA RC, reachable on the local network via HTTPS |
+| Gateway user account | A dedicated user account on the gateway for Home Assistant |
+| HACS *(optional)* | Recommended for easy installation and future updates |
 
-Die Integration hat **keine zusätzlichen Python-Abhängigkeiten** außerhalb des Home Assistant Core (`aiohttp` wird aus HA genutzt).
+The integration has **no additional Python runtime dependencies** beyond Home Assistant Core (`aiohttp` is used from HA itself).
 
 ---
 
 ## Installation
 
-### Option A – HACS (empfohlen)
+### Option A – HACS (recommended)
 
-1. Öffne HACS in Home Assistant.
-2. Navigiere zu **Integrationen** → **Benutzerdefinierte Repositories**.
-3. Füge das Repository hinzu:
+1. Open HACS in Home Assistant.
+2. Navigate to **Integrations** → **Custom Repositories**.
+3. Add the repository:
    - **URL:** `https://github.com/flom89/mhi_nova_link`
-   - **Kategorie:** Integration
-4. Suche in HACS nach **MHI Nova Link** und klicke auf **Installieren**.
-5. Starte Home Assistant neu.
+   - **Category:** Integration
+4. Search for **MHI Nova Link** in HACS and click **Install**.
+5. Restart Home Assistant.
 
-### Option B – Manuelle Installation
+### Option B – Manual Installation
 
-1. Lade dieses Repository herunter (ZIP oder `git clone`).
-2. Kopiere den Ordner `custom_components/mhi_nova_link` in dein Home Assistant `custom_components`-Verzeichnis.
+1. Download this repository (ZIP or `git clone`).
+2. Copy the `custom_components/mhi_nova_link` folder into your Home Assistant `custom_components` directory:
    ```
    <config>/
    └── custom_components/
        └── mhi_nova_link/
    ```
-3. Starte Home Assistant neu.
+3. Restart Home Assistant.
 
 ---
 
-## Konfiguration
+## Configuration
 
-### Schritt 1 – Benutzer auf dem Gateway anlegen
+### Step 1 – Create a gateway user
 
-Erstelle auf dem CompTrol 4Web NOVA RC einen dedizierten Benutzer für Home Assistant. Verwende **keine** Administrator-Zugangsdaten des Gateways.
+Create a dedicated user for Home Assistant on the CompTrol 4Web NOVA RC. Do **not** use the gateway's administrator credentials.
 
-### Schritt 2 – Integration hinzufügen
+### Step 2 – Add the integration
 
-1. Navigiere in Home Assistant zu **Einstellungen → Geräte & Dienste**.
-2. Klicke auf **Integration hinzufügen** und suche nach **MHI Nova Link**.
-3. Fülle das Einrichtungsformular aus:
+1. In Home Assistant, navigate to **Settings → Devices & Services**.
+2. Click **Add Integration** and search for **MHI Nova Link**.
+3. Fill in the setup form:
 
-| Feld | Beschreibung | Pflichtfeld |
+| Field | Description | Required |
 |---|---|---|
-| `host` | IP-Adresse oder Hostname des Gateways | ✅ |
-| `username` | Benutzername des Gateway-Kontos | ✅ |
-| `password` | Passwort des Gateway-Kontos | ✅ |
-| `ssl_fingerprint` | SHA256-Fingerabdruck des TLS-Zertifikats | ❌ |
+| `host` | IP address or hostname of the gateway | ✅ |
+| `username` | Gateway account username | ✅ |
+| `password` | Gateway account password | ✅ |
+| `ssl_fingerprint` | SHA256 fingerprint of the TLS certificate | ❌ |
 
-> **Hinweis zum SSL-Fingerabdruck:** Wird das Feld leer gelassen, versucht die Integration, den Fingerabdruck des selbstsignierten Zertifikats automatisch zu ermitteln und zu pinnen.
+> **SSL Fingerprint note:** If left empty, the integration automatically discovers and pins the fingerprint of the gateway's self-signed certificate.
 
-### Schritt 3 – Optionen anpassen (optional)
+### Step 3 – Adjust options (optional)
 
-Nach der Einrichtung können folgende Optionen jederzeit unter **Einstellungen → Geräte & Dienste → MHI Nova Link → Konfigurieren** geändert werden:
+After setup, the following options can be changed at any time under **Settings → Devices & Services → MHI Nova Link → Configure**:
 
-| Option | Standard | Beschreibung |
+| Option | Default | Description |
 |---|---|---|
-| `poll_interval` | `15` Sekunden | Abfrageintervall für Zonen-Daten (ZoneQueries) |
-| `time_series_poll_interval` | `60` Sekunden | Abfrageintervall für Zeitreihendaten (Timeseries) |
-| `ssl_fingerprint` | – | SHA256-Fingerabdruck manuell setzen oder überschreiben |
-| `username` | – | Benutzername aktualisieren |
-| `password` | – | Passwort aktualisieren |
+| `poll_interval` | `15` seconds | Polling interval for zone data (ZoneQueries) |
+| `time_series_poll_interval` | `60` seconds | Polling interval for time-series data |
+| `ssl_fingerprint` | – | Manually set or override the SHA256 fingerprint |
+| `username` | – | Update the gateway username |
+| `password` | – | Update the gateway password |
 
-### Umgebungsvariablen (fortgeschritten)
+### Environment Variables (advanced)
 
-Für Szenarien ohne UI-Konfiguration (z. B. Docker, CI) können die Polling-Intervalle auch über Umgebungsvariablen gesetzt werden:
+For scenarios without UI configuration (e.g. Docker, CI), polling intervals can also be set via environment variables:
 
-| Variable | Beschreibung |
+| Variable | Description |
 |---|---|
-| `NOVA_RC_UPDATE_INTERVAL_SECONDS` | Abfrageintervall für Zonen-Daten in Sekunden |
-| `NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS` | Abfrageintervall für Zeitreihendaten in Sekunden |
-| `MHI_NOVALINK_UPDATE_INTERVAL_SECONDS` | Legacy-Alias für `NOVA_RC_UPDATE_INTERVAL_SECONDS` |
-| `MHI_NOVALINK_TIME_SERIES_UPDATE_INTERVAL_SECONDS` | Legacy-Alias für die Zeitreihen-Intervallvariable |
+| `NOVA_RC_UPDATE_INTERVAL_SECONDS` | Zone query polling interval in seconds |
+| `NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS` | Time-series polling interval in seconds |
+| `MHI_NOVALINK_UPDATE_INTERVAL_SECONDS` | Legacy alias for `NOVA_RC_UPDATE_INTERVAL_SECONDS` |
+| `MHI_NOVALINK_TIME_SERIES_UPDATE_INTERVAL_SECONDS` | Legacy alias for the time-series interval variable |
 
 ---
 
-## Anwendung starten
+## Starting the Application
 
-Die Integration wird nach dem Neustart von Home Assistant automatisch gestartet. Es sind keine separaten Startbefehle erforderlich.
+The integration starts automatically after Home Assistant restarts. No separate start command is required.
 
-Um die Integration manuell neu zu laden, gehe zu **Einstellungen → Geräte & Dienste → MHI Nova Link → ⋮ → Neu laden**.
+To manually reload the integration, go to **Settings → Devices & Services → MHI Nova Link → ⋮ → Reload**.
 
 ---
 
-## Nächste Schritte
+## Next Steps
 
-- [Architektur & Projektstruktur](Architecture.md) – Wie ist der Code aufgebaut?
-- [Entwickler-Guide](Contributing.md) – Eigene Änderungen beitragen
-- [Troubleshooting & FAQ](Troubleshooting.md) – Hilfe bei Problemen
+- [Architecture & Project Structure](Architecture.md) – How is the code structured?
+- [Developer Guide](Contributing.md) – How to contribute changes
+- [Troubleshooting & FAQ](Troubleshooting.md) – Help with common problems

@@ -1,129 +1,131 @@
-# Entwickler-Guide (Contributing)
+# Developer Guide (Contributing)
 
-Diese Seite beschreibt, wie du eine lokale Entwicklungsumgebung einrichtest, den Code-Stil einhältst und Beiträge zum Projekt einreichst.
+This page describes how to set up a local development environment, follow the code style, and submit contributions to the project.
+
+> **Deutsch:** Diese Seite beschreibt die lokale Entwicklungsumgebung, Code-Standards und den Git-Workflow für Beiträge zum Projekt.
 
 ---
 
-## Lokale Entwicklungsumgebung aufsetzen
+## Setting Up a Local Development Environment
 
-### Voraussetzungen
+### Prerequisites
 
 - Python ≥ 3.13
-- `pip` oder `uv` (empfohlen für schnelle Installationen)
+- `pip` or `uv` (recommended for faster installs)
 - Git
-- Eine laufende Home Assistant-Instanz (für manuelle Tests)
+- A running Home Assistant instance (for manual testing)
 
-### Repository klonen
+### Clone the repository
 
 ```bash
 git clone https://github.com/flom89/mhi_nova_link.git
 cd mhi_nova_link
 ```
 
-### Abhängigkeiten installieren
+### Install dependencies
 
-Die Integration selbst hat keine zusätzlichen Python-Laufzeitabhängigkeiten. Für Tests werden Home Assistant und `pytest` benötigt:
+The integration itself has no additional Python runtime dependencies. Tests require Home Assistant and pytest:
 
 ```bash
 pip install homeassistant pytest pytest-asyncio pytest-homeassistant-custom-component
 ```
 
-Alternativ mit `uv`:
+Or with `uv`:
 
 ```bash
 uv pip install homeassistant pytest pytest-asyncio pytest-homeassistant-custom-component
 ```
 
-### Integration für die Entwicklung einbinden
+### Link the integration for development
 
-Kopiere (oder verknüpfe) den Ordner `custom_components/mhi_nova_link` in das `custom_components`-Verzeichnis deiner Home Assistant-Instanz und starte HA neu.
+Copy (or symlink) the `custom_components/mhi_nova_link` folder into the `custom_components` directory of your Home Assistant instance and restart HA.
 
 ---
 
-## Tests ausführen
+## Running Tests
 
-Die Testsuite befindet sich in `custom_components/mhi_nova_link/tests/`. Führe alle Tests aus dem Repository-Root aus:
+The test suite is located in `custom_components/mhi_nova_link/tests/`. Run all tests from the repository root:
 
 ```bash
 pytest -q custom_components/mhi_nova_link/tests
 ```
 
-Für ausführliche Ausgabe:
+For verbose output:
 
 ```bash
 pytest -v custom_components/mhi_nova_link/tests
 ```
 
-### Testdateien
+### Test files
 
-| Datei | Inhalt |
+| File | Contents |
 |---|---|
-| `test_smoke.py` | Grundlegende Smoke-Tests (Integration lädt korrekt) |
-| `test_sensor_entities.py` | Sensor-Entitäten, Skalierung, Zustandslogik |
-| `test_quality_flow.py` | Config Flow, Options Flow, Fehlerbehandlung |
+| `test_smoke.py` | Basic smoke tests (integration loads correctly) |
+| `test_sensor_entities.py` | Sensor entities, value scaling, state logic |
+| `test_quality_flow.py` | Config Flow, Options Flow, error handling |
 
 ---
 
-## Coding-Standards
+## Coding Standards
 
-- **Sprache:** Python 3.13+, strenge Typisierung (`from typing import Final`, Type Hints überall)
-- **Asynchronität:** Alle I/O-Operationen sind `async`/`await`-basiert (aiohttp)
-- **Logging:** Verwende das modulspezifische Logger-Objekt (`_LOGGER = logging.getLogger(__name__)`); keine `print`-Statements
-- **Konstanten:** Alle wiederverwendeten Strings und Werte gehören in `const.py` als `Final`
-- **Fehlerbehandlung:** Verwende die spezifischen Exceptions aus `api.py` (`CannotConnect`, `InvalidAuth`, `InvalidCertificate`)
-- **Entitäten:** Neue Entitäten erben von der Basisklasse in `entity.py`
-- **Übersetzungen:** Jede neue UI-sichtbare Zeichenkette muss in `strings.json` und alle Sprachdateien unter `translations/` aufgenommen werden
-- **Keine zusätzlichen Abhängigkeiten** ohne ausdrückliche Begründung – `requirements.txt` soll leer bleiben
+- **Language:** Python 3.13+, strict typing (`from typing import Final`, type hints everywhere)
+- **Async:** All I/O operations use `async`/`await` (aiohttp)
+- **Logging:** Use the module-level logger (`_LOGGER = logging.getLogger(__name__)`); no `print` statements
+- **Constants:** All reused strings and values belong in `const.py` as `Final`
+- **Error handling:** Use the specific exceptions from `api.py` (`CannotConnect`, `InvalidAuth`, `InvalidCertificate`)
+- **Entities:** New entities must inherit from the base class in `entity.py`
+- **Translations:** Every new UI-visible string must be added to `strings.json` and all language files under `translations/`
+- **No extra dependencies** without explicit justification — `requirements.txt` should remain empty
 
-### Stil-Empfehlungen
+### Style recommendations
 
-- Folge dem [Home Assistant-Coding-Style](https://developers.home-assistant.io/docs/development_guidelines)
-- Verwende `ruff` als Linter/Formatter (falls im Projekt konfiguriert)
-- Halte Funktionen kurz und fokussiert auf eine Aufgabe
+- Follow the [Home Assistant coding style](https://developers.home-assistant.io/docs/development_guidelines)
+- Use `ruff` as linter/formatter where applicable
+- Keep functions short and focused on a single responsibility
 
 ---
 
-## Git-Workflow
+## Git Workflow
 
-### Branches
+### Branch naming
 
-| Branch-Typ | Schema | Beispiel |
+| Branch type | Pattern | Example |
 |---|---|---|
-| Feature | `feature/<kurzbeschreibung>` | `feature/add-humidity-sensor` |
-| Bugfix | `fix/<kurzbeschreibung>` | `fix/tls-fingerprint-validation` |
-| Dokumentation | `docs/<kurzbeschreibung>` | `docs/update-wiki` |
+| Feature | `feature/<short-description>` | `feature/add-humidity-sensor` |
+| Bug fix | `fix/<short-description>` | `fix/tls-fingerprint-validation` |
+| Documentation | `docs/<short-description>` | `docs/update-wiki` |
 
-### Commit-Nachrichten
+### Commit messages
 
-Schreibe prägnante, aussagekräftige Commit-Nachrichten im Imperativ:
+Write concise, descriptive commit messages in the imperative mood:
 
 ```
 Add compressor power sensor derived from current and frequency
-Fix TLS fingerprint normalization for uppercase hex input
+Fix TLS fingerprint normalisation for uppercase hex input
 Update German translations for options flow labels
 ```
 
-### Pull-Request-Regeln
+### Pull Request rules
 
-1. **Fork** das Repository und erstelle einen Branch von `main`.
-2. Stelle sicher, dass **alle Tests grün** sind (`pytest -q`).
-3. Beschreibe im PR-Body:
-   - **Was** wurde geändert und **warum**
-   - Betroffene Entitäten oder Konfigurationsfelder
-   - Ggf. Testabdeckung
-4. Referenziere verwandte Issues mit `Fixes #<issue-nr>` oder `Closes #<issue-nr>`.
-5. Der Code muss **review-bereit** sein – keine WIP-Commits im finalen PR.
+1. **Fork** the repository and create a branch from `main`.
+2. Make sure **all tests pass** (`pytest -q`).
+3. Describe in the PR body:
+   - **What** was changed and **why**
+   - Affected entities or configuration fields
+   - Test coverage added or updated
+4. Reference related issues with `Fixes #<issue-number>` or `Closes #<issue-number>`.
+5. The code must be **review-ready** — no WIP commits in the final PR.
 
-### Sicherheit
+### Security
 
-Melde Sicherheitslücken **nicht** als öffentliche Issues. Nutze stattdessen den [GitHub Security Advisory](https://github.com/flom89/mhi_nova_link/security/advisories/new)-Mechanismus. Weitere Details in [SECURITY.md](../SECURITY.md).
+Report security vulnerabilities **not** as public issues. Use the [GitHub Security Advisory](https://github.com/flom89/mhi_nova_link/security/advisories/new) mechanism instead. See [SECURITY.md](../SECURITY.md) for details.
 
 ---
 
-## Neue Entitäten hinzufügen
+## Adding New Entities
 
-1. Erstelle die Entitätslogik in der passenden Plattformdatei (`sensor.py`, `binary_sensor.py` etc.) oder lege eine neue Datei an.
-2. Registriere die Entität in `__init__.py` unter den Plattformen.
-3. Füge den Entitätsnamen und -zustände in `strings.json` und alle `translations/*.json`-Dateien ein.
-4. Ergänze einen Test in `tests/test_sensor_entities.py` oder einer passenden Testdatei.
-5. Aktualisiere `CHANGELOG.md` unter `[Unreleased] → Added`.
+1. Implement the entity logic in the appropriate platform file (`sensor.py`, `binary_sensor.py`, etc.) or create a new file.
+2. Register the entity in `__init__.py` under the relevant platforms.
+3. Add the entity name and states to `strings.json` and all `translations/*.json` files.
+4. Add a test in `tests/test_sensor_entities.py` or another suitable test file.
+5. Update `CHANGELOG.md` under `[Unreleased] → Added`.
