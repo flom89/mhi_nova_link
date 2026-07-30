@@ -6,6 +6,16 @@
 
 This repository folder contains a custom Home Assistant integration for using Mitsubishi Heavy Industries Air Conditioners connected to a CompTrol 4Web NOVA RC via Home Assistant.
 
+## Wiki
+
+Comprehensive user documentation is available in the repository wiki pages:
+
+- [Home](wiki/Home.md)
+- [Installation and Setup](wiki/Installation-and-Setup.md)
+- [Configuration Reference](wiki/Configuration-Reference.md)
+- [Entities Reference](wiki/Entities-Reference.md)
+- [Troubleshooting](wiki/Troubleshooting.md)
+
 ## Features
 
 - Connects to a CompTrol 4Web NOVA RC gateway over the local network using SSL connection.
