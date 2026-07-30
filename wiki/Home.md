@@ -21,6 +21,7 @@
 | Switch entities | 3D Auto mode |
 | Multilingual | Translations for English, German, Italian, Spanish, and French |
 | Config Flow & Options Flow | Easy setup and configuration directly from the HA UI |
+| Optional anonymous telemetry | Opt-in installation ping with version-only metadata |
 | HACS-compatible | Can be installed as a custom repository via HACS |
 
 ---

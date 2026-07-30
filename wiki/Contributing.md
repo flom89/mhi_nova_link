@@ -10,7 +10,7 @@ This page describes how to set up a local development environment, follow the co
 
 ### Prerequisites
 
-- Python ≥ 3.13
+- Python ≥ 3.14
 - `pip` or `uv` (recommended for faster installs)
 - Git
 - A running Home Assistant instance (for manual testing)
@@ -63,12 +63,20 @@ pytest -v custom_components/mhi_nova_link/tests
 | `test_smoke.py` | Basic smoke tests (integration loads correctly) |
 | `test_sensor_entities.py` | Sensor entities, value scaling, state logic |
 | `test_quality_flow.py` | Config Flow, Options Flow, error handling |
+| `test_telemetry.py` | Telemetry behavior and logging paths |
+
+For quick quality checks before pushing:
+
+```bash
+pytest -q custom_components/mhi_nova_link/tests
+ruff check custom_components/mhi_nova_link
+```
 
 ---
 
 ## Coding Standards
 
-- **Language:** Python 3.13+, strict typing (`from typing import Final`, type hints everywhere)
+- **Language:** Python 3.14+, strict typing (`from typing import Final`, type hints everywhere)
 - **Async:** All I/O operations use `async`/`await` (aiohttp)
 - **Logging:** Use the module-level logger (`_LOGGER = logging.getLogger(__name__)`); no `print` statements
 - **Constants:** All reused strings and values belong in `const.py` as `Final`

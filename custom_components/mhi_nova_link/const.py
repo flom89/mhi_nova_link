@@ -20,10 +20,8 @@ DEFAULT_TIME_SERIES_POLL_INTERVAL: Final = 60
 CONF_ANALYTICS_OPT_IN: Final = "analytics_opt_in"
 ANALYTICS_ANONYMOUS_ID_KEY: Final = "analytics_anonymous_id"
 _SUPABASE_URL: Final = "https://tqjcumkijngqjhbhvhld.supabase.co"
-# Publishable key – safe to embed in client code (access is restricted by RLS).
-ANALYTICS_SUPABASE_KEY: Final = (
-    "sb_publishable_dmay8xixSiT1VcJNyjEGoQ_Mmgujb8M"
-)
+# Publishable key - safe to embed in client code (access is restricted by RLS).
+ANALYTICS_SUPABASE_KEY: Final = "sb_publishable_dmay8xixSiT1VcJNyjEGoQ_Mmgujb8M"
 ANALYTICS_PING_URL: Final = f"{_SUPABASE_URL}/rest/v1/install_pings"
 
 # Environment override for the coordinator poll interval

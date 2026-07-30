@@ -79,6 +79,13 @@ def hass_fixture() -> DummyHass:
     return DummyHass()
 
 
+@pytest.fixture(autouse=True)
+def patch_update_coordinator_report_usage() -> None:
+    """Disable frame usage reporting for lightweight unit test stubs."""
+    with patch("homeassistant.helpers.frame.report_usage"):
+        yield
+
+
 class DummyConfigEntry(SimpleNamespace):
     """Minimal config-entry stub for setup/unload regression tests."""
 
@@ -146,7 +153,9 @@ async def test_config_flow_creates_entry_when_login_succeeds(
     assert result["step_id"] == "analytics"
 
     # Submit the analytics step (opting out)
-    result2 = await flow.async_step_analytics({config_flow_module.CONF_ANALYTICS_OPT_IN: False})
+    result2 = await flow.async_step_analytics(
+        {config_flow_module.CONF_ANALYTICS_OPT_IN: False}
+    )
     assert result2["type"] is FlowResultType.CREATE_ENTRY
     assert result2["title"] == "CompTrol 4Web NOVA RC (gateway.local)"
     assert result2["data"][config_flow_module.CONF_ANALYTICS_OPT_IN] is False

@@ -13,6 +13,7 @@ This repository folder contains a custom Home Assistant integration for using Mi
 - Supports config flow and options flow for easy integration and maintenance.
 - Includes translation for English, German, Italian, Spanish, and French.
 - Supports automatic TLS fingerprint pinning for self-signed gateway certificates.
+- Optional anonymous installation telemetry (opt-in) to help monitor integration adoption.
 - Exposes gateway software information, including installed version and update availability.
 
 ## Requirements
@@ -54,6 +55,12 @@ During setup, enter:
 - For self-signed certificates, the integration can automatically discover and pin the certificate fingerprint.
 - You can also set or override the fingerprint manually in the integration options.
 
+### Anonymous telemetry (opt-in)
+
+- Telemetry is disabled by default and only sent when explicitly enabled during setup/options.
+- A ping is sent on integration setup with: integration version, Home Assistant version, and a random anonymous ID.
+- The payload contains no host, username, device names, zone names, or sensor values.
+
 ## Entities
 
 The integration provides:
@@ -74,6 +81,19 @@ The integration provides:
 - No entities or incomplete data:
 	- Check user permissions on the CompTrol gateway.
 	- Reload the integration from Home Assistant settings.
+- Telemetry not visible in logs:
+	- Enable debug logging for `custom_components.mhi_nova_link`.
+	- If analytics are not opted in, no telemetry ping is sent.
+	- Rejected telemetry writes are logged as warnings with the HTTP status.
+
+Enable debug logging in `configuration.yaml`:
+
+```yaml
+logger:
+  default: warning
+  logs:
+    custom_components.mhi_nova_link: debug
+```
 
 ## Development
 

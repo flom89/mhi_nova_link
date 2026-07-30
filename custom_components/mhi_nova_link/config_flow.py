@@ -1,7 +1,5 @@
 """Define the config and options flow for NOVA_RC."""
 
-from __future__ import annotations
-
 import logging
 from typing import Any
 import uuid
@@ -199,8 +197,8 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                         ANALYTICS_ANONYMOUS_ID_KEY,
                         self._config_entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
                     )
-                    entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = (
-                        anonymous_id or str(uuid.uuid4())
+                    entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = anonymous_id or str(
+                        uuid.uuid4()
                     )
                 else:
                     entry_data.pop(ANALYTICS_ANONYMOUS_ID_KEY, None)
