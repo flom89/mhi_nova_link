@@ -24,6 +24,15 @@
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval"
         }
+      },
+      "reauth_confirm": {
+        "title": "Riautentica l'account del gateway",
+        "description": "Aggiorna le credenziali del gateway utilizzate da questa integrazione.",
+        "data": {
+          "username": "Nome utente",
+          "password": "Password",
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opzionale)"
+        }
       }
     },
     "error": {
@@ -34,7 +43,9 @@
       "unknown": "Si è verificato un errore imprevisto."
     },
     "abort": {
-      "already_configured": "Questo gateway è già configurato in Home Assistant."
+      "already_configured": "Questo gateway è già configurato in Home Assistant.",
+      "reauth_successful": "La riautenticazione è riuscita.",
+      "reauth_unsuccessful": "La riautenticazione non è riuscita."
     }
   },
   "entity": {
@@ -207,12 +218,12 @@
       "protection_state": {
         "name": "Stato di protezione"
       },
-        "compressor_current": {
-          "name": "Corrente compressore"
-        },
-        "compressor_power": {
-          "name": "Potenza compressore"
-        },
+      "compressor_current": {
+        "name": "Corrente compressore"
+      },
+      "compressor_power": {
+        "name": "Potenza compressore"
+      },
       "indoor_capacity": {
         "name": "Potenza unità interna"
       },

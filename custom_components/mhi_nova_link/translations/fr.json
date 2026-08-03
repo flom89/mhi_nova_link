@@ -24,6 +24,15 @@
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval"
         }
+      },
+      "reauth_confirm": {
+        "title": "Réauthentifier le compte de la passerelle",
+        "description": "Mettez à jour les identifiants de la passerelle utilisés par cette intégration.",
+        "data": {
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe",
+          "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)"
+        }
       }
     },
     "error": {
@@ -34,7 +43,9 @@
       "unknown": "Une erreur inattendue s'est produite."
     },
     "abort": {
-      "already_configured": "Cette passerelle est déjà configurée dans Home Assistant."
+      "already_configured": "Cette passerelle est déjà configurée dans Home Assistant.",
+      "reauth_successful": "La réauthentification a réussi.",
+      "reauth_unsuccessful": "La réauthentification a échoué."
     }
   },
   "entity": {
