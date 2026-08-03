@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.2] - 2026-08-03
+
+### Maintenance
+- Bumped version to 1.2.2 to align with the v1.2.2 release tag.
+
 ## [1.2.1] - 2026-07-30
 
 ### Fixed
