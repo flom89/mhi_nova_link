@@ -82,14 +82,14 @@
         }
       },
       "compressor_active": {
-        "name": "TS_Kompressor aktiv",
+        "name": "Kompressor aktiv",
         "state": {
           "on": "Aktiv",
           "off": "Inaktiv"
         }
       },
       "defrosting_active": {
-        "name": "TS_Abtauung",
+        "name": "Abtauung",
         "state": {
           "on": "Aktiv",
           "off": "Inaktiv"
@@ -199,31 +199,31 @@
         "name": "Innengerät-Temperatur"
       },
       "outdoor_air_temperature": {
-        "name": "TS_Außenlufttemperatur"
+        "name": "Außenlufttemperatur"
       },
       "compressor_frequency": {
-        "name": "TS_Verdichterfrequenz"
+        "name": "Verdichterfrequenz"
       },
       "compressor_current": {
-        "name": "TS_Verdichterstrom"
+        "name": "Verdichterstrom"
       },
       "compressor_power": {
-        "name": "TS_Verdichterleistung"
+        "name": "Verdichterleistung"
       },
       "protection_state": {
-        "name": "TS_Verdichterschutzstatus"
+        "name": "Verdichterschutzstatus"
       },
       "indoor_capacity": {
-        "name": "TS_Innengeräteleistung"
+        "name": "Innengeräteleistung"
       },
       "indoor_heat_exchanger_1_low_temp": {
-        "name": "TS_Innengerät Auswurftemperatur"
+        "name": "Innengerät Auswurftemperatur"
       },
       "outdoor_heat_exchanger_1_low_temp": {
-        "name": "TS_Wärmetauscher Außen Unten"
+        "name": "Wärmetauscher Außen Unten"
       },
       "outdoor_heat_exchanger_1_high_temp": {
-        "name": "TS_Wärmetauscher Außen Oben"
+        "name": "Wärmetauscher Außen Oben"
       },
       "gateway_software_version": {
         "name": "Gateway-Softwareversion"

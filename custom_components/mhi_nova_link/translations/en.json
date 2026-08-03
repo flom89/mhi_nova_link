@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect CompTrol Nova gateway",
-        "description": "Enter the IP address or hostname and the credentials for your NOVA_RC CompTrol Nova gateway.",
+        "description": "Enter the IP address or hostname and the credentials for your NOVA_RC CompTrol Nova gateway. If no SSL fingerprint is provided and the gateway uses a self-signed certificate, the fingerprint will be automatically discovered on first connection. Verify the fingerprint in the integration options after setup.",
         "data": {
           "host": "IP address / hostname",
           "username": "Username",
@@ -97,14 +97,14 @@
         }
       },
       "compressor_active": {
-        "name": "TS_Compressor active",
+        "name": "Compressor active",
         "state": {
           "on": "Active",
           "off": "Inactive"
         }
       },
       "defrosting_active": {
-        "name": "TS_Defrosting",
+        "name": "Defrosting",
         "state": {
           "on": "Active",
           "off": "Inactive"
@@ -198,15 +198,15 @@
       "indoor_unit_setpoint": {"name": "Indoor unit setpoint"},
       "indoor_unit_operation_mode": {"name": "Indoor unit mode"},
       "indoor_unit_fan_speed": {"name": "Indoor unit fan"},
-      "outdoor_air_temperature": {"name": "TS_Outdoor air temperature"},
-      "compressor_frequency": {"name": "TS_Compressor frequency"},
-      "compressor_current": {"name": "TS_Compressor current"},
-      "compressor_power": {"name": "TS_Compressor power"},
-      "protection_state": {"name": "TS_Protection state"},
-      "indoor_capacity": {"name": "TS_Indoor unit capacity"},
-      "indoor_heat_exchanger_1_low_temp": {"name": "TS_Indoor unit discharge temperature"},
-      "outdoor_heat_exchanger_1_low_temp": {"name": "TS_Outdoor heat exchanger bottom temperature"},
-      "outdoor_heat_exchanger_1_high_temp": {"name": "TS_Outdoor heat exchanger top temperature"},
+      "outdoor_air_temperature": {"name": "Outdoor air temperature"},
+      "compressor_frequency": {"name": "Compressor frequency"},
+      "compressor_current": {"name": "Compressor current"},
+      "compressor_power": {"name": "Compressor power"},
+      "protection_state": {"name": "Protection state"},
+      "indoor_capacity": {"name": "Indoor unit capacity"},
+      "indoor_heat_exchanger_1_low_temp": {"name": "Indoor unit discharge temperature"},
+      "outdoor_heat_exchanger_1_low_temp": {"name": "Outdoor heat exchanger bottom temperature"},
+      "outdoor_heat_exchanger_1_high_temp": {"name": "Outdoor heat exchanger top temperature"},
       "gateway_software_version": {"name": "Gateway software version"},
       "operation_mode": {
         "name": "Mode",

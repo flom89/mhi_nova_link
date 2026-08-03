@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from aiohttp import ClientError
 
-from mhi_nova_link import telemetry
+from custom_components.mhi_nova_link import telemetry
 
 
 class _DummyHass:

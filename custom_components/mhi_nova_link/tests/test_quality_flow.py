@@ -1,22 +1,15 @@
 """Run quality-focused regression tests for NOVA_RC."""
 
-import sys
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import custom_components.mhi_nova_link as integration_module
+import custom_components.mhi_nova_link.config_flow as config_flow_module
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResultType
 
 CONF_SSL_FINGERPRINT = "ssl_fingerprint"
-
-config_dir = Path(__file__).resolve().parents[3]
-if str(config_dir) not in sys.path:
-    sys.path.insert(0, str(config_dir))
-
-import custom_components.mhi_nova_link as integration_module  # noqa: E402
-import custom_components.mhi_nova_link.config_flow as config_flow_module  # noqa: E402
 
 
 class DummyConfigEntries:
