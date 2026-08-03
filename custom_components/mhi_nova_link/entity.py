@@ -38,7 +38,11 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             or self._zone_data.get("displayName")
             or f"Zone {self.zone_id}"
         )
-        info: dict[str, Any] = {
+        sw_version = (
+            getattr(self.coordinator, "gateway_update", {}).get("installed_version")
+            or getattr(self.coordinator, "gateway_update", {}).get("available_version")
+        )
+        device_info: dict[str, Any] = {
             "identifiers": {
                 (
                     DOMAIN,
@@ -49,12 +53,9 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             "manufacturer": "STULZ GmbH",
             "model": "CompTrol 4Web NOVA RC",
         }
-        installed_version = getattr(self.coordinator, "gateway_update", {}).get(
-            "installed_version"
-        )
-        if installed_version is not None:
-            info["sw_version"] = installed_version
-        return info
+        if sw_version is not None:
+            device_info["sw_version"] = sw_version
+        return device_info
 
     def get_indoor_unit_data(self, indoor_unit_id: int) -> dict[str, Any]:
         """Return the payload for a specific indoor unit attached to the zone."""
