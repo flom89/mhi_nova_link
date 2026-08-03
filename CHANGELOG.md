@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [2.5.0] - 2026-08-03
+## [2.0.0] - 2026-08-03
 
 ### Refactoring
 - Migrated runtime state handling to `ConfigEntry.runtime_data`.
@@ -30,7 +30,7 @@ All notable changes to this project are documented in this file.
 
 ### Documentation
 - Rewrote `README.md` with current setup, troubleshooting, diagnostics, and platform details.
-- Refreshed contribution and security documentation for the 2.5.0 release baseline.
+- Refreshed contribution and security documentation for the 2.0.0 release baseline.
 
 ## [1.2.2] - 2026-08-03
 
