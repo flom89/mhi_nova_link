@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER, MODEL
@@ -31,7 +32,7 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
         return {}
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the zone."""
         zone_name = (
             self._zone_data.get("name")
@@ -42,11 +43,12 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             getattr(self.coordinator, "gateway_update", {}).get("installed_version")
             or getattr(self.coordinator, "gateway_update", {}).get("available_version")
         )
-        device_info: dict[str, Any] = {
+        entry_id = self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
+        device_info: DeviceInfo = {
             "identifiers": {
                 (
                     DOMAIN,
-                    f"{self.coordinator.config_entry.entry_id}_{self.zone_id}",
+                    f"{entry_id}_{self.zone_id}",
                 )
             },
             "name": f"{zone_name}",
@@ -65,7 +67,9 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
         return {}
 
 
-def build_gateway_device_info(entry_id: str, *, identifier_suffix: str, name: str) -> dict[str, Any]:
+def build_gateway_device_info(
+    entry_id: str, *, identifier_suffix: str, name: str
+) -> DeviceInfo:
     """Build consistent gateway device info metadata."""
     return {
         "identifiers": {(DOMAIN, f"{entry_id}_{identifier_suffix}")},

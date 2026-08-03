@@ -174,12 +174,13 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_ssl_fingerprint_format"
             else:
                 session = async_get_clientsession(self.hass)
+                reauth_password = user_input.get(CONF_PASSWORD, "")
                 try:
                     _, auto_fingerprint = await async_login_with_autopin(
                         host=self._reauth_entry.data[CONF_HOST],
                         session=session,
                         username=user_input.get(CONF_USERNAME, ""),
-                        ****** ""),
+                        **{CONF_PASSWORD: reauth_password},
                         ssl_fingerprint=ssl_fingerprint,
                     )
                 except CannotConnect:

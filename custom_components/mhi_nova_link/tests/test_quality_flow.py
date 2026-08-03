@@ -3,11 +3,12 @@
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-import custom_components.mhi_nova_link as integration_module
-import custom_components.mhi_nova_link.config_flow as config_flow_module
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResultType
+
+import custom_components.mhi_nova_link as integration_module
+import custom_components.mhi_nova_link.config_flow as config_flow_module
 
 CONF_SSL_FINGERPRINT = "ssl_fingerprint"
 

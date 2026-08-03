@@ -71,6 +71,7 @@ TIME_SERIES_LOOKBACK = timedelta(days=30)
 TIME_SERIES_POINT_COUNT = 100
 
 _LOGGER = logging.getLogger(__name__)
+_REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 
 class CannotConnect(Exception):
@@ -513,7 +514,7 @@ class NovaRcApiClient:
                 },
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
@@ -560,7 +561,7 @@ class NovaRcApiClient:
                 },
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
@@ -633,7 +634,7 @@ class NovaRcApiClient:
                 },
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
@@ -671,7 +672,7 @@ class NovaRcApiClient:
                 },
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
@@ -709,7 +710,7 @@ class NovaRcApiClient:
                 },
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
@@ -781,7 +782,7 @@ class NovaRcApiClient:
                 json=payload,
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()
@@ -866,9 +867,9 @@ class NovaRcApiClient:
                     )
 
                 if datasets:
-                    payload = {"dataSets": list(datasets.values())}
-                    zone["timeSeries"] = payload
-                    self._set_cached_time_series(zone_id, payload)
+                    normalized_payload = {"dataSets": list(datasets.values())}
+                    zone["timeSeries"] = normalized_payload
+                    self._set_cached_time_series(zone_id, normalized_payload)
 
                 self._touch_time_series_fetch(zone_id)
 
@@ -932,7 +933,7 @@ class NovaRcApiClient:
                 json=payload,
                 headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
-                timeout=10,
+                timeout=_REQUEST_TIMEOUT,
                 ssl=self._ssl_context,
             ) as response:
                 text = await response.text()

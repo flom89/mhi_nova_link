@@ -103,6 +103,10 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
     def current_option(self) -> str | None:
         """Return the current position."""
         raw = self._zone_data.get("louverPosition")
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            return str(raw)
         return LOUVER_MAP.get(raw, raw)
 
     async def async_select_option(self, option: str) -> None:
@@ -163,6 +167,10 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
     def current_option(self) -> str | None:
         """Return the current position."""
         raw = self._zone_data.get("vanePosition")
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            return str(raw)
         return VANE_MAP.get(raw, raw)
 
     async def async_select_option(self, option: str) -> None:

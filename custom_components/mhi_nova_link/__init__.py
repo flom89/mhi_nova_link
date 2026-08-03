@@ -1,8 +1,8 @@
 """Set up the NOVA_RC integration."""
 
-from dataclasses import dataclass
 import logging
 import uuid
+from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
@@ -18,7 +18,9 @@ from .const import (
     CONF_SSL_FINGERPRINT,
     CONF_TIME_SERIES_POLL_INTERVAL,
     DEFAULT_TIME_SERIES_POLL_INTERVAL,
-    DOMAIN,
+)
+from .const import (
+    DOMAIN as DOMAIN,
 )
 from .coordinator import NovaRcDataUpdateCoordinator
 from .telemetry import async_send_analytics_ping

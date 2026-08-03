@@ -4,89 +4,82 @@
 
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
-This repository folder contains a custom Home Assistant integration for using Mitsubishi Heavy Industries Air Conditioners connected to a CompTrol 4Web NOVA RC via Home Assistant.
+MHI Nova Link is a custom Home Assistant integration for Mitsubishi Heavy Industries systems connected through a **CompTrol 4Web NOVA RC** gateway.
 
 ## Features
 
-- Connects to a CompTrol 4Web NOVA RC gateway over the local network using SSL connection.
-- Exposes relevant climate, sensor, select, switch, and binary sensor entities.
-- Supports config flow and options flow for easy integration and maintenance.
-- Includes translation for English, German, Italian, Spanish, and French.
-- Supports automatic TLS fingerprint pinning for self-signed gateway certificates.
-- Optional anonymous installation telemetry (opt-in) to help monitor integration adoption.
-- Exposes gateway software information, including installed version and update availability.
+- Local HTTPS communication with NOVA RC gateways.
+- Config flow, options flow, and reauthentication support.
+- Automatic TLS fingerprint pinning (TOFU) for self-signed certificates.
+- Zone climate control entities (mode, fan, swing, setpoint, on/off).
+- Zone and gateway sensors, binary sensors, switches, and selects.
+- Safe diagnostics export with sensitive fields redacted.
+- Optional anonymous telemetry (strictly opt-in).
+- Translations: English, German, Italian, Spanish, French.
+
+## Supported Platforms
+
+- `climate`
+- `sensor`
+- `binary_sensor`
+- `switch`
+- `select`
 
 ## Requirements
 
-- A reachable CompTrol 4Web NOVA RC gateway in your local network.
-- A dedicated gateway user account for Home Assistant.
-- Home Assistant with support for custom integrations.
+- Home Assistant with custom integrations support.
+- A reachable CompTrol 4Web NOVA RC gateway on your local network.
+- A dedicated gateway account for Home Assistant.
 
 ## Installation
 
-Create a user on the CompTrol 4Web NOVA RC for this integration. The credentials are stored in Home Assistant.
+### HACS
 
-### Manual installation
+1. Open HACS.
+2. Add this repository as a custom repository:
+   - URL: `https://github.com/flom89/mhi_nova_link`
+   - Category: `Integration`
+3. Search for **MHI Nova Link** and install.
+4. Restart Home Assistant.
 
-1. Copy the `mhi_nova_link` folder into your Home Assistant `custom_components` directory.
+### Manual
+
+1. Copy `/custom_components/mhi_nova_link` into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
-3. Add the integration from Settings -> Devices & Services.
-
-### HACS / Custom Repository
-
-If you use HACS, add this repository as a custom repository:
-
-- Repository URL: [https://github.com/flom89/mhi_nova_link](https://github.com/flom89/mhi_nova_link)
-- Category: Integration
-
-Then search for MHI Nova Link in HACS and install it.
+3. Go to **Settings → Devices & Services → Add Integration**.
+4. Search for **MHI Nova Link**.
 
 ## Configuration
 
-During setup, enter:
+During setup:
 
-- Gateway IP address or hostname.
-- Username and password for the CompTrol user.
-- Optional SSL fingerprint.
+- Hostname or IP address
+- Username
+- Password
+- Optional SSL SHA256 fingerprint
 
-### TLS and SSL fingerprint behavior
+If no fingerprint is provided and the gateway uses a self-signed certificate, the integration can auto-discover and pin the certificate fingerprint on first connection.
 
-- The integration connects over HTTPS.
-- For self-signed certificates, the integration can automatically discover and pin the certificate fingerprint.
-- You can also set or override the fingerprint manually in the integration options.
+## Entity Overview
 
-### Anonymous telemetry (opt-in)
+- **Climate**: one per zone
+- **Sensors**: zone temperatures, setpoints, mode/fan states, time-series diagnostics, gateway software version
+- **Binary sensors**: running, availability, compressor/defrost activity, notifications, gateway GPIO states, update availability
+- **Selects**: louver and vane positions
+- **Switches**: 3D auto mode
 
-- Telemetry is disabled by default and only sent when explicitly enabled during setup/options.
-- A ping is sent on integration setup with: integration version, Home Assistant version, and a random anonymous ID.
-- The payload contains no host, username, device names, zone names, or sensor values.
+## Diagnostics
 
-## Entities
-
-The integration provides:
-
-- Climate entities per zone.
-- Zone-level sensors for temperature, setpoint, mode, fan state, and time-series values.
-- Gateway binary sensors for Digital IO states.
-- Gateway info entities for software version and update availability.
+The integration provides diagnostics export in Home Assistant. Sensitive values (host, credentials, TLS fingerprint, anonymous telemetry ID) are automatically redacted.
 
 ## Troubleshooting
 
-- TLS certificate validation failed:
-	- Verify gateway host/IP and certificate.
-	- Open integration options and set a valid SHA256 fingerprint if needed.
-- Cannot connect:
-	- Verify gateway reachability and credentials.
-	- Confirm HTTPS endpoint access in local network.
-- No entities or incomplete data:
-	- Check user permissions on the CompTrol gateway.
-	- Reload the integration from Home Assistant settings.
-- Telemetry not visible in logs:
-	- Enable debug logging for `custom_components.mhi_nova_link`.
-	- If analytics are not opted in, no telemetry ping is sent.
-	- Rejected telemetry writes are logged as warnings with the HTTP status.
+- **Cannot connect**: verify gateway address, HTTPS availability, and credentials.
+- **TLS fingerprint error**: update the fingerprint in options or clear it to let auto-pinning run again.
+- **Missing/partial entities**: verify gateway permissions and reload the integration.
+- **Reauthentication requested**: complete the reauth flow from the integration card.
 
-Enable debug logging in `configuration.yaml`:
+Enable debug logging:
 
 ```yaml
 logger:
@@ -97,24 +90,19 @@ logger:
 
 ## Development
 
-The integration is tested through Home Assistant's integration test suite.
-
-From this repository root, run:
+From repository root:
 
 ```bash
+pip install homeassistant pytest pytest-asyncio ruff mypy
+ruff check custom_components/mhi_nova_link
+mypy custom_components/mhi_nova_link
 pytest -q custom_components/mhi_nova_link/tests
 ```
 
-## Restriction
+## Contributing
 
-Please consider reviewing the terms and conditions of STULZ S-Klima regarding permitted usage of CompTrol 4Web NOVA RC.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0.
-
-See the full license text in LICENSE.
-
-## Notes
-
-This custom integration is experimental and may cause damage; use is entirely at your own risk. There are no cards or GUI elements included. Use your preferred ones.
+GPL-3.0. See [LICENSE](LICENSE).

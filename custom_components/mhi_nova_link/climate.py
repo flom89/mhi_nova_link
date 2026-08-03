@@ -160,6 +160,8 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
             return HVACMode.OFF
 
         raw_mode = data.get("operationMode")
+        if not isinstance(raw_mode, str):
+            return HVACMode.AUTO
         return HVAC_MODE_MAP.get(raw_mode, HVACMode.AUTO)
 
     @property
@@ -185,6 +187,8 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
     def fan_mode(self) -> str | None:
         """Return the current fan mode."""
         raw_fan = self._zone_data.get("fanSpeed")
+        if not isinstance(raw_fan, str):
+            return FAN_AUTO
         return FAN_MODE_MAP.get(raw_fan, FAN_AUTO)
 
     @property
@@ -209,6 +213,10 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         raw_vane = self._zone_data.get("vanePosition") or self._zone_data.get(
             "louverPosition"
         )
+        if raw_vane is None:
+            return None
+        if not isinstance(raw_vane, str):
+            return str(raw_vane)
         return SWING_MODE_MAP.get(raw_vane, raw_vane)
 
     @property

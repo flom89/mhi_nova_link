@@ -10,6 +10,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -116,10 +117,11 @@ class NovaRcGatewaySoftwareVersionSensor(
         self._attr_unique_id = f"{coordinator.api.host}_gateway_software_version"
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway info device."""
+        entry_id = self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
         return build_gateway_device_info(
-            self.coordinator.config_entry.entry_id,
+            entry_id,
             identifier_suffix="gateway_info",
             name="Gateway",
         )

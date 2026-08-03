@@ -9,6 +9,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -94,10 +95,15 @@ class NovaRcGatewayBinarySensor(
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway."""
+        entry_id = (
+            self.coordinator.config_entry.entry_id
+            if self.coordinator.config_entry
+            else "unknown"
+        )
         return build_gateway_device_info(
-            self.coordinator.config_entry.entry_id,
+            entry_id,
             identifier_suffix="gateway",
             name="Digital IOs",
         )
@@ -123,10 +129,15 @@ class NovaRcGatewayUpdateAvailableBinarySensor(
         self._attr_unique_id = f"{coordinator.api.host}_gateway_update_available"
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway info device."""
+        entry_id = (
+            self.coordinator.config_entry.entry_id
+            if self.coordinator.config_entry
+            else "unknown"
+        )
         return build_gateway_device_info(
-            self.coordinator.config_entry.entry_id,
+            entry_id,
             identifier_suffix="gateway_info",
             name="Gateway",
         )

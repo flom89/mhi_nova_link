@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+
 from custom_components.mhi_nova_link.api import (
     InvalidAuth,
     _get_time_series_update_interval,
@@ -558,6 +559,6 @@ class TestNormalizeGatewayUpdatePayload:
         assert result["available_version"] is None
 
     def test_non_dict_system_is_handled_gracefully(self) -> None:
-        payload = {"data": {"system": None, "update": {}}}
+        payload: dict[str, object] = {"data": {"system": None, "update": {}}}
         result = normalize_gateway_update_payload(payload)
         assert result["installed_version"] is None
