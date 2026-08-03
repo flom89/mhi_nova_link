@@ -159,6 +159,46 @@ def test_zone_entity_uses_zone_name_for_device_info() -> None:
     assert entity.device_info["name"] == "Living room"
 
 
+def test_zone_entity_device_info_falls_back_to_latest_received_version() -> None:
+    """Use the latest received version when installed version is not available."""
+    entity_module = _load_entity_module()
+    coordinator = SimpleNamespace(
+        data=[{"zoneId": 3, "name": "Living room"}],
+        gateway_update={"available_version": "3.2.6"},
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    class DummyZoneEntity(entity_module.NovaRcZoneEntity):
+        """Simple stub entity used for the shared-base regression test."""
+
+    entity = DummyZoneEntity(coordinator, 3)
+
+    assert entity.device_info["sw_version"] == "3.2.6"
+
+
+def test_zone_entity_device_info_omits_sw_version_when_unknown() -> None:
+    """Do not report a null software version when no version is known."""
+    entity_module = _load_entity_module()
+    coordinator = SimpleNamespace(
+        data=[{"zoneId": 3, "name": "Living room"}],
+        gateway_update={},
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    class DummyZoneEntity(entity_module.NovaRcZoneEntity):
+        """Simple stub entity used for the shared-base regression test."""
+
+    entity = DummyZoneEntity(coordinator, 3)
+
+    assert "sw_version" not in entity.device_info
+
+
 def test_setpoint_sensor_reads_zone_value(integration_module: object) -> None:
     """The setpoint sensor should expose the current setpoint from the zone payload."""
     coordinator = SimpleNamespace(
