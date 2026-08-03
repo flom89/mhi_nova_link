@@ -15,3 +15,10 @@ include-package-data = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Discover tests in all three suites.
+# Run a specific suite with: pytest tests/unit  |  pytest tests/integration  |  pytest tests/functional
+testpaths = [
+    "tests/unit",
+    "tests/integration",
+    "tests/functional",
+]

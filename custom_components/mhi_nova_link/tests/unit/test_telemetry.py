@@ -1,7 +1,9 @@
-"""Telemetry tests for the MHI Nova Link integration."""
+"""Unit tests for the telemetry module — no HA boot or network required."""
 
 from collections.abc import Callable
 import logging
+from pathlib import Path
+import sys
 from types import TracebackType
 from typing import Any
 from unittest.mock import patch
@@ -9,7 +11,12 @@ from unittest.mock import patch
 from aiohttp import ClientError
 import pytest
 
-from mhi_nova_link import telemetry
+_integration_dir = Path(__file__).resolve().parents[2]
+_config_dir = _integration_dir.parent.parent
+if str(_config_dir) not in sys.path:
+    sys.path.insert(0, str(_config_dir))
+
+from custom_components.mhi_nova_link import telemetry  # noqa: E402
 
 
 class _DummyHass:

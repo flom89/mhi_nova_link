@@ -15,7 +15,7 @@ from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
 @pytest.fixture(name="integration_module")
 def integration_module_fixture() -> object:
     """Import the integration package from the custom component path."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -27,7 +27,7 @@ def integration_module_fixture() -> object:
 
 def _load_api_helpers() -> object:
     """Import the API helper functions after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -39,7 +39,7 @@ def _load_api_helpers() -> object:
 
 def _load_graphql_module() -> object:
     """Import the GraphQL query module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -51,7 +51,7 @@ def _load_graphql_module() -> object:
 
 def _load_helpers_module() -> object:
     """Import the dataset helper functions after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -63,7 +63,7 @@ def _load_helpers_module() -> object:
 
 def _load_entity_module() -> object:
     """Import the shared entity base helpers."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -75,7 +75,7 @@ def _load_entity_module() -> object:
 
 def _load_select_module() -> object:
     """Import the select module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -87,7 +87,7 @@ def _load_select_module() -> object:
 
 def _load_switch_module() -> object:
     """Import the switch module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -99,7 +99,7 @@ def _load_switch_module() -> object:
 
 def _load_climate_module() -> object:
     """Import the climate module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -111,7 +111,7 @@ def _load_climate_module() -> object:
 
 def _load_binary_sensor_module() -> object:
     """Import the binary sensor module after the custom-components path setup."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -123,7 +123,7 @@ def _load_binary_sensor_module() -> object:
 
 def test_integration_loads_sensor_and_binary_sensor_platforms() -> None:
     """The integration should forward the sensor and binary sensor platforms."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))
@@ -277,7 +277,7 @@ def test_build_time_series_identifiers_use_zone_scoped_outdoor_reference() -> No
 
 def test_translation_assets_cover_entity_and_config_strings() -> None:
     """The translations should include the entity labels used by the integration."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
 
     with (integration_dir / "strings.json").open(encoding="utf-8") as handle:
         strings = json.load(handle)
@@ -642,7 +642,7 @@ async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
 @pytest.mark.asyncio
 async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> None:
     """The binary sensor setup should expose per-indoor-unit running state."""
-    integration_dir = Path(__file__).resolve().parents[1]
+    integration_dir = Path(__file__).resolve().parents[2]
     config_dir = integration_dir.parent.parent
     if str(config_dir) not in sys.path:
         sys.path.insert(0, str(config_dir))

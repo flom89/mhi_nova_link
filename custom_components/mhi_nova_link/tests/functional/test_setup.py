@@ -1,4 +1,9 @@
-"""Run quality-focused regression tests for NOVA_RC."""
+"""Functional regression tests for integration setup/unload and config flow.
+
+These tests verify the full wiring of the integration entry lifecycle
+(async_setup_entry / async_unload_entry) and config + options flows
+against lightweight HA stubs.
+"""
 
 from pathlib import Path
 import sys
@@ -12,7 +17,8 @@ from homeassistant.data_entry_flow import FlowResultType
 
 CONF_SSL_FINGERPRINT = "ssl_fingerprint"
 
-config_dir = Path(__file__).resolve().parents[3]
+# parents[2] = tests/, parents[3] = mhi_nova_link/, parents[4] = custom_components/, parents[5] = repo root
+config_dir = Path(__file__).resolve().parents[4]
 if str(config_dir) not in sys.path:
     sys.path.insert(0, str(config_dir))
 

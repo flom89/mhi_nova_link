@@ -68,15 +68,15 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
     def icon(self) -> str:
         """Return an icon matching the current louver position."""
         match self.current_option:
-            case "Position 1":
+            case "Position 1   ↗":
                 return "mdi:arrow-top-right"
-            case "Position 2":
+            case "Position 2   ↘":
                 return "mdi:arrow-right-top"
-            case "Position 3":
+            case "Position 3  ↘↘":
                 return "mdi:arrow-bottom-right"
-            case "Position 4":
+            case "Position 4   ↓":
                 return "mdi:arrow-down-right"
-            case "Auto":
+            case "Auto ↺":
                 return "mdi:sync"
             case _:
                 return "mdi:arrow-up-down-bold"
