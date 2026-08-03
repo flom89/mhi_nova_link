@@ -55,7 +55,7 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
         session = async_get_clientsession(hass)
         headers = {
             "apikey": _SUPABASE_KEY,
-            "Authorization": f"******",
+            "Authorization": "******",
             "Content-Type": "application/json",
             "Prefer": "return=minimal",
         }

@@ -1,12 +1,9 @@
 """Comprehensive unit tests for all normalize_* and build_* functions in api.py."""
 
-import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from custom_components.mhi_nova_link.api import (
-    CannotConnect,
     InvalidAuth,
     _get_time_series_update_interval,
     _raise_if_auth_rejected,
@@ -20,7 +17,6 @@ from custom_components.mhi_nova_link.api import (
     normalize_zones_payload,
 )
 from custom_components.mhi_nova_link.const import DEFAULT_TIME_SERIES_POLL_INTERVAL
-
 
 # ---------------------------------------------------------------------------
 # normalize_ssl_fingerprint
