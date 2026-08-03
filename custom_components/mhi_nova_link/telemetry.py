@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 from aiohttp import ClientError
-
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -17,6 +16,8 @@ _LOGGER = logging.getLogger(__name__)
 
 # Environment variable that disables telemetry at runtime (useful for CI/tests).
 _ENV_DISABLE_VAR = "MHI_NOVALINK_DISABLE_ANALYTICS"
+# Allow key rotation without a code change.
+_SUPABASE_KEY = os.getenv("NOVA_RC_SUPABASE_KEY", ANALYTICS_SUPABASE_KEY)
 
 
 def _get_integration_version() -> str:
@@ -53,8 +54,8 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
     try:
         session = async_get_clientsession(hass)
         headers = {
-            "apikey": ANALYTICS_SUPABASE_KEY,
-            "Authorization": f"Bearer {ANALYTICS_SUPABASE_KEY}",
+            "apikey": _SUPABASE_KEY,
+            "Authorization": f"******",
             "Content-Type": "application/json",
             "Prefer": "return=minimal",
         }

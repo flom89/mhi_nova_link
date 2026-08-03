@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 import uuid
+from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -16,7 +15,7 @@ from .api import (
     CannotConnect,
     InvalidAuth,
     InvalidCertificate,
-    NovaRcApiClient,
+    async_login_with_autopin,
     normalize_ssl_fingerprint,
 )
 from .const import (
@@ -74,52 +73,26 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ssl_fingerprint = None
             if not errors:
                 session = async_get_clientsession(self.hass)
-                client = NovaRcApiClient(
-                    host=user_input[CONF_HOST],
-                    session=session,
-                    ssl_fingerprint=ssl_fingerprint,
-                )
-
                 try:
-                    await client.async_login(
+                    client, auto_fingerprint = await async_login_with_autopin(
+                        host=user_input[CONF_HOST],
+                        session=session,
                         username=user_input.get(CONF_USERNAME, ""),
                         password=user_input.get(CONF_PASSWORD, ""),
+                        ssl_fingerprint=ssl_fingerprint,
                     )
                 except CannotConnect:
                     errors["base"] = "cannot_connect"
                 except InvalidAuth:
                     errors["base"] = "invalid_auth"
                 except InvalidCertificate:
-                    if ssl_fingerprint:
-                        errors["base"] = "invalid_ssl_fingerprint"
-                    else:
-                        try:
-                            auto_fingerprint = await client.async_get_tls_fingerprint()
-                            fallback_client = NovaRcApiClient(
-                                host=user_input[CONF_HOST],
-                                session=session,
-                                ssl_fingerprint=auto_fingerprint,
-                            )
-                            await fallback_client.async_login(
-                                username=user_input.get(CONF_USERNAME, ""),
-                                password=user_input.get(CONF_PASSWORD, ""),
-                            )
-                        except CannotConnect:
-                            errors["base"] = "cannot_connect"
-                        except InvalidAuth:
-                            errors["base"] = "invalid_auth"
-                        except InvalidCertificate:
-                            errors["base"] = "invalid_ssl_fingerprint"
-                        except Exception:  # pylint: disable=broad-except
-                            _LOGGER.exception(
-                                "Unexpected error during automatic TLS fingerprint setup"
-                            )
-                            errors["base"] = "unknown"
-                        else:
-                            ssl_fingerprint = auto_fingerprint
+                    errors["base"] = "invalid_ssl_fingerprint"
                 except Exception:  # pylint: disable=broad-except
                     _LOGGER.exception("Unexpected error during config flow")
                     errors["base"] = "unknown"
+                else:
+                    if auto_fingerprint:
+                        ssl_fingerprint = auto_fingerprint
 
                 if not errors:
                     await self.async_set_unique_id(user_input[CONF_HOST])

@@ -14,6 +14,45 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: HACS validation
-        uses: "hacs/action@main"
+        uses: "hacs/action@22.5.0"
         with:
           category: "Integration"
+
+  test:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+      - name: Set up Python
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install homeassistant pytest pytest-asyncio
+      - name: Run tests
+        run: pytest -q custom_components/mhi_nova_link/tests
+
+  lint:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+      - name: Set up Python
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Run ruff
+        run: ruff check custom_components/mhi_nova_link
+
+  type-check:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v4"
+      - name: Set up Python
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.12"
+      - name: Install mypy
+        run: pip install mypy homeassistant
+      - name: Run mypy
+        run: mypy custom_components/mhi_nova_link --ignore-missing-imports --no-error-summary

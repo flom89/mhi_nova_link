@@ -10,7 +10,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .api import CannotConnect, InvalidAuth, InvalidCertificate, NovaRcApiClient
+from .api import CannotConnect, InvalidAuth, InvalidCertificate, async_login_with_autopin
 from .const import (
     ANALYTICS_ANONYMOUS_ID_KEY,
     CONF_ANALYTICS_OPT_IN,
@@ -46,64 +46,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONF_SSL_FINGERPRINT,
         entry.data.get(CONF_SSL_FINGERPRINT),
     )
-    api = NovaRcApiClient(
-        host=entry.data[CONF_HOST],
-        session=session,
-        ssl_fingerprint=ssl_fingerprint,
-        time_series_poll_interval=entry.options.get(
-            CONF_TIME_SERIES_POLL_INTERVAL,
-            DEFAULT_TIME_SERIES_POLL_INTERVAL,
-        ),
-    )
-
     try:
-        await api.async_login(
+        api, discovered_fingerprint = await async_login_with_autopin(
+            host=entry.data[CONF_HOST],
+            session=session,
             username=username,
             password=password,
+            ssl_fingerprint=ssl_fingerprint,
+            time_series_poll_interval=entry.options.get(
+                CONF_TIME_SERIES_POLL_INTERVAL,
+                DEFAULT_TIME_SERIES_POLL_INTERVAL,
+            ),
         )
     except InvalidAuth as err:
         raise ConfigEntryNotReady("Authentication failed") from err
     except InvalidCertificate as err:
-        if ssl_fingerprint:
-            raise ConfigEntryNotReady(
-                "TLS certificate validation failed. Configure ssl_fingerprint for self-signed certificates."
-            ) from err
-
-        try:
-            discovered_fingerprint = await api.async_get_tls_fingerprint()
-            api = NovaRcApiClient(
-                host=entry.data[CONF_HOST],
-                session=session,
-                ssl_fingerprint=discovered_fingerprint,
-                time_series_poll_interval=entry.options.get(
-                    CONF_TIME_SERIES_POLL_INTERVAL,
-                    DEFAULT_TIME_SERIES_POLL_INTERVAL,
-                ),
-            )
-            await api.async_login(
-                username=username,
-                password=password,
-            )
-        except InvalidAuth as retry_err:
-            raise ConfigEntryNotReady("Authentication failed") from retry_err
-        except InvalidCertificate as retry_err:
-            raise ConfigEntryNotReady(
-                "TLS certificate validation failed. Configure ssl_fingerprint for self-signed certificates."
-            ) from retry_err
-        except CannotConnect as retry_err:
-            raise ConfigEntryNotReady(
-                f"Unable to reach gateway: {retry_err}"
-            ) from retry_err
-        else:
-            _LOGGER.warning(
-                "Automatically pinned TLS fingerprint for NOVA_RC gateway %s",
-                entry.data[CONF_HOST],
-            )
-            updated_data = dict(entry.data)
-            updated_data[CONF_SSL_FINGERPRINT] = discovered_fingerprint
-            hass.config_entries.async_update_entry(entry, data=updated_data)
+        raise ConfigEntryNotReady(
+            "TLS certificate validation failed. Configure ssl_fingerprint for self-signed certificates."
+        ) from err
     except CannotConnect as err:
         raise ConfigEntryNotReady(f"Unable to reach gateway: {err}") from err
+
+    if discovered_fingerprint:
+        _LOGGER.warning(
+            "Automatically pinned TLS fingerprint for NOVA_RC gateway %s",
+            entry.data[CONF_HOST],
+        )
+        updated_data = dict(entry.data)
+        updated_data[CONF_SSL_FINGERPRINT] = discovered_fingerprint
+        hass.config_entries.async_update_entry(entry, data=updated_data)
 
     coordinator = NovaRcDataUpdateCoordinator(hass=hass, api=api, entry=entry)
 

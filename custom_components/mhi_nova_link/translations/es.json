@@ -82,14 +82,14 @@
         }
       },
       "compressor_active": {
-        "name": "TS_Compresor activo",
+        "name": "Compresor activo",
         "state": {
           "on": "Activo",
           "off": "Inactivo"
         }
       },
       "defrosting_active": {
-        "name": "TS_Desescarche",
+        "name": "Desescarche",
         "state": {
           "on": "Activo",
           "off": "Inactivo"
@@ -199,31 +199,31 @@
         "name": "Temperatura de la unidad interior"
       },
       "outdoor_air_temperature": {
-        "name": "TS_Temperatura del aire exterior"
+        "name": "Temperatura del aire exterior"
       },
       "compressor_frequency": {
-        "name": "TS_Frecuencia del compresor"
+        "name": "Frecuencia del compresor"
       },
       "compressor_current": {
-        "name": "TS_Corriente del compresor"
+        "name": "Corriente del compresor"
       },
       "compressor_power": {
-        "name": "TS_Potencia del compresor"
+        "name": "Potencia del compresor"
       },
       "protection_state": {
-        "name": "TS_Estado de protección"
+        "name": "Estado de protección"
       },
       "indoor_capacity": {
-        "name": "TS_Potencia de la unidad interior"
+        "name": "Potencia de la unidad interior"
       },
       "indoor_heat_exchanger_1_low_temp": {
-        "name": "TS_Temperatura de impulsión unidad interior"
+        "name": "Temperatura de impulsión unidad interior"
       },
       "outdoor_heat_exchanger_1_low_temp": {
-        "name": "TS_Intercambiador exterior inferior"
+        "name": "Intercambiador exterior inferior"
       },
       "outdoor_heat_exchanger_1_high_temp": {
-        "name": "TS_Intercambiador exterior superior"
+        "name": "Intercambiador exterior superior"
       },
       "gateway_software_version": {
         "name": "Versión de software del gateway"

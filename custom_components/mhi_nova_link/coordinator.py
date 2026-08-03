@@ -1,11 +1,12 @@
 """Coordinate periodic data updates for NOVA_RC."""
 
 import asyncio
-from datetime import timedelta
 import logging
 import os
+from datetime import timedelta
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -29,7 +30,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self,
         hass: HomeAssistant,
         api: NovaRcApiClient,
-        entry: Any | None = None,
+        entry: ConfigEntry | None = None,
     ) -> None:
         """Initialize the coordinator with the configured poll interval."""
         super().__init__(

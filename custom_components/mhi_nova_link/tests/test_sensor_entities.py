@@ -2,153 +2,39 @@
 
 import json
 from pathlib import Path
-import sys
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import custom_components.mhi_nova_link.api as api_module
+import custom_components.mhi_nova_link.binary_sensor as binary_sensor_module
+import custom_components.mhi_nova_link.climate as climate_module
+import custom_components.mhi_nova_link.coordinator as coordinator_module
+import custom_components.mhi_nova_link.entity as entity_module
+import custom_components.mhi_nova_link.graphql as graphql_module
+import custom_components.mhi_nova_link.helpers as helpers_module
+import custom_components.mhi_nova_link.select as select_module
+import custom_components.mhi_nova_link.sensor as sensor_module
+import custom_components.mhi_nova_link.switch as switch_module
 import pytest
-
 from homeassistant.components.climate import HVACMode
 from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
 
 
 @pytest.fixture(name="integration_module")
 def integration_module_fixture() -> object:
-    """Import the integration package from the custom component path."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.sensor as sensor_module  # noqa: PLC0415
-
+    """Return the sensor module for tests that need it via fixture injection."""
     return sensor_module
-
-
-def _load_api_helpers() -> object:
-    """Import the API helper functions after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.api as api_module  # noqa: PLC0415
-
-    return api_module
-
-
-def _load_graphql_module() -> object:
-    """Import the GraphQL query module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.graphql as graphql_module  # noqa: PLC0415
-
-    return graphql_module
-
-
-def _load_helpers_module() -> object:
-    """Import the dataset helper functions after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.helpers as helpers_module  # noqa: PLC0415
-
-    return helpers_module
-
-
-def _load_entity_module() -> object:
-    """Import the shared entity base helpers."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.entity as entity_module  # noqa: PLC0415
-
-    return entity_module
-
-
-def _load_coordinator_module() -> object:
-    """Import the coordinator module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.coordinator as coordinator_module  # noqa: PLC0415
-
-    return coordinator_module
-
-
-def _load_select_module() -> object:
-    """Import the select module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.select as select_module  # noqa: PLC0415
-
-    return select_module
-
-
-def _load_switch_module() -> object:
-    """Import the switch module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.switch as switch_module  # noqa: PLC0415
-
-    return switch_module
-
-
-def _load_climate_module() -> object:
-    """Import the climate module after the custom-components path is configured."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.climate as climate_module  # noqa: PLC0415
-
-    return climate_module
-
-
-def _load_binary_sensor_module() -> object:
-    """Import the binary sensor module after the custom-components path setup."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.binary_sensor as binary_sensor_module  # noqa: PLC0415
-
-    return binary_sensor_module
-
 
 def test_integration_loads_sensor_and_binary_sensor_platforms() -> None:
     """The integration should forward the sensor and binary sensor platforms."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
+    import custom_components.mhi_nova_link as _integration_module
 
-    import custom_components.mhi_nova_link as integration_module  # noqa: PLC0415
-
-    assert Platform.SENSOR in integration_module.PLATFORMS
-    assert Platform.BINARY_SENSOR in integration_module.PLATFORMS
+    assert Platform.SENSOR in _integration_module.PLATFORMS
+    assert Platform.BINARY_SENSOR in _integration_module.PLATFORMS
 
 
 def test_zone_entity_uses_zone_name_for_device_info() -> None:
     """The shared zone entity base should expose the zone name through device info."""
-    entity_module = _load_entity_module()
     coordinator = SimpleNamespace(
         data=[
             {
@@ -175,7 +61,6 @@ def test_zone_entity_uses_zone_name_for_device_info() -> None:
 @pytest.mark.asyncio
 async def test_coordinator_keeps_last_installed_version_until_new_one_arrives() -> None:
     """Coordinator should retain the previous installed version when payload omits it."""
-    coordinator_module = _load_coordinator_module()
     api = SimpleNamespace(
         async_get_zones=AsyncMock(return_value=[]),
         async_get_notifications=AsyncMock(return_value=[]),
@@ -201,7 +86,6 @@ async def test_coordinator_keeps_last_installed_version_until_new_one_arrives() 
 
 def test_zone_entity_device_info_falls_back_to_latest_received_version() -> None:
     """Use the latest received version when installed version is not available."""
-    entity_module = _load_entity_module()
     coordinator = SimpleNamespace(
         data=[{"zoneId": 3, "name": "Living room"}],
         gateway_update={"available_version": "3.2.6"},
@@ -221,7 +105,6 @@ def test_zone_entity_device_info_falls_back_to_latest_received_version() -> None
 
 def test_zone_entity_device_info_omits_sw_version_when_unknown() -> None:
     """Do not report a null software version when no version is known."""
-    entity_module = _load_entity_module()
     coordinator = SimpleNamespace(
         data=[{"zoneId": 3, "name": "Living room"}],
         gateway_update={},
@@ -291,7 +174,6 @@ def test_indoor_unit_temperature_sensor_reads_indoor_unit_state(
 
 def test_build_time_series_identifiers_uses_zone_and_indoor_unit_references() -> None:
     """The time-series request builder should create identifiers for indoor and outdoor units."""
-    api_module = _load_api_helpers()
     identifiers = api_module.build_time_series_identifiers(
         {
             "zoneId": 1,
@@ -312,7 +194,6 @@ def test_build_time_series_identifiers_uses_zone_and_indoor_unit_references() ->
 
 def test_build_time_series_identifiers_deduplicates_repeated_references() -> None:
     """Identifier generation should avoid duplicate reference/id pairs."""
-    api_module = _load_api_helpers()
 
     identifiers = api_module.build_time_series_identifiers(
         {
@@ -332,7 +213,6 @@ def test_build_time_series_identifiers_deduplicates_repeated_references() -> Non
 
 def test_build_time_series_identifiers_use_zone_scoped_outdoor_reference() -> None:
     """Outdoor-unit identifiers should stay scoped to the current zone id."""
-    api_module = _load_api_helpers()
 
     zone_1_ids = api_module.build_time_series_identifiers(
         {"zoneId": 1, "indoorUnits": []}
@@ -410,7 +290,6 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
 
 def test_zone_query_keeps_zone_level_fields_separate_from_indoor_unit_reads() -> None:
     """The zone query should stay focused on zone-level data and avoid direct unit lookups."""
-    graphql_module = _load_graphql_module()
 
     assert "zoneId" in graphql_module.GET_ZONES_QUERY
     assert "available" in graphql_module.GET_ZONES_QUERY
@@ -422,7 +301,6 @@ def test_zone_query_keeps_zone_level_fields_separate_from_indoor_unit_reads() ->
 
 def test_normalize_zones_payload_keeps_unavailable_zones() -> None:
     """Unavailable zones should still be preserved so the availability entity can report false."""
-    api_module = _load_api_helpers()
 
     payload = {
         "data": {
@@ -652,7 +530,6 @@ async def test_setup_entry_creates_time_series_sensors(
 @pytest.mark.asyncio
 async def test_select_setup_entry_creates_zone_select_entities() -> None:
     """Select platform setup should create louver and vane entities per zone."""
-    select_module = _load_select_module()
 
     coordinator = SimpleNamespace(
         data=[
@@ -690,7 +567,6 @@ async def test_select_setup_entry_creates_zone_select_entities() -> None:
 @pytest.mark.asyncio
 async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
     """Switch platform setup should create one 3D auto switch per zone."""
-    switch_module = _load_switch_module()
 
     coordinator = SimpleNamespace(
         data=[
@@ -722,13 +598,6 @@ async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
 @pytest.mark.asyncio
 async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> None:
     """The binary sensor setup should expose per-indoor-unit running state."""
-    integration_dir = Path(__file__).resolve().parents[1]
-    config_dir = integration_dir.parent.parent
-    if str(config_dir) not in sys.path:
-        sys.path.insert(0, str(config_dir))
-
-    import custom_components.mhi_nova_link.binary_sensor as binary_sensor_module  # noqa: PLC0415
-
     coordinator = SimpleNamespace(
         data=[
             {
@@ -984,7 +853,6 @@ def test_compressor_frequency_sensor_scales_raw_dataset_value(
 
 def test_get_dataset_value_uses_latest_timestamped_point() -> None:
     """Dataset helpers should choose the newest known datapoint when timestamps are present."""
-    helpers_module = _load_helpers_module()
 
     dataset = {
         "data": [
@@ -998,7 +866,6 @@ def test_get_dataset_value_uses_latest_timestamped_point() -> None:
 
 def test_dataset_is_on_parses_yes_no_labels() -> None:
     """Boolean helpers should understand common yes/no labels from the gateway."""
-    helpers_module = _load_helpers_module()
 
     assert helpers_module.dataset_is_on("compressor_active", {"data": {"value": "Ja"}})
     assert not helpers_module.dataset_is_on(
@@ -1010,7 +877,6 @@ def test_compressor_binary_sensor_uses_frequency_fallback_when_active_flag_is_fa
     None
 ):
     """Compressor should be considered active when frequency is above zero."""
-    binary_sensor_module = _load_binary_sensor_module()
 
     coordinator = SimpleNamespace(
         data=[
@@ -1046,7 +912,6 @@ def test_compressor_binary_sensor_uses_frequency_fallback_when_active_flag_is_fa
 
 def test_compressor_binary_sensor_stays_off_when_frequency_is_zero() -> None:
     """Compressor should stay off when active flag is false and frequency is zero."""
-    binary_sensor_module = _load_binary_sensor_module()
 
     coordinator = SimpleNamespace(
         data=[
@@ -1289,7 +1154,6 @@ def test_operation_mode_sensor_returns_none_when_zone_value_missing(
 
 def test_normalize_time_series_payload_collects_datasets_by_id() -> None:
     """Time-series payloads should be normalized into a lookup keyed by dataset id."""
-    api_module = _load_api_helpers()
     datasets = api_module.normalize_time_series_payload(
         {
             "data": {
@@ -1311,7 +1175,6 @@ def test_normalize_time_series_payload_collects_datasets_by_id() -> None:
 
 def test_zone_query_requests_richer_zone_detail_fields() -> None:
     """The zone query should request the richer detail fields from the gateway."""
-    graphql_module = _load_graphql_module()
 
     query = graphql_module.GET_ZONES_QUERY
 
@@ -1324,7 +1187,6 @@ def test_zone_query_requests_richer_zone_detail_fields() -> None:
 
 def test_update_query_requests_installed_version_and_available_release() -> None:
     """The update query should include installed and available software versions."""
-    graphql_module = _load_graphql_module()
 
     query = graphql_module.GET_UPDATE_CLOUD_SETTINGS_QUERY
 
@@ -1336,7 +1198,6 @@ def test_update_query_requests_installed_version_and_available_release() -> None
 
 def test_get_zone_query_requests_airflow_and_patch_options() -> None:
     """The targeted GetZone query should request airflow and patch option fields."""
-    graphql_module = _load_graphql_module()
 
     query = graphql_module.GET_ZONE_QUERY
 
@@ -1348,7 +1209,6 @@ def test_get_zone_query_requests_airflow_and_patch_options() -> None:
 
 def test_notifications_query_avoids_schema_volatile_object_fields() -> None:
     """Notifications query should avoid object fields that require nested sub-selections."""
-    graphql_module = _load_graphql_module()
 
     query = graphql_module.GET_NOTIFICATIONS_QUERY
 
@@ -1360,7 +1220,6 @@ def test_notifications_query_avoids_schema_volatile_object_fields() -> None:
 
 def test_louver_select_returns_none_when_direct_zone_value_missing() -> None:
     """Louver select should not use time-series values when the direct zone value is missing."""
-    select_module = _load_select_module()
 
     coordinator = SimpleNamespace(
         data=[
@@ -1395,7 +1254,6 @@ def test_louver_select_returns_none_when_direct_zone_value_missing() -> None:
 
 def test_vane_select_returns_none_when_direct_zone_value_missing() -> None:
     """Vane select should not use time-series values when the direct zone value is missing."""
-    select_module = _load_select_module()
 
     coordinator = SimpleNamespace(
         data=[
@@ -1435,7 +1293,6 @@ def test_vane_select_returns_none_when_direct_zone_value_missing() -> None:
 @pytest.mark.asyncio
 async def test_climate_async_set_hvac_mode_uses_startup_airflow_wait() -> None:
     """HVAC mode changes should request airflow wait only when starting from off."""
-    climate_module = _load_climate_module()
 
     api = SimpleNamespace(host="gateway", async_set_zone_state=AsyncMock())
     coordinator = SimpleNamespace(
@@ -1471,7 +1328,6 @@ async def test_climate_async_set_hvac_mode_uses_startup_airflow_wait() -> None:
 @pytest.mark.asyncio
 async def test_climate_async_set_temperature_forwards_setpoint() -> None:
     """Temperature changes should forward setpoint updates to the API."""
-    climate_module = _load_climate_module()
 
     api = SimpleNamespace(host="gateway", async_set_zone_state=AsyncMock())
     coordinator = SimpleNamespace(
@@ -1502,7 +1358,6 @@ async def test_climate_async_set_temperature_forwards_setpoint() -> None:
 @pytest.mark.asyncio
 async def test_climate_async_set_fan_mode_maps_gateway_value() -> None:
     """Fan mode updates should map Home Assistant mode labels to gateway values."""
-    climate_module = _load_climate_module()
 
     api = SimpleNamespace(host="gateway", async_set_zone_state=AsyncMock())
     coordinator = SimpleNamespace(

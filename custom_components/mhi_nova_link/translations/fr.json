@@ -82,14 +82,14 @@
         }
       },
       "compressor_active": {
-        "name": "TS_Compresseur actif",
+        "name": "Compresseur actif",
         "state": {
           "on": "Actif",
           "off": "Inactif"
         }
       },
       "defrosting_active": {
-        "name": "TS_Dégivrage",
+        "name": "Dégivrage",
         "state": {
           "on": "Actif",
           "off": "Inactif"
@@ -199,31 +199,31 @@
         "name": "Température de l'unité intérieure"
       },
       "outdoor_air_temperature": {
-        "name": "TS_Température de l'air extérieur"
+        "name": "Température de l'air extérieur"
       },
       "compressor_frequency": {
-        "name": "TS_Fréquence du compresseur"
+        "name": "Fréquence du compresseur"
       },
       "compressor_current": {
-        "name": "TS_Courant du compresseur"
+        "name": "Courant du compresseur"
       },
       "compressor_power": {
-        "name": "TS_Puissance du compresseur"
+        "name": "Puissance du compresseur"
       },
       "protection_state": {
-        "name": "TS_État de protection"
+        "name": "État de protection"
       },
       "indoor_capacity": {
-        "name": "TS_Puissance unité intérieure"
+        "name": "Puissance unité intérieure"
       },
       "indoor_heat_exchanger_1_low_temp": {
-        "name": "TS_Température de soufflage unité intérieure"
+        "name": "Température de soufflage unité intérieure"
       },
       "outdoor_heat_exchanger_1_low_temp": {
-        "name": "TS_Échangeur extérieur bas"
+        "name": "Échangeur extérieur bas"
       },
       "outdoor_heat_exchanger_1_high_temp": {
-        "name": "TS_Échangeur extérieur haut"
+        "name": "Échangeur extérieur haut"
       },
       "gateway_software_version": {
         "name": "Version logicielle de la passerelle"
