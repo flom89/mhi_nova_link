@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from pathlib import Path
 
 from aiohttp import ClientError
@@ -23,7 +24,7 @@ def _get_integration_version() -> str:
     manifest_path = Path(__file__).parent / "manifest.json"
     try:
         return json.loads(manifest_path.read_text(encoding="utf-8"))["version"]
-    except OSError, json.JSONDecodeError, KeyError, TypeError:
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
         return "unknown"
 
 
@@ -34,13 +35,11 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
         - ``integration_version`` - the version declared in manifest.json
         - ``ha_version`` - the running Home Assistant version
         - ``anonymous_id`` - a random UUID generated at first setup; never
-      linked to any personal data
+          linked to any personal data
 
     Any network or server error is logged and swallowed so this call never
     affects the integration's normal operation.
     """
-    import os  # noqa: PLC0415
-
     if os.environ.get(_ENV_DISABLE_VAR):
         _LOGGER.debug("Telemetry disabled via environment variable")
         return
@@ -75,5 +74,5 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
                 resp.status,
                 response_preview or "<empty response>",
             )
-    except ClientError, TimeoutError, OSError:
+    except (ClientError, TimeoutError, OSError):
         _LOGGER.warning("Telemetry ping request failed (non-critical, ignored)")

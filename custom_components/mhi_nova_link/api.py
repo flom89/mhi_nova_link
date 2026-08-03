@@ -320,6 +320,12 @@ def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+_GRAPHQL_HEADERS: dict[str, str] = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
+
+
 class NovaRcApiClient:
     """GraphQL client for NOVA_RC."""
 
@@ -433,14 +439,6 @@ class NovaRcApiClient:
             and zone.get("vanePosition") is not None
         )
 
-    @staticmethod
-    def _build_headers() -> dict[str, str]:
-        """Build standard GraphQL HTTP headers."""
-        return {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-
     async def async_login(self, username: str, password: str) -> bool:
         """Validate connectivity and store authentication credentials."""
         self.username = username
@@ -468,7 +466,7 @@ class NovaRcApiClient:
                     "operationName": "GetZones",
                     "variables": {},
                 },
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,
@@ -514,7 +512,7 @@ class NovaRcApiClient:
                     "operationName": "GetZone",
                     "variables": {"zoneId": int(zone_id)},
                 },
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,
@@ -587,7 +585,7 @@ class NovaRcApiClient:
                     "operationName": "GetNotifications",
                     "variables": {},
                 },
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,
@@ -625,7 +623,7 @@ class NovaRcApiClient:
                     "operationName": "GetGpios",
                     "variables": {},
                 },
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,
@@ -663,7 +661,7 @@ class NovaRcApiClient:
                     "operationName": "GetUpdateCloudSettings",
                     "variables": {},
                 },
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,
@@ -735,7 +733,7 @@ class NovaRcApiClient:
             async with self.session.post(
                 self.endpoint,
                 json=payload,
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,
@@ -886,7 +884,7 @@ class NovaRcApiClient:
             async with self.session.post(
                 self.endpoint,
                 json=payload,
-                headers=self._build_headers(),
+                headers=_GRAPHQL_HEADERS,
                 auth=self._build_auth(),
                 timeout=10,
                 ssl=self._ssl_context,

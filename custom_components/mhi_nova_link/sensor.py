@@ -1,6 +1,5 @@
 """Implement sensor entities for NOVA_RC zones."""
 
-import inspect
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -84,9 +83,7 @@ async def async_setup_entry(
                 NovaRcIndoorUnitFanSpeedSensor(coordinator, zone_id, indoor_unit_id)
             )
 
-    result = async_add_entities(entities)
-    if inspect.isawaitable(result):
-        await result
+    async_add_entities(entities)
 
 
 class NovaRcBaseSensor(NovaRcZoneEntity, SensorEntity):

@@ -1,6 +1,5 @@
 """Implement binary sensor entities for NOVA_RC."""
 
-import inspect
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
@@ -68,9 +67,7 @@ async def async_setup_entry(
                 NovaRcIndoorUnitFilterBinarySensor(coordinator, zone_id, indoor_unit_id)
             )
 
-    result = async_add_entities(entities)
-    if inspect.isawaitable(result):
-        await result
+    async_add_entities(entities)
 
 
 class NovaRcBaseBinarySensor(NovaRcZoneEntity, BinarySensorEntity):
