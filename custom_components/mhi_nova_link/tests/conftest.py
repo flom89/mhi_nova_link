@@ -1,7 +1,7 @@
 """Configure pytest for the NOVA_RC integration test suite."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add the repository root to sys.path once so that all test modules can import
 # custom_components.mhi_nova_link.* without per-file sys.path manipulation.
