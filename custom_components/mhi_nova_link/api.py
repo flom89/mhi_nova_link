@@ -326,6 +326,54 @@ _GRAPHQL_HEADERS: dict[str, str] = {
 }
 
 
+async def async_login_with_autopin(
+    *,
+    host: str,
+    session: "aiohttp.ClientSession",
+    username: str,
+    password: str,
+    ssl_fingerprint: str | None,
+    time_series_poll_interval: int | None = None,
+) -> "tuple[NovaRcApiClient, str | None]":
+    """Create a client and login, auto-discovering the TLS fingerprint when needed.
+
+    When *ssl_fingerprint* is ``None`` and the gateway uses a self-signed
+    certificate, the fingerprint is discovered via TOFU (Trust On First Use) and
+    the login is retried with the discovered value.
+
+    Returns a ``(client, discovered_fingerprint)`` tuple.  *discovered_fingerprint*
+    is ``None`` when the fingerprint was already known or plain TLS validation
+    succeeded, and is the newly pinned hex fingerprint when TOFU discovery was
+    performed.
+    """
+    client = NovaRcApiClient(
+        host=host,
+        session=session,
+        ssl_fingerprint=ssl_fingerprint,
+        time_series_poll_interval=time_series_poll_interval,
+    )
+
+    try:
+        await client.async_login(username=username, password=password)
+        return client, None
+    except InvalidCertificate:
+        if ssl_fingerprint:
+            # A fingerprint was explicitly configured but didn't match.
+            raise
+
+    # TOFU: discover the gateway's certificate fingerprint and retry.
+    discovered_fingerprint = await client.async_get_tls_fingerprint()
+    pinned_client = NovaRcApiClient(
+        host=host,
+        session=session,
+        ssl_fingerprint=discovered_fingerprint,
+        time_series_poll_interval=time_series_poll_interval,
+    )
+    await pinned_client.async_login(username=username, password=password)
+    return pinned_client, discovered_fingerprint
+
+
+
 class NovaRcApiClient:
     """GraphQL client for NOVA_RC."""
 
@@ -486,8 +534,9 @@ class NovaRcApiClient:
                     raise CannotConnect("GraphQL query error")
 
                 zones = normalize_zones_payload(data)
-                for zone in zones:
-                    await self._attach_time_series_data(zone)
+                await asyncio.gather(
+                    *[self._attach_time_series_data(zone) for zone in zones]
+                )
 
                 return zones
 

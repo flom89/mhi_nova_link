@@ -3,6 +3,37 @@
 from collections.abc import Mapping
 from typing import Any
 
+# Token sets used to map string/enum option labels to boolean values.
+# The gateway firmware may return labels in several European languages; all
+# recognised variants are listed here to ensure reliable on/off detection.
+_TRUTHY_TOKENS: frozenset[str] = frozenset(
+    {
+        "active",
+        "aktiv",
+        "ein",
+        "enabled",
+        "ja",
+        "on",
+        "open",
+        "true",
+        "y",
+        "yes",
+    }
+)
+_FALSY_TOKENS: frozenset[str] = frozenset(
+    {
+        "aus",
+        "closed",
+        "disabled",
+        "false",
+        "inactive",
+        "inaktiv",
+        "n",
+        "nein",
+        "no",
+        "off",
+    }
+)
 
 def get_zone_time_series_datasets(zone: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     """Return all time series datasets attached to a zone."""
@@ -116,61 +147,17 @@ def dataset_is_on(dataset_id: str, dataset: Mapping[str, Any]) -> bool:
                 if not isinstance(option, dict):
                     continue
                 label = _normalize_enum_token(str(option.get("label", "")))
-                if label in {
-                    "active",
-                    "enabled",
-                    "on",
-                    "open",
-                    "true",
-                    "yes",
-                    "ja",
-                    "aktiv",
-                    "ein",
-                }:
-                    return value == option.get("value")
-                if label in {
-                    "inactive",
-                    "disabled",
-                    "off",
-                    "closed",
-                    "false",
-                    "no",
-                    "nein",
-                    "inaktiv",
-                    "aus",
-                }:
+                if label in _TRUTHY_TOKENS or label in _FALSY_TOKENS:
                     return value == option.get("value")
         return bool(value)
 
     if isinstance(value, str):
         normalized = _normalize_enum_token(value)
-        if normalized in {
-            "active",
-            "enabled",
-            "on",
-            "open",
-            "true",
-            "1",
-            "ja",
-            "yes",
-            "y",
-            "aktiv",
-            "ein",
-        }:
+        # "1" is truthy, "0" is falsy — these are not in the shared token sets
+        # because they are numeric strings, not enum labels.
+        if normalized in _TRUTHY_TOKENS or normalized == "1":
             return True
-        if normalized in {
-            "inactive",
-            "disabled",
-            "off",
-            "closed",
-            "false",
-            "0",
-            "nein",
-            "no",
-            "n",
-            "inaktiv",
-            "aus",
-        }:
+        if normalized in _FALSY_TOKENS or normalized == "0":
             return False
 
     if dataset_id in {"compressor_active", "defrosting_active", "filter_sign"}:

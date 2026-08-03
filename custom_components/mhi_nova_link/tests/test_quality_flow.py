@@ -113,17 +113,18 @@ async def test_config_flow_creates_entry_when_login_succeeds(
     hass: DummyHass,
 ) -> None:
     """A successful login should proceed to the analytics step and then create a config entry."""
+    mock_client = AsyncMock()
     with (
         patch(
             "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
             return_value=object(),
         ),
         patch(
-            "custom_components.mhi_nova_link.config_flow.NovaRcApiClient"
-        ) as client_cls,
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(mock_client, None),
+        ),
     ):
-        client = client_cls.return_value
-        client.async_login = AsyncMock(return_value=True)
 
         flow = config_flow_module.NovaRcConfigFlow()
         flow.hass = hass
@@ -164,11 +165,11 @@ async def test_config_flow_returns_form_for_invalid_auth(
             return_value=object(),
         ),
         patch(
-            "custom_components.mhi_nova_link.config_flow.NovaRcApiClient"
-        ) as client_cls,
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            side_effect=config_flow_module.InvalidAuth,
+        ),
     ):
-        client = client_cls.return_value
-        client.async_login = AsyncMock(side_effect=config_flow_module.InvalidAuth)
 
         flow = config_flow_module.NovaRcConfigFlow()
         flow.hass = hass
@@ -224,13 +225,11 @@ async def test_config_flow_returns_form_for_invalid_gateway_certificate(
             return_value=object(),
         ),
         patch(
-            "custom_components.mhi_nova_link.config_flow.NovaRcApiClient"
-        ) as client_cls,
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            side_effect=config_flow_module.InvalidCertificate,
+        ),
     ):
-        client = client_cls.return_value
-        client.async_login = AsyncMock(
-            side_effect=config_flow_module.InvalidCertificate
-        )
 
         flow = config_flow_module.NovaRcConfigFlow()
         flow.hass = hass
@@ -254,23 +253,16 @@ async def test_config_flow_auto_pins_fingerprint_for_self_signed_gateway(
     hass: DummyHass,
 ) -> None:
     """When no fingerprint is provided, the flow should auto-discover and store one."""
-    first_client = AsyncMock()
-    first_client.async_login = AsyncMock(
-        side_effect=config_flow_module.InvalidCertificate
-    )
-    first_client.async_get_tls_fingerprint = AsyncMock(return_value="cc" * 32)
-
-    fallback_client = AsyncMock()
-    fallback_client.async_login = AsyncMock(return_value=True)
-
+    mock_client = AsyncMock()
     with (
         patch(
             "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
             return_value=object(),
         ),
         patch(
-            "custom_components.mhi_nova_link.config_flow.NovaRcApiClient",
-            side_effect=[first_client, fallback_client],
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(mock_client, "cc" * 32),
         ),
     ):
         flow = config_flow_module.NovaRcConfigFlow()
@@ -315,27 +307,25 @@ async def test_setup_and_unload_entry(
     entry.options = {CONF_SSL_FINGERPRINT: "bb" * 32}
     entry.add_to_hass(hass)
 
+    mock_client = AsyncMock()
     with (
         patch(
             "custom_components.mhi_nova_link.async_get_clientsession",
             return_value=object(),
         ),
-        patch("custom_components.mhi_nova_link.NovaRcApiClient") as client_cls,
+        patch(
+            "custom_components.mhi_nova_link.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(mock_client, None),
+        ) as autopin_mock,
         patch(
             "custom_components.mhi_nova_link.coordinator.NovaRcDataUpdateCoordinator.async_config_entry_first_refresh",
             new_callable=AsyncMock,
         ) as refresh_mock,
     ):
-        client = client_cls.return_value
-        client.async_login = AsyncMock(return_value=True)
-
         assert await integration_module.async_setup_entry(hass, entry)
-        client_cls.assert_called_once()
-        assert client_cls.call_args.kwargs["ssl_fingerprint"] == "bb" * 32
-        client.async_login.assert_awaited_once_with(
-            username="user",
-            password="secret",
-        )
+        autopin_mock.assert_awaited_once()
+        assert autopin_mock.call_args.kwargs["ssl_fingerprint"] == "bb" * 32
         assert entry.title == "CompTrol 4Web NOVA RC (gateway.local)"
         assert entry.entry_id in hass.data[integration_module.DOMAIN]
         assert refresh_mock.await_count == 1
@@ -363,23 +353,16 @@ async def test_setup_auto_pins_fingerprint_when_missing(
     entry.options = {}
     entry.add_to_hass(hass)
 
-    first_client = AsyncMock()
-    first_client.async_login = AsyncMock(
-        side_effect=integration_module.InvalidCertificate
-    )
-    first_client.async_get_tls_fingerprint = AsyncMock(return_value="dd" * 32)
-
-    fallback_client = AsyncMock()
-    fallback_client.async_login = AsyncMock(return_value=True)
-
+    mock_client = AsyncMock()
     with (
         patch(
             "custom_components.mhi_nova_link.async_get_clientsession",
             return_value=object(),
         ),
         patch(
-            "custom_components.mhi_nova_link.NovaRcApiClient",
-            side_effect=[first_client, fallback_client],
+            "custom_components.mhi_nova_link.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(mock_client, "dd" * 32),
         ),
         patch(
             "custom_components.mhi_nova_link.coordinator.NovaRcDataUpdateCoordinator.async_config_entry_first_refresh",
@@ -413,25 +396,24 @@ async def test_setup_uses_username_and_password_from_options(
     }
     entry.add_to_hass(hass)
 
+    mock_client = AsyncMock()
     with (
         patch(
             "custom_components.mhi_nova_link.async_get_clientsession",
             return_value=object(),
         ),
-        patch("custom_components.mhi_nova_link.NovaRcApiClient") as client_cls,
+        patch(
+            "custom_components.mhi_nova_link.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(mock_client, None),
+        ) as autopin_mock,
         patch(
             "custom_components.mhi_nova_link.coordinator.NovaRcDataUpdateCoordinator.async_config_entry_first_refresh",
             new_callable=AsyncMock,
         ),
     ):
-        client = client_cls.return_value
-        client.async_login = AsyncMock(return_value=True)
-
         assert await integration_module.async_setup_entry(hass, entry)
-        client.async_login.assert_awaited_once_with(
-            username="new-user",
-            password="new-secret",
-        )
+        assert autopin_mock.call_args.kwargs["username"] == "new-user"
 
 
 async def test_options_flow_accepts_updated_credentials(
@@ -521,12 +503,17 @@ async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
     entry.options = {integration_module.CONF_ANALYTICS_OPT_IN: True}
     entry.add_to_hass(hass)
 
+    mock_client = AsyncMock()
     with (
         patch(
             "custom_components.mhi_nova_link.async_get_clientsession",
             return_value=object(),
         ),
-        patch("custom_components.mhi_nova_link.NovaRcApiClient") as client_cls,
+        patch(
+            "custom_components.mhi_nova_link.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(mock_client, None),
+        ),
         patch(
             "custom_components.mhi_nova_link.coordinator.NovaRcDataUpdateCoordinator.async_config_entry_first_refresh",
             new_callable=AsyncMock,
@@ -537,8 +524,6 @@ async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
             return_value=None,
         ),
     ):
-        client = client_cls.return_value
-        client.async_login = AsyncMock(return_value=True)
 
         assert await integration_module.async_setup_entry(hass, entry)
         assert integration_module.ANALYTICS_ANONYMOUS_ID_KEY in entry.data
