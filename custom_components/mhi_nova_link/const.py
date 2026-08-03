@@ -1,8 +1,10 @@
-"""Define constants used by the NOVA_RC integration."""
+"""Define constants used by the MHI Nova Link integration."""
 
 from typing import Final
 
 DOMAIN: Final = "mhi_nova_link"
+MANUFACTURER: Final = "STULZ GmbH"
+MODEL: Final = "CompTrol 4Web NOVA RC"
 
 # Configuration keys
 CONF_HOST: Final = "host"
@@ -26,10 +28,6 @@ ANALYTICS_PING_URL: Final = f"{_SUPABASE_URL}/rest/v1/install_pings"
 
 # Environment override for the coordinator poll interval
 UPDATE_INTERVAL_ENV_VAR: Final = "NOVA_RC_UPDATE_INTERVAL_SECONDS"
-LEGACY_UPDATE_INTERVAL_ENV_VAR: Final = "MHI_NOVALINK_UPDATE_INTERVAL_SECONDS"
 TIME_SERIES_UPDATE_INTERVAL_ENV_VAR: Final = (
     "NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS"
-)
-LEGACY_TIME_SERIES_UPDATE_INTERVAL_ENV_VAR: Final = (
-    "MHI_NOVALINK_TIME_SERIES_UPDATE_INTERVAL_SECONDS"
 )

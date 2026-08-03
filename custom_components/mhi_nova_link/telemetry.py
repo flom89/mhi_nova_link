@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 
-from aiohttp import ClientError
+from aiohttp import ClientError, ClientTimeout
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -13,6 +13,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import ANALYTICS_PING_URL, ANALYTICS_SUPABASE_KEY
 
 _LOGGER = logging.getLogger(__name__)
+_REQUEST_TIMEOUT = ClientTimeout(total=10)
 
 # Environment variable that disables telemetry at runtime (useful for CI/tests).
 _ENV_DISABLE_VAR = "MHI_NOVALINK_DISABLE_ANALYTICS"
@@ -63,7 +64,7 @@ async def async_send_analytics_ping(hass: HomeAssistant, anonymous_id: str) -> N
             ANALYTICS_PING_URL,
             json=payload,
             headers=headers,
-            timeout=10,
+            timeout=_REQUEST_TIMEOUT,
         ) as resp:
             if 200 <= resp.status < 300:
                 _LOGGER.debug("Telemetry ping sent (status %s)", resp.status)

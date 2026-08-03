@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This document explains how to get s
 
 ### Prerequisites
 
-- Python ≥ 3.13
+- Python ≥ 3.12
 - A working Home Assistant development environment (optional, required for manual testing)
 
 ### Install dependencies
@@ -52,7 +52,8 @@ GitHub Actions runs on every push and pull request:
 - **test** — installs dependencies and runs `pytest`
 - **lint** — runs `ruff check`
 - **type-check** — runs `mypy`
-- **validate** — runs HACS validation and Home Assistant hassfest
+- **validate-hacs** — runs HACS validation
+- **validate (hassfest)** — runs Home Assistant hassfest
 
 All checks must pass before a PR can be merged.
 
@@ -77,6 +78,12 @@ This project follows [Semantic Versioning](https://semver.org/). The version mus
 - `custom_components/mhi_nova_link/manifest.json` (`version` field)
 - `custom_components/mhi_nova_link/pyproject.toml` (`version` field)
 - `CHANGELOG.md` (new section at the top)
+
+For architecture changes, ensure:
+
+- Config entry runtime state is stored in `ConfigEntry.runtime_data`.
+- Diagnostics output redacts sensitive values before export.
+- Any new async code avoids blocking I/O on the event loop.
 
 A GitHub Actions release workflow (`release.yml`) validates this consistency on every tag push.
 

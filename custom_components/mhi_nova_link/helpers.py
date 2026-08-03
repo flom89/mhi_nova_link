@@ -119,21 +119,6 @@ def get_dataset_value(dataset: Mapping[str, Any]) -> Any:
     return data
 
 
-def get_dataset_option_label(dataset: Mapping[str, Any], value: Any) -> str | None:
-    """Return the label for an enumerated dataset value when available."""
-    options = dataset.get("options", {}).get("options", [])
-    if not isinstance(options, list):
-        return None
-
-    for option in options:
-        if isinstance(option, dict) and option.get("value") == value:
-            label = option.get("label")
-            if isinstance(label, str) and label:
-                return label
-
-    return None
-
-
 def dataset_is_on(dataset_id: str, dataset: Mapping[str, Any]) -> bool:
     """Convert a dataset to a boolean suitable for binary sensors."""
     value = get_dataset_value(dataset)

@@ -2,6 +2,36 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.5.0] - 2026-08-03
+
+### Refactoring
+- Migrated runtime state handling to `ConfigEntry.runtime_data`.
+- Centralized gateway device metadata generation for sensor and binary sensor entities.
+- Added explicit config-entry diagnostics support.
+
+### Cleanup
+- Removed unused helper logic (`get_dataset_option_label`).
+- Removed legacy poll-interval environment variable compatibility paths.
+- Removed duplicated gateway device-info dictionary construction.
+
+### Home Assistant compliance
+- Added diagnostics manifest capability and secure diagnostics output with redaction.
+- Added reauthentication flow (`reauth` + `reauth_confirm`) to recover from credential drift.
+- Kept coordinator-based update architecture while improving typed runtime integration access.
+
+### Performance and stability
+- Preserved concurrent coordinator fetch model while reducing setup-state indirection.
+- Continued to avoid telemetry impact on integration startup by keeping failures non-fatal.
+
+### Testing
+- Updated regression tests for runtime-data architecture changes.
+- Added diagnostics test coverage.
+- Updated normalizer tests for removed legacy configuration paths.
+
+### Documentation
+- Rewrote `README.md` with current setup, troubleshooting, diagnostics, and platform details.
+- Refreshed contribution and security documentation for the 2.5.0 release baseline.
+
 ## [1.2.2] - 2026-08-03
 
 ### Maintenance

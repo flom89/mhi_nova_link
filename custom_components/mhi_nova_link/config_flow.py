@@ -39,8 +39,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_SSL_FINGERPRINT, default=""): str,
     }
 )
-
-
 class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for NOVA_RC."""
 
@@ -49,6 +47,7 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialise the config flow."""
         self._pending_entry_data: dict[str, Any] = {}
+        self._reauth_entry: config_entries.ConfigEntry | None = None
 
     @staticmethod
     def async_get_options_flow(
@@ -74,7 +73,7 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not errors:
                 session = async_get_clientsession(self.hass)
                 try:
-                    client, auto_fingerprint = await async_login_with_autopin(
+                    _, auto_fingerprint = await async_login_with_autopin(
                         host=user_input[CONF_HOST],
                         session=session,
                         username=user_input.get(CONF_USERNAME, ""),
@@ -138,6 +137,89 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Optional(CONF_ANALYTICS_OPT_IN, default=False): bool,
                 }
             ),
+        )
+
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> config_entries.ConfigFlowResult:
+        """Handle reauthentication requests."""
+        self._reauth_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Confirm reauthentication with updated credentials."""
+        errors: dict[str, str] = {}
+        if self._reauth_entry is None:
+            return self.async_abort(reason="reauth_unsuccessful")
+
+        default_username = self._reauth_entry.options.get(
+            CONF_USERNAME,
+            self._reauth_entry.data.get(CONF_USERNAME, ""),
+        )
+        default_password = self._reauth_entry.options.get(
+            CONF_PASSWORD,
+            self._reauth_entry.data.get(CONF_PASSWORD, ""),
+        )
+        default_fingerprint = self._reauth_entry.options.get(
+            CONF_SSL_FINGERPRINT,
+            self._reauth_entry.data.get(CONF_SSL_FINGERPRINT, ""),
+        )
+
+        if user_input is not None:
+            try:
+                ssl_fingerprint = normalize_ssl_fingerprint(
+                    user_input.get(CONF_SSL_FINGERPRINT)
+                )
+            except ValueError:
+                errors["base"] = "invalid_ssl_fingerprint_format"
+            else:
+                session = async_get_clientsession(self.hass)
+                reauth_password = user_input.get(CONF_PASSWORD, "")
+                try:
+                    _, auto_fingerprint = await async_login_with_autopin(
+                        host=self._reauth_entry.data[CONF_HOST],
+                        session=session,
+                        username=user_input.get(CONF_USERNAME, ""),
+                        **{CONF_PASSWORD: reauth_password},
+                        ssl_fingerprint=ssl_fingerprint,
+                    )
+                except CannotConnect:
+                    errors["base"] = "cannot_connect"
+                except InvalidAuth:
+                    errors["base"] = "invalid_auth"
+                except InvalidCertificate:
+                    errors["base"] = "invalid_ssl_fingerprint"
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.exception("Unexpected error during reauthentication")
+                    errors["base"] = "unknown"
+                else:
+                    updated_data = dict(self._reauth_entry.data)
+                    updated_data[CONF_USERNAME] = user_input.get(CONF_USERNAME, "")
+                    updated_data[CONF_PASSWORD] = user_input.get(CONF_PASSWORD, "")
+                    if auto_fingerprint:
+                        ssl_fingerprint = auto_fingerprint
+                    if ssl_fingerprint:
+                        updated_data[CONF_SSL_FINGERPRINT] = ssl_fingerprint
+                    else:
+                        updated_data.pop(CONF_SSL_FINGERPRINT, None)
+
+                    self.hass.config_entries.async_update_entry(
+                        self._reauth_entry,
+                        data=updated_data,
+                    )
+                    await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+                    return self.async_abort(reason="reauth_successful")
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_USERNAME, default=default_username): str,
+                    vol.Optional(CONF_PASSWORD, default=default_password): str,
+                    vol.Optional(CONF_SSL_FINGERPRINT, default=default_fingerprint): str,
+                }
+            ),
+            errors=errors,
         )
 
 

@@ -5,6 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
 
@@ -33,11 +34,15 @@ VANE_REVERSE_MAP = {v: k for k, v in VANE_MAP.items()}
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry | NovaRcConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the select entities for each zone."""
-    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator
+    if hasattr(entry, "runtime_data"):
+        coordinator = entry.runtime_data.coordinator
+    else:
+        coordinator = hass.data[entry.domain][entry.entry_id]
 
     entities: list[SelectEntity] = []
     for zone in coordinator.data:
@@ -98,6 +103,10 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
     def current_option(self) -> str | None:
         """Return the current position."""
         raw = self._zone_data.get("louverPosition")
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            return str(raw)
         return LOUVER_MAP.get(raw, raw)
 
     async def async_select_option(self, option: str) -> None:
@@ -158,6 +167,10 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
     def current_option(self) -> str | None:
         """Return the current position."""
         raw = self._zone_data.get("vanePosition")
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            return str(raw)
         return VANE_MAP.get(raw, raw)
 
     async def async_select_option(self, option: str) -> None:

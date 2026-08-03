@@ -10,23 +10,28 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfElectricCurrent, UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity
+from .entity import NovaRcZoneEntity, build_gateway_device_info
 from .helpers import get_dataset_value, get_zone_time_series_datasets
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry | NovaRcConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the meaningful sensors from the coordinator data."""
-    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator
+    if hasattr(entry, "runtime_data"):
+        coordinator = entry.runtime_data.coordinator
+    else:
+        coordinator = hass.data[entry.domain][entry.entry_id]
 
     entities: list[SensorEntity] = []
     entities.append(NovaRcGatewaySoftwareVersionSensor(coordinator))
@@ -112,16 +117,14 @@ class NovaRcGatewaySoftwareVersionSensor(
         self._attr_unique_id = f"{coordinator.api.host}_gateway_software_version"
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway info device."""
-        return {
-            "identifiers": {
-                (DOMAIN, f"{self.coordinator.config_entry.entry_id}_gateway_info")
-            },
-            "name": "Gateway",
-            "manufacturer": "STULZ GmbH",
-            "model": "CompTrol 4Web NOVA RC",
-        }
+        entry_id = self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
+        return build_gateway_device_info(
+            entry_id,
+            identifier_suffix="gateway_info",
+            name="Gateway",
+        )
 
     @property
     def native_value(self) -> str | None:

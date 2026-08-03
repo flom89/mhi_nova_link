@@ -19,6 +19,7 @@ from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
 
@@ -71,11 +72,15 @@ SWING_MODE_REVERSE_MAP = {v: k for k, v in SWING_MODE_MAP.items()}
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry | NovaRcConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the climate entities from the coordinator data."""
-    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator
+    if hasattr(entry, "runtime_data"):
+        coordinator = entry.runtime_data.coordinator
+    else:
+        coordinator = hass.data[entry.domain][entry.entry_id]
 
     entities = [
         NovaRcZoneClimate(coordinator, zone["zoneId"]) for zone in coordinator.data
@@ -155,6 +160,8 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
             return HVACMode.OFF
 
         raw_mode = data.get("operationMode")
+        if not isinstance(raw_mode, str):
+            return HVACMode.AUTO
         return HVAC_MODE_MAP.get(raw_mode, HVACMode.AUTO)
 
     @property
@@ -180,6 +187,8 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
     def fan_mode(self) -> str | None:
         """Return the current fan mode."""
         raw_fan = self._zone_data.get("fanSpeed")
+        if not isinstance(raw_fan, str):
+            return FAN_AUTO
         return FAN_MODE_MAP.get(raw_fan, FAN_AUTO)
 
     @property
@@ -204,6 +213,10 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         raw_vane = self._zone_data.get("vanePosition") or self._zone_data.get(
             "louverPosition"
         )
+        if raw_vane is None:
+            return None
+        if not isinstance(raw_vane, str):
+            return str(raw_vane)
         return SWING_MODE_MAP.get(raw_vane, raw_vane)
 
     @property

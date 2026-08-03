@@ -5,6 +5,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import pytest
+from homeassistant.components.climate import HVACMode
+from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
+
 import custom_components.mhi_nova_link.api as api_module
 import custom_components.mhi_nova_link.binary_sensor as binary_sensor_module
 import custom_components.mhi_nova_link.climate as climate_module
@@ -15,9 +19,6 @@ import custom_components.mhi_nova_link.helpers as helpers_module
 import custom_components.mhi_nova_link.select as select_module
 import custom_components.mhi_nova_link.sensor as sensor_module
 import custom_components.mhi_nova_link.switch as switch_module
-import pytest
-from homeassistant.components.climate import HVACMode
-from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
 
 
 @pytest.fixture(name="integration_module")

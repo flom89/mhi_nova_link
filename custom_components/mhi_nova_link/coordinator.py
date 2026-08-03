@@ -16,7 +16,6 @@ from .const import (
     CONF_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
     DOMAIN,
-    LEGACY_UPDATE_INTERVAL_ENV_VAR,
     UPDATE_INTERVAL_ENV_VAR,
 )
 
@@ -86,8 +85,6 @@ def _get_update_interval(entry: Any | None) -> timedelta:
 
     if raw_value is None:
         raw_value = os.getenv(UPDATE_INTERVAL_ENV_VAR)
-    if raw_value is None:
-        raw_value = os.getenv(LEGACY_UPDATE_INTERVAL_ENV_VAR)
 
     if raw_value is None:
         return timedelta(seconds=DEFAULT_POLL_INTERVAL)

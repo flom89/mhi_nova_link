@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+
 from custom_components.mhi_nova_link.api import (
     InvalidAuth,
     _get_time_series_update_interval,
@@ -115,11 +116,6 @@ class TestGetTimeSeriesUpdateInterval:
     def test_env_var_is_read_when_none_provided(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "45")
         assert _get_time_series_update_interval(None) == 45
-
-    def test_legacy_env_var_is_read_as_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", raising=False)
-        monkeypatch.setenv("MHI_NOVALINK_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "30")
-        assert _get_time_series_update_interval(None) == 30
 
     def test_configured_value_takes_precedence_over_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "999")
@@ -563,6 +559,6 @@ class TestNormalizeGatewayUpdatePayload:
         assert result["available_version"] is None
 
     def test_non_dict_system_is_handled_gracefully(self) -> None:
-        payload = {"data": {"system": None, "update": {}}}
+        payload: dict[str, object] = {"data": {"system": None, "update": {}}}
         result = normalize_gateway_update_payload(payload)
         assert result["installed_version"] is None

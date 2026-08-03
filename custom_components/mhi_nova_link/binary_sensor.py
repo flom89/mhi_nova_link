@@ -9,22 +9,27 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity
+from .entity import NovaRcZoneEntity, build_gateway_device_info
 from .helpers import dataset_is_on, get_dataset_value, get_zone_time_series_datasets
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry | NovaRcConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the binary sensors."""
-    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator
+    if hasattr(entry, "runtime_data"):
+        coordinator = entry.runtime_data.coordinator
+    else:
+        coordinator = hass.data[entry.domain][entry.entry_id]
 
     entities: list[BinarySensorEntity] = [
         NovaRcFreeCoolingBinarySensor(coordinator),
@@ -90,16 +95,18 @@ class NovaRcGatewayBinarySensor(
         )
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway."""
-        return {
-            "identifiers": {
-                (DOMAIN, f"{self.coordinator.config_entry.entry_id}_gateway")
-            },
-            "name": "Digital IOs",
-            "manufacturer": "STULZ GmbH",
-            "model": "CompTrol 4Web NOVA RC",
-        }
+        entry_id = (
+            self.coordinator.config_entry.entry_id
+            if self.coordinator.config_entry
+            else "unknown"
+        )
+        return build_gateway_device_info(
+            entry_id,
+            identifier_suffix="gateway",
+            name="Digital IOs",
+        )
 
     @property
     def is_on(self) -> bool:
@@ -122,16 +129,18 @@ class NovaRcGatewayUpdateAvailableBinarySensor(
         self._attr_unique_id = f"{coordinator.api.host}_gateway_update_available"
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway info device."""
-        return {
-            "identifiers": {
-                (DOMAIN, f"{self.coordinator.config_entry.entry_id}_gateway_info")
-            },
-            "name": "Gateway",
-            "manufacturer": "STULZ GmbH",
-            "model": "CompTrol 4Web NOVA RC",
-        }
+        entry_id = (
+            self.coordinator.config_entry.entry_id
+            if self.coordinator.config_entry
+            else "unknown"
+        )
+        return build_gateway_device_info(
+            entry_id,
+            identifier_suffix="gateway_info",
+            name="Gateway",
+        )
 
     @property
     def is_on(self) -> bool:
