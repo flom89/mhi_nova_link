@@ -24,6 +24,15 @@
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval"
         }
+      },
+      "reauth_confirm": {
+        "title": "Gateway-Konto erneut authentifizieren",
+        "description": "Aktualisiere die Zugangsdaten des Gateways, die von dieser Integration verwendet werden.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort",
+          "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)"
+        }
       }
     },
     "error": {
@@ -34,7 +43,9 @@
       "unknown": "Ein unerwarteter Fehler ist aufgetreten."
     },
     "abort": {
-      "already_configured": "Dieses Gateway ist bereits in Home Assistant konfiguriert."
+      "already_configured": "Dieses Gateway ist bereits in Home Assistant konfiguriert.",
+      "reauth_successful": "Erneute Authentifizierung war erfolgreich.",
+      "reauth_unsuccessful": "Erneute Authentifizierung ist fehlgeschlagen."
     }
   },
   "entity": {

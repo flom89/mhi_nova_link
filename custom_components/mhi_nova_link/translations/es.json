@@ -24,6 +24,15 @@
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval"
         }
+      },
+      "reauth_confirm": {
+        "title": "Volver a autenticar la cuenta del gateway",
+        "description": "Actualiza las credenciales del gateway utilizadas por esta integración.",
+        "data": {
+          "username": "Nombre de usuario",
+          "password": "Contraseña",
+          "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)"
+        }
       }
     },
     "error": {
@@ -34,7 +43,9 @@
       "unknown": "Se ha producido un error inesperado."
     },
     "abort": {
-      "already_configured": "Esta puerta de enlace ya está configurada en Home Assistant."
+      "already_configured": "Esta puerta de enlace ya está configurada en Home Assistant.",
+      "reauth_successful": "La reautenticación se completó correctamente.",
+      "reauth_unsuccessful": "La reautenticación ha fallado."
     }
   },
   "entity": {
