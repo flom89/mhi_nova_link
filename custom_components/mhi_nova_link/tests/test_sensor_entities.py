@@ -73,6 +73,18 @@ def _load_entity_module() -> object:
     return entity_module
 
 
+def _load_coordinator_module() -> object:
+    """Import the coordinator module after the custom-components path is configured."""
+    integration_dir = Path(__file__).resolve().parents[1]
+    config_dir = integration_dir.parent.parent
+    if str(config_dir) not in sys.path:
+        sys.path.insert(0, str(config_dir))
+
+    import custom_components.mhi_nova_link.coordinator as coordinator_module  # noqa: PLC0415
+
+    return coordinator_module
+
+
 def _load_select_module() -> object:
     """Import the select module after the custom-components path is configured."""
     integration_dir = Path(__file__).resolve().parents[1]
@@ -157,6 +169,34 @@ def test_zone_entity_uses_zone_name_for_device_info() -> None:
     entity = DummyZoneEntity(coordinator, 3)
 
     assert entity.device_info["name"] == "Living room"
+    assert "sw_version" not in entity.device_info
+
+
+@pytest.mark.asyncio
+async def test_coordinator_keeps_last_installed_version_until_new_one_arrives() -> None:
+    """Coordinator should retain the previous installed version when payload omits it."""
+    coordinator_module = _load_coordinator_module()
+    api = SimpleNamespace(
+        async_get_zones=AsyncMock(return_value=[]),
+        async_get_notifications=AsyncMock(return_value=[]),
+        async_get_gpios=AsyncMock(return_value={}),
+        async_get_gateway_update_information=AsyncMock(
+            return_value={"installed_version": None, "update_available": True}
+        ),
+    )
+    coordinator = coordinator_module.NovaRcDataUpdateCoordinator(
+        SimpleNamespace(),
+        api,
+    )
+    coordinator.gateway_update = {
+        "installed_version": "3.2.5",
+        "update_available": False,
+    }
+
+    await coordinator._async_update_data()
+
+    assert coordinator.gateway_update["installed_version"] == "3.2.5"
+    assert coordinator.gateway_update["update_available"] is True
 
 
 def test_setpoint_sensor_reads_zone_value(integration_module: object) -> None:
