@@ -66,7 +66,13 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 zone["notifications"] = notifications
 
         self.gpios = gpios
+        previous_installed_version = self.gateway_update.get("installed_version")
         self.gateway_update = gateway_update
+        if (
+            self.gateway_update.get("installed_version") is None
+            and previous_installed_version is not None
+        ):
+            self.gateway_update["installed_version"] = previous_installed_version
         return data
 
 
