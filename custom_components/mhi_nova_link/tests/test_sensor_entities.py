@@ -1,13 +1,12 @@
 """Run regression tests for NOVA_RC sensor entities."""
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-
 from homeassistant.components.climate import HVACMode
 from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
 

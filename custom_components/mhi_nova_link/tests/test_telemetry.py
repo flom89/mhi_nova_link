@@ -1,13 +1,13 @@
 """Telemetry tests for the MHI Nova Link integration."""
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from types import TracebackType
 from typing import Any
 from unittest.mock import patch
 
-from aiohttp import ClientError
 import pytest
+from aiohttp import ClientError
 
 from mhi_nova_link import telemetry
 

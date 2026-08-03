@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 
 from aiohttp import ClientError
-
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession

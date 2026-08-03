@@ -1,7 +1,7 @@
 """Run smoke tests for the NOVA_RC custom integration."""
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def test_manifest_exists() -> None:
