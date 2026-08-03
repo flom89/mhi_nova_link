@@ -402,7 +402,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
 
     added_entities: list[object] = []
 
-    async def add_entities(entities: list[object]) -> None:
+    def add_entities(entities: list[object]) -> None:
         added_entities.extend(entities)
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
@@ -473,7 +473,7 @@ async def test_setup_entry_creates_indoor_unit_sensors_for_multi_indoor_zone(
 
     added_entities: list[object] = []
 
-    async def add_entities(entities: list[object]) -> None:
+    def add_entities(entities: list[object]) -> None:
         added_entities.extend(entities)
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
@@ -526,7 +526,7 @@ async def test_setup_entry_creates_time_series_sensors(
 
     added_entities: list[object] = []
 
-    async def add_entities(entities: list[object]) -> None:
+    def add_entities(entities: list[object]) -> None:
         added_entities.extend(entities)
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
@@ -592,7 +592,7 @@ async def test_select_setup_entry_creates_zone_select_entities() -> None:
 
     added_entities: list[object] = []
 
-    async def add_entities(entities: list[object]) -> None:
+    def add_entities(entities: list[object]) -> None:
         added_entities.extend(entities)
 
     await select_module.async_setup_entry(hass, entry, add_entities)
@@ -630,7 +630,7 @@ async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
 
     added_entities: list[object] = []
 
-    async def add_entities(entities: list[object]) -> None:
+    def add_entities(entities: list[object]) -> None:
         added_entities.extend(entities)
 
     await switch_module.async_setup_entry(hass, entry, add_entities)
@@ -674,7 +674,7 @@ async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> Non
 
     added_entities: list[object] = []
 
-    async def add_entities(entities: list[object]) -> None:
+    def add_entities(entities: list[object]) -> None:
         added_entities.extend(entities)
 
     await binary_sensor_module.async_setup_entry(hass, entry, add_entities)

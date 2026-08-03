@@ -1,6 +1,5 @@
 """Implement switch entities for NOVA_RC controls."""
 
-import inspect
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
@@ -27,9 +26,7 @@ async def async_setup_entry(
             continue
         entities.append(NovaRc3DAutoSwitch(coordinator, zone_id))
 
-    result = async_add_entities(entities)
-    if inspect.isawaitable(result):
-        await result
+    async_add_entities(entities)
 
 
 class NovaRc3DAutoSwitch(NovaRcZoneEntity, SwitchEntity):

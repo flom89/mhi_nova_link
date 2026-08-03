@@ -48,7 +48,9 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             "name": f"{zone_name}",
             "manufacturer": "STULZ GmbH",
             "model": "CompTrol 4Web NOVA RC",
-            "sw_version": "NOVA RC Software 3.2.5",
+            "sw_version": getattr(self.coordinator, "gateway_update", {}).get(
+                "installed_version"
+            ),
         }
 
     def get_indoor_unit_data(self, indoor_unit_id: int) -> dict[str, Any]:

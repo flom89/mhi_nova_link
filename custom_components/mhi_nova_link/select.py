@@ -1,7 +1,5 @@
 """Implement select entities for NOVA_RC airflow controls."""
 
-import inspect
-
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -49,9 +47,7 @@ async def async_setup_entry(
         entities.append(NovaRcLouverSelect(coordinator, zone_id))
         entities.append(NovaRcVaneSelect(coordinator, zone_id))
 
-    result = async_add_entities(entities)
-    if inspect.isawaitable(result):
-        await result
+    async_add_entities(entities)
 
 
 class NovaRcBaseSelect(NovaRcZoneEntity, SelectEntity):
@@ -87,7 +83,7 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
 
     @property
     def options(self) -> list[str]:
-        """Verfügbare Optionen aus den PatchOptions des Gateways."""
+        """Return the available louver position options from the gateway patch options."""
         patch_opts = self._zone_data.get("patchOptions") or {}
         raw_opts = patch_opts.get("louverPosition") or [
             "POSITION_1",
@@ -144,7 +140,7 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
 
     @property
     def options(self) -> list[str]:
-        """Verfügbare Optionen aus den PatchOptions des Gateways."""
+        """Return the available vane position options from the gateway patch options."""
         patch_opts = self._zone_data.get("patchOptions") or {}
         raw_opts = patch_opts.get("vanePosition") or [
             "POSITION_1",

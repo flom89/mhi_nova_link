@@ -1,5 +1,7 @@
 """Define the config and options flow for NOVA_RC."""
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 import uuid

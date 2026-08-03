@@ -1,5 +1,6 @@
 """Coordinate periodic data updates for NOVA_RC."""
 
+import asyncio
 from datetime import timedelta
 import logging
 import os
@@ -44,16 +45,18 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
     async def _async_update_data(self) -> list[dict[str, Any]]:
         """Fetch the latest zone data from the GraphQL gateway."""
         try:
-            data = await self.api.async_get_zones()
-            notifications = await self.api.async_get_notifications()
-            gpios = await self.api.async_get_gpios()
-            gateway_update = await self.api.async_get_gateway_update_information()
+            data, notifications, gpios, gateway_update = await asyncio.gather(
+                self.api.async_get_zones(),
+                self.api.async_get_notifications(),
+                self.api.async_get_gpios(),
+                self.api.async_get_gateway_update_information(),
+            )
         except InvalidAuth as err:
             raise ConfigEntryAuthFailed from err
         except InvalidCertificate as err:
             raise UpdateFailed(f"TLS certificate validation failed: {err}") from err
         except CannotConnect as err:
-            raise UpdateFailed(f"Fehler beim Laden der NOVA_RC Daten: {err}") from err
+            raise UpdateFailed(f"Error loading NOVA_RC data: {err}") from err
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected error while fetching NOVA_RC data")
             raise UpdateFailed(f"Unexpected error: {err}") from err
