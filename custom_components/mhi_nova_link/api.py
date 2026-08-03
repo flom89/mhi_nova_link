@@ -15,7 +15,6 @@ from aiohttp import client_exceptions as aiohttp_exceptions
 
 from .const import (
     DEFAULT_TIME_SERIES_POLL_INTERVAL,
-    LEGACY_TIME_SERIES_UPDATE_INTERVAL_ENV_VAR,
     TIME_SERIES_UPDATE_INTERVAL_ENV_VAR,
 )
 from .graphql import (
@@ -122,8 +121,6 @@ def _get_time_series_update_interval(configured_interval: Any) -> int:
 
     if raw_value is None:
         raw_value = os.getenv(TIME_SERIES_UPDATE_INTERVAL_ENV_VAR)
-    if raw_value is None:
-        raw_value = os.getenv(LEGACY_TIME_SERIES_UPDATE_INTERVAL_ENV_VAR)
 
     if raw_value is None:
         return DEFAULT_TIME_SERIES_POLL_INTERVAL

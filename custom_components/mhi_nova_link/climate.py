@@ -19,6 +19,7 @@ from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
 from .entity import NovaRcZoneEntity
 
@@ -71,11 +72,15 @@ SWING_MODE_REVERSE_MAP = {v: k for k, v in SWING_MODE_MAP.items()}
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry | NovaRcConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the climate entities from the coordinator data."""
-    coordinator: NovaRcDataUpdateCoordinator = hass.data[entry.domain][entry.entry_id]
+    coordinator: NovaRcDataUpdateCoordinator
+    if hasattr(entry, "runtime_data"):
+        coordinator = entry.runtime_data.coordinator
+    else:
+        coordinator = hass.data[entry.domain][entry.entry_id]
 
     entities = [
         NovaRcZoneClimate(coordinator, zone["zoneId"]) for zone in coordinator.data

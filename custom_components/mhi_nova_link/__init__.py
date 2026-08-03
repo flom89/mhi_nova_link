@@ -1,5 +1,6 @@
 """Set up the NOVA_RC integration."""
 
+from dataclasses import dataclass
 import logging
 import uuid
 
@@ -24,6 +25,16 @@ from .telemetry import async_send_analytics_ping
 
 _LOGGER = logging.getLogger(__name__)
 
+type NovaRcConfigEntry = ConfigEntry["NovaRcRuntimeData"]
+
+
+@dataclass(slots=True)
+class NovaRcRuntimeData:
+    """Runtime data stored on each config entry."""
+
+    coordinator: NovaRcDataUpdateCoordinator
+
+
 PLATFORMS: tuple[Platform, ...] = (
     Platform.BINARY_SENSOR,
     Platform.CLIMATE,
@@ -33,7 +44,7 @@ PLATFORMS: tuple[Platform, ...] = (
 )
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: NovaRcConfigEntry) -> bool:
     """Set up a config entry."""
     expected_title = f"CompTrol 4Web NOVA RC ({entry.data[CONF_HOST]})"
     if entry.title != expected_title:
@@ -83,7 +94,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except UpdateFailed as err:
         raise ConfigEntryNotReady("Unable to initialize coordinator") from err
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    entry.runtime_data = NovaRcRuntimeData(coordinator=coordinator)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -105,14 +116,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: NovaRcConfigEntry) -> bool:
     """Remove a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok:
-        domain_data = hass.data.get(DOMAIN)
-        if domain_data is not None:
-            domain_data.pop(entry.entry_id, None)
-            if not domain_data:
-                hass.data.pop(DOMAIN, None)
-
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

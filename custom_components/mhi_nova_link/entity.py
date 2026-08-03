@@ -4,7 +4,7 @@ from typing import Any
 
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, MANUFACTURER, MODEL
 from .coordinator import NovaRcDataUpdateCoordinator
 
 
@@ -50,8 +50,8 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
                 )
             },
             "name": f"{zone_name}",
-            "manufacturer": "STULZ GmbH",
-            "model": "CompTrol 4Web NOVA RC",
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
         }
         if sw_version is not None:
             device_info["sw_version"] = sw_version
@@ -63,3 +63,13 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             if indoor_unit.get("indoorUnitId") == indoor_unit_id:
                 return indoor_unit
         return {}
+
+
+def build_gateway_device_info(entry_id: str, *, identifier_suffix: str, name: str) -> dict[str, Any]:
+    """Build consistent gateway device info metadata."""
+    return {
+        "identifiers": {(DOMAIN, f"{entry_id}_{identifier_suffix}")},
+        "name": name,
+        "manufacturer": MANUFACTURER,
+        "model": MODEL,
+    }

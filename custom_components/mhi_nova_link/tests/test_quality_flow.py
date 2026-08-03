@@ -327,14 +327,10 @@ async def test_setup_and_unload_entry(
         autopin_mock.assert_awaited_once()
         assert autopin_mock.call_args.kwargs["ssl_fingerprint"] == "bb" * 32
         assert entry.title == "CompTrol 4Web NOVA RC (gateway.local)"
-        assert entry.entry_id in hass.data[integration_module.DOMAIN]
+        assert entry.runtime_data.coordinator.api is mock_client
         assert refresh_mock.await_count == 1
 
         assert await integration_module.async_unload_entry(hass, entry)
-        assert (
-            integration_module.DOMAIN not in hass.data
-            or entry.entry_id not in hass.data[integration_module.DOMAIN]
-        )
 
 
 async def test_setup_auto_pins_fingerprint_when_missing(
@@ -371,7 +367,7 @@ async def test_setup_auto_pins_fingerprint_when_missing(
     ):
         assert await integration_module.async_setup_entry(hass, entry)
         assert entry.data[CONF_SSL_FINGERPRINT] == "dd" * 32
-        assert entry.entry_id in hass.data[integration_module.DOMAIN]
+        assert entry.runtime_data.coordinator.api is mock_client
         assert refresh_mock.await_count == 1
 
 
@@ -529,3 +525,54 @@ async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
         assert integration_module.ANALYTICS_ANONYMOUS_ID_KEY in entry.data
         assert entry.data[integration_module.ANALYTICS_ANONYMOUS_ID_KEY]
         assert hass.created_tasks
+
+
+async def test_reauth_confirm_updates_credentials_and_reloads_entry(
+    config_flow_module: object,
+    hass: DummyHass,
+) -> None:
+    """Reauth confirmation should validate credentials, update data, and reload."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_HOST: "gateway.local",
+            CONF_USERNAME: "old-user",
+            CONF_PASSWORD: "old-secret",
+            CONF_SSL_FINGERPRINT: "aa" * 32,
+        },
+        options={},
+    )
+    hass.config_entries._entries[entry.entry_id] = entry  # noqa: SLF001
+    hass.config_entries.async_get_entry = lambda entry_id: hass.config_entries._entries.get(  # noqa: SLF001
+        entry_id
+    )
+    hass.config_entries.async_reload = AsyncMock(return_value=True)
+
+    with (
+        patch(
+            "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch(
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(AsyncMock(), "bb" * 32),
+        ),
+    ):
+        flow = config_flow_module.NovaRcConfigFlow()
+        flow.hass = hass
+        flow.context = {"entry_id": "entry-id"}
+        await flow.async_step_reauth({})
+        result = await flow.async_step_reauth_confirm(
+            {
+                CONF_USERNAME: "new-user",
+                CONF_PASSWORD: "new-secret",
+                CONF_SSL_FINGERPRINT: "",
+            }
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_USERNAME] == "new-user"
+    assert entry.data[CONF_PASSWORD] == "new-secret"
+    assert entry.data[CONF_SSL_FINGERPRINT] == "bb" * 32

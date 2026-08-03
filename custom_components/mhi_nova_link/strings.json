@@ -18,6 +18,15 @@
           "analytics_opt_in": "Share anonymous usage statistics"
         }
       },
+      "reauth_confirm": {
+        "title": "Reauthenticate gateway account",
+        "description": "Update the gateway credentials used by this integration.",
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "ssl_fingerprint": "SSL fingerprint (SHA256, optional)"
+        }
+      },
       "init": {
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
@@ -34,7 +43,9 @@
       "unknown": "An unexpected error occurred."
     },
     "abort": {
-      "already_configured": "This gateway is already configured in Home Assistant."
+      "already_configured": "This gateway is already configured in Home Assistant.",
+      "reauth_successful": "Reauthentication was successful.",
+      "reauth_unsuccessful": "Reauthentication failed."
     }
   },
   "options": {

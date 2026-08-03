@@ -116,11 +116,6 @@ class TestGetTimeSeriesUpdateInterval:
         monkeypatch.setenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "45")
         assert _get_time_series_update_interval(None) == 45
 
-    def test_legacy_env_var_is_read_as_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", raising=False)
-        monkeypatch.setenv("MHI_NOVALINK_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "30")
-        assert _get_time_series_update_interval(None) == 30
-
     def test_configured_value_takes_precedence_over_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "999")
         assert _get_time_series_update_interval(60) == 60
