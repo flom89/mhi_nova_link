@@ -2,10 +2,12 @@
 
 <img src="custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
 
-![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/flom89/mhi_nova_link?label=Release)](https://github.com/flom89/mhi_nova_link/releases)
 [![Validate](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml)
 [![Hassfest](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml)
+[![Documentation](https://img.shields.io/badge/docs-wiki-0A66C2)](https://github.com/flom89/mhi_nova_link/wiki)
+[![Open Issues](https://img.shields.io/github/issues/flom89/mhi_nova_link?label=issues)](https://github.com/flom89/mhi_nova_link/issues)
 
 MHI Nova Link lets you control your Mitsubishi Heavy Industries system in Home Assistant when your setup uses a **CompTrol 4Web NOVA RC** gateway.
 
