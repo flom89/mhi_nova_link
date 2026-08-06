@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.1.0] - 2026-08-06
+
+### Added
+- Gateway GPIO control switches for **Betriebssperre** (operational lock) and **Externe Kühlung** (external cooling) to support EnWG §14a compliance via Home Assistant / EVCC.
+- `activeHigh` API support for configurable GPIO output polarity.
+- Expanded switch platform with gateway-level GPIO on/off entities.
+
+### Changed
+- `graphql.py` extended with `set_gpio_active_high` mutation.
+- `coordinator.py` updated to include GPIO state refresh in polling cycle.
+- Translations updated (EN / DE / IT / ES / FR) for new GPIO switch entities.
+
+### Fixed
+- Resolved import ordering lint error in `tests/test_api_normalizers.py` (ruff I001).
+
 ## [2.0.0] - 2026-08-03
 
 ### Refactoring
