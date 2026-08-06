@@ -248,6 +248,20 @@
           "on": "On",
           "off": "Off"
         }
+      },
+      "betriebssperre": {
+        "name": "Operation lock",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
+      },
+      "externe_kuehlung": {
+        "name": "External cooling",
+        "state": {
+          "on": "Active",
+          "off": "Inactive"
+        }
       }
     }
   }

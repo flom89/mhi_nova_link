@@ -131,8 +131,25 @@ query GetGpios {
 fragment GpioSimple on Gpio {
   id
   function
+  activeHigh
   value
   __typename
+}
+"""
+
+SET_GPIO_ACTIVE_HIGH_MUTATION = """
+mutation SetActiveHigh($id: ID!, $activeHigh: Boolean!) {
+  gpio {
+    setActiveHigh(id: $id, activeHigh: $activeHigh) {
+      id
+      function
+      activeHigh
+      value
+      direction
+      __typename
+    }
+    __typename
+  }
 }
 """
 
