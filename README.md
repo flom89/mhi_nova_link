@@ -66,7 +66,7 @@ If no fingerprint is provided and the gateway uses a self-signed certificate, th
 - **Sensors**: zone temperatures, setpoints, mode/fan states, time-series diagnostics, gateway software version
 - **Binary sensors**: running, availability, compressor/defrost activity, notifications, gateway GPIO states, update availability
 - **Selects**: louver and vane positions
-- **Switches**: 3D auto mode, gateway GPIO outputs (Betriebssperre, Externe Kühlung)
+- **Switches**: 3D auto mode, gateway GPIO outputs (Betriebssperre / operational lock, Externe Kühlung / external cooling)
 
 ## Diagnostics
 
