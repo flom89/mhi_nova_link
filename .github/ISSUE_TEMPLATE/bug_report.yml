@@ -1,0 +1,113 @@
+name: Bug report
+description: Report a reproducible problem with the MHI Nova Link integration.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        Before submitting, please check the wiki for known issues and troubleshooting steps:
+        https://github.com/flom89/mhi_nova_link/wiki
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I read the troubleshooting section in the wiki.
+          required: true
+        - label: I can reproduce this issue on the latest integration release.
+          required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Installation method
+      options:
+        - HACS (default store)
+        - HACS (custom repository)
+        - Manual
+    validations:
+      required: true
+
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      description: Example: 2.1.0
+      placeholder: 2.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.8.0
+    validations:
+      required: true
+
+  - type: input
+    id: gateway_model
+    attributes:
+      label: Gateway model
+      description: Example: CompTrol 4Web NOVA RC / 4WebNRC
+      placeholder: CompTrol 4Web NOVA RC
+    validations:
+      required: true
+
+  - type: input
+    id: gateway_firmware
+    attributes:
+      label: Gateway firmware version
+      placeholder: 3.2.5
+    validations:
+      required: false
+
+  - type: textarea
+    id: bug_description
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior and when it occurs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Change ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Paste relevant log output. Remove secrets before submitting.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add anything else that may help diagnose this issue.
+    validations:
+      required: false
