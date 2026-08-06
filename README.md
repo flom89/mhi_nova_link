@@ -1,29 +1,42 @@
 # MHI Nova Link for Home Assistant
 
-![MHI Nova logo](custom_components/mhi_nova_link/brand/logo.png)
+<img src="custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
 
-![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/flom89/mhi_nova_link?label=Release)](https://github.com/flom89/mhi_nova_link/releases)
+[![Validate](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml)
+[![Hassfest](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml)
+[![Documentation](https://img.shields.io/badge/docs-wiki-0A66C2)](https://github.com/flom89/mhi_nova_link/wiki)
+[![Open Issues](https://img.shields.io/github/issues/flom89/mhi_nova_link?label=issues)](https://github.com/flom89/mhi_nova_link/issues)
 
-MHI Nova Link is a custom Home Assistant integration for Mitsubishi Heavy Industries systems connected through a **CompTrol 4Web NOVA RC** gateway.
+MHI Nova Link lets you control your Mitsubishi Heavy Industries system in Home Assistant when your setup uses a **CompTrol 4Web NOVA RC** gateway.
 
-## Features
+Current integration version: **2.1.0**
 
-- Local HTTPS communication with NOVA RC gateways.
-- Config flow, options flow, and reauthentication support.
-- Automatic TLS fingerprint pinning (TOFU) for self-signed certificates.
-- Zone climate control entities (mode, fan, swing, setpoint, on/off).
-- Zone and gateway sensors, binary sensors, switches, and selects.
-- Safe diagnostics export with sensitive fields redacted.
-- Optional anonymous telemetry (strictly opt-in).
-- Translations: English, German, Italian, Spanish, French.
+## Hardware Reference
+
+The integration is designed for installations using the CompTrol 4Web / 4WebNRC hardware family.
+
+- Official product page: https://www.s-klima.de/shop/comptrol/comptrol-erweiterungsmodule/comptrol-4web-4webnrc.html
+
+## What You Can Do
+
+- Control temperature, mode, fan, swing, and power for your zones.
+- See important status values from your zones and gateway.
+- Use Home Assistant automations with climate, sensor, binary sensor, switch, and select entities.
+- Complete setup directly in the Home Assistant UI.
+- Reauthenticate easily if credentials change.
+- Use with self-signed gateway certificates (automatic fingerprint handling is supported).
+- Keep diagnostics safer with sensitive values redacted.
+- Use the integration in English, German, Italian, Spanish, or French.
 
 ## Supported Platforms
 
-- `climate`
-- `sensor`
-- `binary_sensor`
-- `switch`
-- `select`
+- Climate
+- Sensor
+- Binary sensor
+- Switch
+- Select
 
 ## Requirements
 
@@ -35,6 +48,8 @@ MHI Nova Link is a custom Home Assistant integration for Mitsubishi Heavy Indust
 
 ### HACS
 
+If this integration is not yet in the default HACS store for your installation, add it as a custom repository first:
+
 1. Open HACS.
 2. Add this repository as a custom repository:
    - URL: `https://github.com/flom89/mhi_nova_link`
@@ -42,23 +57,23 @@ MHI Nova Link is a custom Home Assistant integration for Mitsubishi Heavy Indust
 3. Search for **MHI Nova Link** and install.
 4. Restart Home Assistant.
 
-### Manual
+Once available in the default HACS store, steps 2 (custom repository) can be skipped.
 
-1. Copy `/custom_components/mhi_nova_link` into your Home Assistant `custom_components` directory.
-2. Restart Home Assistant.
-3. Go to **Settings → Devices & Services → Add Integration**.
-4. Search for **MHI Nova Link**.
+## First-Time Setup (In Home Assistant)
 
-## Configuration
+After installation:
 
-During setup:
+1. Go to **Settings -> Devices & Services**.
+2. Select **Add Integration**.
+3. Search for **MHI Nova Link**.
+4. Enter:
+   - Hostname or IP address of your gateway
+   - Username
+   - Password
+   - Optional SSL SHA256 fingerprint
 
-- Hostname or IP address
-- Username
-- Password
-- Optional SSL SHA256 fingerprint
-
-If no fingerprint is provided and the gateway uses a self-signed certificate, the integration can auto-discover and pin the certificate fingerprint on first connection.
+Tip:
+If you leave fingerprint empty and your gateway uses a self-signed certificate, the integration can detect and save the fingerprint automatically.
 
 ## Entity Overview
 
@@ -79,25 +94,29 @@ The integration provides diagnostics export in Home Assistant. Sensitive values 
 - **Missing/partial entities**: verify gateway permissions and reload the integration.
 - **Reauthentication requested**: complete the reauth flow from the integration card.
 
-Enable debug logging:
+## Important Note for Operation Lock / External Cooling
 
-```yaml
-logger:
-  default: warning
-  logs:
-    custom_components.mhi_nova_link: debug
-```
+Depending on your installation and wiring, certain gateway control switches can affect whether cooling/heating operation is allowed.
 
-## Development
+If you use operation lock behavior (for example utility-control setups), review the detailed guidance in the wiki before creating automations.
 
-From repository root:
+## Documentation
 
-```bash
-pip install homeassistant pytest pytest-asyncio ruff mypy
-ruff check custom_components/mhi_nova_link
-mypy custom_components/mhi_nova_link
-pytest -q custom_components/mhi_nova_link/tests
-```
+For complete user guides, setup walkthroughs, troubleshooting, and updates, see the wiki:
+
+https://github.com/flom89/mhi_nova_link/wiki
+
+## Quality and Testing
+
+Quality information below reflects the current repository state and links to live results.
+
+- Validate workflow: https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml
+- Hassfest workflow: https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml
+- Latest successful Validate run: https://github.com/flom89/mhi_nova_link/actions/runs/31066035369
+- Latest successful Hassfest run: https://github.com/flom89/mhi_nova_link/actions/runs/31117859543
+- Automated test suite size: 127 tests
+- Most recent local run in this environment (2026-08-06): 126 passed, 1 failed
+- Releases are published with version tags so users can track stable versions clearly.
 
 ## Contributing
 
