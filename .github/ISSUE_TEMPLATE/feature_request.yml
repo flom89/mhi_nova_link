@@ -1,0 +1,63 @@
+name: Feature request
+description: Suggest an improvement or new capability for MHI Nova Link.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing your idea.
+
+        Please keep requests focused and practical for Home Assistant users.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This request is for MHI Nova Link and not a general Home Assistant issue.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user problem does this solve?
+      placeholder: As a user, I cannot ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: Describe what should be added or changed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe alternatives or workarounds you tried.
+    validations:
+      required: false
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Real-world use case
+      description: Explain how this would be used in practice.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add screenshots, links, or extra details if helpful.
+    validations:
+      required: false
