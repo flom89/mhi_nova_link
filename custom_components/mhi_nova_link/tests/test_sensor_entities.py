@@ -274,6 +274,8 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
         ("entity", "sensor", "indoor_heat_exchanger_1_low_temp", "name"),
         ("entity", "sensor", "outdoor_heat_exchanger_1_low_temp", "name"),
         ("entity", "sensor", "outdoor_heat_exchanger_1_high_temp", "name"),
+        ("entity", "switch", "betriebssperre", "name"),
+        ("entity", "switch", "externe_kuehlung", "name"),
     ]
 
     for path in expected_paths:
@@ -567,7 +569,7 @@ async def test_select_setup_entry_creates_zone_select_entities() -> None:
 
 @pytest.mark.asyncio
 async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
-    """Switch platform setup should create one 3D auto switch per zone."""
+    """Switch platform setup should create gateway and zone switch entities."""
 
     coordinator = SimpleNamespace(
         data=[
@@ -577,6 +579,10 @@ async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
                 "indoorUnits": [],
             }
         ],
+        gpio_active_high={
+            "SYSTEM_STOP": True,
+            "FREE_COOLING": True,
+        },
         config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
         api=SimpleNamespace(host="gateway"),
         last_update_success=True,
@@ -592,8 +598,18 @@ async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
 
     await switch_module.async_setup_entry(hass, entry, add_entities)
 
-    assert len(added_entities) == 1
-    assert isinstance(added_entities[0], switch_module.NovaRc3DAutoSwitch)
+    assert len(added_entities) == 3
+    assert any(
+        isinstance(entity, switch_module.NovaRc3DAutoSwitch) for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, switch_module.NovaRcSystemStopSwitch)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, switch_module.NovaRcFreeCoolingSwitch)
+        for entity in added_entities
+    )
 
 
 @pytest.mark.asyncio
@@ -1197,6 +1213,14 @@ def test_update_query_requests_installed_version_and_available_release() -> None
     assert "automaticCheck" in query
 
 
+def test_gpio_queries_and_mutation_include_active_high_control_fields() -> None:
+    """GPIO query and mutation should support reading and setting active-high."""
+
+    assert "activeHigh" in graphql_module.GET_GPIOS_QUERY
+    assert "mutation SetActiveHigh" in graphql_module.SET_GPIO_ACTIVE_HIGH_MUTATION
+    assert "setActiveHigh" in graphql_module.SET_GPIO_ACTIVE_HIGH_MUTATION
+
+
 def test_get_zone_query_requests_airflow_and_patch_options() -> None:
     """The targeted GetZone query should request airflow and patch option fields."""
 
@@ -1383,4 +1407,62 @@ async def test_climate_async_set_fan_mode_maps_gateway_value() -> None:
     await climate.async_set_fan_mode("Power")
 
     api.async_set_zone_state.assert_awaited_once_with(1, fan_speed="POWERFUL")
+    coordinator.async_request_refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_system_stop_switch_toggles_active_high_for_low_active_logic() -> None:
+    """System-stop gateway switch should invert activeHigh semantics."""
+
+    api = SimpleNamespace(host="gateway", async_set_gpio_active_high=AsyncMock())
+    coordinator = SimpleNamespace(
+        data=[],
+        gpio_active_high={"SYSTEM_STOP": True},
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
+    )
+    entity = switch_module.NovaRcSystemStopSwitch(coordinator)
+
+    assert not entity.is_on
+
+    await entity.async_turn_on()
+    api.async_set_gpio_active_high.assert_awaited_once_with("/gpio/system_stop", False)
+    coordinator.async_request_refresh.assert_awaited_once()
+
+    api.async_set_gpio_active_high.reset_mock()
+    coordinator.async_request_refresh.reset_mock()
+    coordinator.gpio_active_high["SYSTEM_STOP"] = False
+
+    assert entity.is_on
+
+    await entity.async_turn_off()
+    api.async_set_gpio_active_high.assert_awaited_once_with("/gpio/system_stop", True)
+    coordinator.async_request_refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_free_cooling_switch_toggles_active_high_for_low_active_logic() -> None:
+    """Free-cooling gateway switch should invert activeHigh semantics."""
+
+    api = SimpleNamespace(host="gateway", async_set_gpio_active_high=AsyncMock())
+    coordinator = SimpleNamespace(
+        data=[],
+        gpio_active_high={"FREE_COOLING": True},
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
+    )
+    entity = switch_module.NovaRcFreeCoolingSwitch(coordinator)
+
+    assert not entity.is_on
+
+    await entity.async_turn_on()
+    api.async_set_gpio_active_high.assert_awaited_once_with(
+        "/gpio/sequencing_stop", False
+    )
     coordinator.async_request_refresh.assert_awaited_once()

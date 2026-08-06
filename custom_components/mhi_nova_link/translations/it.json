@@ -277,6 +277,20 @@
           "on": "Attivato",
           "off": "Disattivato"
         }
+      },
+      "betriebssperre": {
+        "name": "Blocco funzionamento",
+        "state": {
+          "on": "Attivo",
+          "off": "Inattivo"
+        }
+      },
+      "externe_kuehlung": {
+        "name": "Raffrescamento esterno",
+        "state": {
+          "on": "Attivo",
+          "off": "Inattivo"
+        }
       }
     }
   },

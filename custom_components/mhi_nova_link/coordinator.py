@@ -40,12 +40,13 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         )
         self.api = api
         self.gpios: dict[str, bool] = {}
+        self.gpio_active_high: dict[str, bool] = {}
         self.gateway_update: dict[str, Any] = {}
 
     async def _async_update_data(self) -> list[dict[str, Any]]:
         """Fetch the latest zone data from the GraphQL gateway."""
         try:
-            data, notifications, gpios, gateway_update = await asyncio.gather(
+            data, notifications, gpios_payload, gateway_update = await asyncio.gather(
                 self.api.async_get_zones(),
                 self.api.async_get_notifications(),
                 self.api.async_get_gpios(),
@@ -65,7 +66,16 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             for zone in data:
                 zone["notifications"] = notifications
 
+        gpios: dict[str, bool]
+        gpio_active_high: dict[str, bool]
+        if isinstance(gpios_payload, tuple):
+            gpios, gpio_active_high = gpios_payload
+        else:
+            gpios = gpios_payload
+            gpio_active_high = {}
+
         self.gpios = gpios
+        self.gpio_active_high = gpio_active_high
         previous_installed_version = self.gateway_update.get("installed_version")
         self.gateway_update = gateway_update
         if (

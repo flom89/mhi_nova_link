@@ -9,6 +9,7 @@ from custom_components.mhi_nova_link.api import (
     _get_time_series_update_interval,
     _raise_if_auth_rejected,
     build_time_series_identifiers,
+    normalize_gpio_active_high_payload,
     build_time_series_period,
     normalize_gateway_update_payload,
     normalize_gpios_payload,
@@ -429,6 +430,42 @@ class TestNormalizeGpiosPayload:
         result = normalize_gpios_payload(payload)
         assert result["FLAG"] is True
         assert result["ZERO"] is False
+
+
+class TestNormalizeGpioActiveHighPayload:
+    """Tests for normalize_gpio_active_high_payload."""
+
+    def test_empty_response_returns_empty_dict(self) -> None:
+        assert normalize_gpio_active_high_payload({}) == {}
+
+    def test_gpio_active_high_states_are_mapped_by_function(self) -> None:
+        payload = {
+            "data": {
+                "gpio": {
+                    "gpios": [
+                        {"function": "FREE_COOLING", "activeHigh": True},
+                        {"function": "SYSTEM_STOP", "activeHigh": False},
+                    ]
+                }
+            }
+        }
+        result = normalize_gpio_active_high_payload(payload)
+        assert result["FREE_COOLING"] is True
+        assert result["SYSTEM_STOP"] is False
+
+    def test_items_without_active_high_are_skipped(self) -> None:
+        payload = {
+            "data": {
+                "gpio": {
+                    "gpios": [
+                        {"function": "MISSING"},
+                        {"function": "VALID", "activeHigh": True},
+                    ]
+                }
+            }
+        }
+        result = normalize_gpio_active_high_payload(payload)
+        assert result == {"VALID": True}
 
 
 # ---------------------------------------------------------------------------

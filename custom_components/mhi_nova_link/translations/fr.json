@@ -277,6 +277,20 @@
           "on": "Activé",
           "off": "Désactivé"
         }
+      },
+      "betriebssperre": {
+        "name": "Verrouillage de fonctionnement",
+        "state": {
+          "on": "Actif",
+          "off": "Inactif"
+        }
+      },
+      "externe_kuehlung": {
+        "name": "Refroidissement externe",
+        "state": {
+          "on": "Actif",
+          "off": "Inactif"
+        }
       }
     }
   },

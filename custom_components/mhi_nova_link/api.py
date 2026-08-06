@@ -24,6 +24,7 @@ from .graphql import (
     GET_UPDATE_CLOUD_SETTINGS_QUERY,
     GET_ZONE_QUERY,
     GET_ZONES_QUERY,
+    SET_GPIO_ACTIVE_HIGH_MUTATION,
     SET_ZONE_PATCH_MUTATION,
 )
 
@@ -256,6 +257,28 @@ def normalize_gpios_payload(data: dict[str, Any]) -> dict[str, bool]:
         value = item.get("value")
         if isinstance(function, str) and function:
             normalized[function] = bool(value)
+
+    return normalized
+
+
+def normalize_gpio_active_high_payload(data: dict[str, Any]) -> dict[str, bool]:
+    """Normalize GPIO payload into a function-to-activeHigh mapping."""
+    gpio = data.get("data", {}).get("gpio", {})
+    if not isinstance(gpio, dict):
+        return {}
+
+    gpios = gpio.get("gpios") or []
+    if not isinstance(gpios, list):
+        return {}
+
+    normalized: dict[str, bool] = {}
+    for item in gpios:
+        if not isinstance(item, dict):
+            continue
+        function = item.get("function")
+        active_high = item.get("activeHigh")
+        if isinstance(function, str) and function and active_high is not None:
+            normalized[function] = bool(active_high)
 
     return normalized
 
@@ -660,8 +683,8 @@ class NovaRcApiClient:
             _LOGGER.debug("Notification request failed: %s", err)
             return {}
 
-    async def async_get_gpios(self) -> dict[str, bool]:
-        """Fetch GPIO states for gateway-level binary indicators."""
+    async def async_get_gpios(self) -> tuple[dict[str, bool], dict[str, bool]]:
+        """Fetch GPIO states and active-high settings for gateway-level controls."""
         try:
             async with self.session.post(
                 self.endpoint,
@@ -679,14 +702,16 @@ class NovaRcApiClient:
                 _raise_if_auth_rejected(response.status, text, "GetGpios")
                 if response.status != 200:
                     _LOGGER.debug("GPIO query failed: %s", text)
-                    return {}
+                    return {}, {}
 
                 data = await response.json()
                 if "errors" in data:
                     _LOGGER.debug("GPIO query error: %s", data.get("errors"))
-                    return {}
+                    return {}, {}
 
-                return normalize_gpios_payload(data)
+                return normalize_gpios_payload(data), normalize_gpio_active_high_payload(
+                    data
+                )
 
         except (
             aiohttp_exceptions.ServerFingerprintMismatch,
@@ -696,7 +721,7 @@ class NovaRcApiClient:
             raise InvalidCertificate("TLS certificate validation failed") from err
         except (TimeoutError, aiohttp.ClientError) as err:
             _LOGGER.debug("GPIO request failed: %s", err)
-            return {}
+            return {}, {}
 
     async def async_get_gateway_update_information(self) -> dict[str, Any]:
         """Fetch installed software version and cloud update availability."""
@@ -976,4 +1001,55 @@ class NovaRcApiClient:
             raise InvalidCertificate("TLS certificate validation failed") from err
         except (TimeoutError, aiohttp.ClientError, ValueError) as err:
             _LOGGER.error("Failed to send mutation for zone %s: %s", zone_id, err)
+            return False
+
+    async def async_set_gpio_active_high(self, gpio_id: str, active_high: bool) -> bool:
+        """Change active-high evaluation for a specific GPIO."""
+        payload = {
+            "query": SET_GPIO_ACTIVE_HIGH_MUTATION,
+            "operationName": "SetActiveHigh",
+            "variables": {
+                "id": gpio_id,
+                "activeHigh": active_high,
+            },
+        }
+
+        try:
+            async with self.session.post(
+                self.endpoint,
+                json=payload,
+                headers=_GRAPHQL_HEADERS,
+                auth=self._build_auth(),
+                timeout=_REQUEST_TIMEOUT,
+                ssl=self._ssl_context,
+            ) as response:
+                text = await response.text()
+                _raise_if_auth_rejected(response.status, text, "SetActiveHigh")
+
+                if response.status != 200:
+                    _LOGGER.error(
+                        "SetActiveHigh returned HTTP error (%s): %s",
+                        response.status,
+                        text,
+                    )
+                    return False
+
+                response_json = await response.json()
+                if "errors" in response_json:
+                    _LOGGER.error(
+                        "SetActiveHigh GraphQL error: %s", response_json["errors"]
+                    )
+                    return False
+
+                result = response_json.get("data", {}).get("gpio", {}).get("setActiveHigh")
+                return isinstance(result, dict)
+
+        except (
+            aiohttp_exceptions.ServerFingerprintMismatch,
+            aiohttp_exceptions.ClientConnectorCertificateError,
+            aiohttp_exceptions.ClientConnectorSSLError,
+        ) as err:
+            raise InvalidCertificate("TLS certificate validation failed") from err
+        except (TimeoutError, aiohttp.ClientError, ValueError) as err:
+            _LOGGER.error("Failed to send SetActiveHigh mutation for %s: %s", gpio_id, err)
             return False

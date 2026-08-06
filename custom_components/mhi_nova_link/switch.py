@@ -5,11 +5,13 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity
+from .entity import NovaRcZoneEntity, build_gateway_device_info
 
 
 async def async_setup_entry(
@@ -24,7 +26,10 @@ async def async_setup_entry(
     else:
         coordinator = hass.data[entry.domain][entry.entry_id]
 
-    entities: list[SwitchEntity] = []
+    entities: list[SwitchEntity] = [
+        NovaRcSystemStopSwitch(coordinator),
+        NovaRcFreeCoolingSwitch(coordinator),
+    ]
     for zone in coordinator.data:
         zone_id = zone.get("zoneId")
         if zone_id is None:
@@ -59,3 +64,66 @@ class NovaRc3DAutoSwitch(NovaRcZoneEntity, SwitchEntity):
         """Disable 3D auto mode on the gateway."""
         await self.coordinator.api.async_set_zone_state(self.zone_id, flap3d_auto=False)
         await self.coordinator.async_request_refresh()
+
+
+class NovaRcGatewayControlSwitch(
+    CoordinatorEntity[NovaRcDataUpdateCoordinator], SwitchEntity
+):
+    """Base switch for active-high controlled gateway input GPIOs."""
+
+    _attr_has_entity_name = True
+    _gpio_id: str
+    _gpio_function: str
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
+        """Initialize a gateway-level GPIO control switch."""
+        super().__init__(coordinator)
+        self._attr_unique_id = (
+            f"{coordinator.api.host}_gateway_gpio_control_{self._gpio_function.lower()}"
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return Home Assistant device metadata for the gateway IO device."""
+        entry_id = (
+            self.coordinator.config_entry.entry_id
+            if self.coordinator.config_entry
+            else "unknown"
+        )
+        return build_gateway_device_info(
+            entry_id,
+            identifier_suffix="gateway",
+            name="Digital IOs",
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether the associated function is logically forced active."""
+        active_high = self.coordinator.gpio_active_high.get(self._gpio_function, True)
+        return not active_high
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Enable the logical active state by using LOW as active level."""
+        await self.coordinator.api.async_set_gpio_active_high(self._gpio_id, False)
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Disable the logical active state by using HIGH as active level."""
+        await self.coordinator.api.async_set_gpio_active_high(self._gpio_id, True)
+        await self.coordinator.async_request_refresh()
+
+
+class NovaRcSystemStopSwitch(NovaRcGatewayControlSwitch):
+    """Switch to control Betriebssperre via SYSTEM_STOP input interpretation."""
+
+    _attr_translation_key = "betriebssperre"
+    _gpio_id = "/gpio/system_stop"
+    _gpio_function = "SYSTEM_STOP"
+
+
+class NovaRcFreeCoolingSwitch(NovaRcGatewayControlSwitch):
+    """Switch to control Externe Kühlung via FREE_COOLING input interpretation."""
+
+    _attr_translation_key = "externe_kuehlung"
+    _gpio_id = "/gpio/sequencing_stop"
+    _gpio_function = "FREE_COOLING"

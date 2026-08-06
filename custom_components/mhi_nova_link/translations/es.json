@@ -277,6 +277,20 @@
           "on": "Activado",
           "off": "Desactivado"
         }
+      },
+      "betriebssperre": {
+        "name": "Bloqueo de funcionamiento",
+        "state": {
+          "on": "Activo",
+          "off": "Inactivo"
+        }
+      },
+      "externe_kuehlung": {
+        "name": "Refrigeración externa",
+        "state": {
+          "on": "Activo",
+          "off": "Inactivo"
+        }
       }
     }
   },
