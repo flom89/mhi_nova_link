@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.1.1] - 2026-08-07
+
+### Fixed
+- Minor maintenance release: version bump to align release artefacts and documentation.
+
 ## [2.1.0] - 2026-08-06
 
 ### Added
