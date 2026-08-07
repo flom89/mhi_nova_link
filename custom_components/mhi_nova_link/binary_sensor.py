@@ -64,9 +64,7 @@ async def async_setup_entry(
 
         for indoor_unit_id in indoor_unit_ids:
             entities.append(
-                NovaRcIndoorUnitRunningBinarySensor(
-                    coordinator, zone_id, indoor_unit_id
-                )
+                NovaRcIndoorUnitRunningBinarySensor(coordinator, zone_id, indoor_unit_id)
             )
             entities.append(
                 NovaRcIndoorUnitFilterBinarySensor(coordinator, zone_id, indoor_unit_id)
@@ -79,9 +77,7 @@ class NovaRcBaseBinarySensor(NovaRcZoneEntity, BinarySensorEntity):
     """Base implementation for zone binary sensors."""
 
 
-class NovaRcGatewayBinarySensor(
-    CoordinatorEntity[NovaRcDataUpdateCoordinator], BinarySensorEntity
-):
+class NovaRcGatewayBinarySensor(CoordinatorEntity[NovaRcDataUpdateCoordinator], BinarySensorEntity):
     """Base implementation for gateway-level GPIO binary sensors."""
 
     _attr_has_entity_name = True
@@ -90,17 +86,13 @@ class NovaRcGatewayBinarySensor(
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
         """Initialize a gateway-level GPIO binary sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = (
-            f"{coordinator.api.host}_gateway_gpio_{self._gpio_function.lower()}"
-        )
+        self._attr_unique_id = f"{coordinator.api.host}_gateway_gpio_{self._gpio_function.lower()}"
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway."""
         entry_id = (
-            self.coordinator.config_entry.entry_id
-            if self.coordinator.config_entry
-            else "unknown"
+            self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
         )
         return build_gateway_device_info(
             entry_id,
@@ -132,9 +124,7 @@ class NovaRcGatewayUpdateAvailableBinarySensor(
     def device_info(self) -> DeviceInfo:
         """Return Home Assistant device metadata for the gateway info device."""
         entry_id = (
-            self.coordinator.config_entry.entry_id
-            if self.coordinator.config_entry
-            else "unknown"
+            self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
         )
         return build_gateway_device_info(
             entry_id,

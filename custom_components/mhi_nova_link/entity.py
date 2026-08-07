@@ -39,11 +39,12 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             or self._zone_data.get("displayName")
             or f"Zone {self.zone_id}"
         )
-        sw_version = (
-            getattr(self.coordinator, "gateway_update", {}).get("installed_version")
-            or getattr(self.coordinator, "gateway_update", {}).get("available_version")
+        sw_version = getattr(self.coordinator, "gateway_update", {}).get(
+            "installed_version"
+        ) or getattr(self.coordinator, "gateway_update", {}).get("available_version")
+        entry_id = (
+            self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
         )
-        entry_id = self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
         device_info: DeviceInfo = {
             "identifiers": {
                 (
@@ -67,9 +68,7 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
         return {}
 
 
-def build_gateway_device_info(
-    entry_id: str, *, identifier_suffix: str, name: str
-) -> DeviceInfo:
+def build_gateway_device_info(entry_id: str, *, identifier_suffix: str, name: str) -> DeviceInfo:
     """Build consistent gateway device info metadata."""
     return {
         "identifiers": {(DOMAIN, f"{entry_id}_{identifier_suffix}")},

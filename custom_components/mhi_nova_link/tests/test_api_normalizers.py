@@ -118,7 +118,9 @@ class TestGetTimeSeriesUpdateInterval:
         monkeypatch.setenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "45")
         assert _get_time_series_update_interval(None) == 45
 
-    def test_configured_value_takes_precedence_over_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_configured_value_takes_precedence_over_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS", "999")
         assert _get_time_series_update_interval(60) == 60
 
@@ -185,9 +187,7 @@ class TestBuildTimeSeriesIdentifiers:
         assert all(i["reference"] == "/outdoor_unit/5" for i in outdoor)
 
     def test_indoor_ids_use_indoor_unit_reference(self) -> None:
-        ids = build_time_series_identifiers(
-            {"zoneId": 1, "indoorUnits": [{"indoorUnitId": 3}]}
-        )
+        ids = build_time_series_identifiers({"zoneId": 1, "indoorUnits": [{"indoorUnitId": 3}]})
         indoor = [i for i in ids if i["reference"] == "/indoor_unit/3"]
         assert len(indoor) > 0
 
@@ -207,12 +207,8 @@ class TestBuildTimeSeriesIdentifiers:
         assert len(pairs) == len(set(pairs))
 
     def test_none_indoor_unit_id_is_skipped(self) -> None:
-        ids = build_time_series_identifiers(
-            {"zoneId": 1, "indoorUnits": [{"indoorUnitId": None}]}
-        )
-        assert all(
-            i["reference"] != "/indoor_unit/None" for i in ids
-        )
+        ids = build_time_series_identifiers({"zoneId": 1, "indoorUnits": [{"indoorUnitId": None}]})
+        assert all(i["reference"] != "/indoor_unit/None" for i in ids)
 
     def test_ou_dataset_ids_map_to_outdoor_reference(self) -> None:
         ids = build_time_series_identifiers({"zoneId": 4, "indoorUnits": []})
@@ -251,11 +247,7 @@ class TestNormalizeZonesPayload:
 
     def test_single_zone_response_is_handled(self) -> None:
         payload = {
-            "data": {
-                "xybus": {
-                    "zone": {"__typename": "XYBusZone", "zoneId": 7, "name": "Office"}
-                }
-            }
+            "data": {"xybus": {"zone": {"__typename": "XYBusZone", "zoneId": 7, "name": "Office"}}}
         }
         result = normalize_zones_payload(payload)
         assert len(result) == 1
@@ -523,9 +515,7 @@ class TestNormalizeTimeSeriesPayload:
         assert list(result.keys()) == ["valid_id"]
 
     def test_non_list_datasets_returns_empty(self) -> None:
-        payload = {
-            "data": {"timeSeries": {"dataSetsWithData": "not_a_list"}}
-        }
+        payload = {"data": {"timeSeries": {"dataSetsWithData": "not_a_list"}}}
         assert normalize_time_series_payload(payload) == {}
 
 
@@ -567,9 +557,7 @@ class TestNormalizeGatewayUpdatePayload:
                 "system": {"information": {}},
                 "update": {
                     "cloud": {
-                        "availableSoftwareRelease": {
-                            "version": {"asString": "3.3.0"}
-                        },
+                        "availableSoftwareRelease": {"version": {"asString": "3.3.0"}},
                         "settings": {
                             "automaticCheck": True,
                             "automaticInstall": False,

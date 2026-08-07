@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.0] - 2026-08-07
+
+### Added
+- Configurable operation-state restore workflow for Betriebssperre and Externe Kuehlung.
+- Persistent restore snapshots with per-source controls and validity-window handling.
+- Fail-safe restore validation that retries once after release when runtime values diverge.
+- Extended regression coverage for restore persistence, lock behavior, options flow, and gateway controls.
+
+### Changed
+- Operation lock now gates user controls consistently across climate, select, and switch entities while keeping the unlock control available.
+- Integration options now expose restore controls for enablement, validity, and source scope.
+- Codebase formatting and style normalized across integration modules and tests.
+
 ## [2.2.0] - 2026-08-07
 
 ### Added

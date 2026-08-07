@@ -21,9 +21,17 @@ from .api import (
 from .const import (
     ANALYTICS_ANONYMOUS_ID_KEY,
     CONF_ANALYTICS_OPT_IN,
+    CONF_GPIO_RESTORE_ENABLED,
+    CONF_GPIO_RESTORE_FREE_COOLING,
+    CONF_GPIO_RESTORE_SYSTEM_STOP,
+    CONF_GPIO_RESTORE_VALIDITY_MINUTES,
     CONF_POLL_INTERVAL,
     CONF_SSL_FINGERPRINT,
     CONF_TIME_SERIES_POLL_INTERVAL,
+    DEFAULT_GPIO_RESTORE_ENABLED,
+    DEFAULT_GPIO_RESTORE_FREE_COOLING,
+    DEFAULT_GPIO_RESTORE_SYSTEM_STOP,
+    DEFAULT_GPIO_RESTORE_VALIDITY_MINUTES,
     DEFAULT_POLL_INTERVAL,
     DEFAULT_TIME_SERIES_POLL_INTERVAL,
     DOMAIN,
@@ -39,6 +47,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_SSL_FINGERPRINT, default=""): str,
     }
 )
+
+
 class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for NOVA_RC."""
 
@@ -64,9 +74,7 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                ssl_fingerprint = normalize_ssl_fingerprint(
-                    user_input.get(CONF_SSL_FINGERPRINT)
-                )
+                ssl_fingerprint = normalize_ssl_fingerprint(user_input.get(CONF_SSL_FINGERPRINT))
             except ValueError:
                 errors["base"] = "invalid_ssl_fingerprint_format"
                 ssl_fingerprint = None
@@ -139,7 +147,9 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_reauth(self, entry_data: dict[str, Any]) -> config_entries.ConfigFlowResult:
+    async def async_step_reauth(
+        self, entry_data: dict[str, Any]
+    ) -> config_entries.ConfigFlowResult:
         """Handle reauthentication requests."""
         self._reauth_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
         return await self.async_step_reauth_confirm()
@@ -167,9 +177,7 @@ class NovaRcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                ssl_fingerprint = normalize_ssl_fingerprint(
-                    user_input.get(CONF_SSL_FINGERPRINT)
-                )
+                ssl_fingerprint = normalize_ssl_fingerprint(user_input.get(CONF_SSL_FINGERPRINT))
             except ValueError:
                 errors["base"] = "invalid_ssl_fingerprint_format"
             else:
@@ -238,9 +246,7 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
 
         if user_input is not None:
             try:
-                ssl_fingerprint = normalize_ssl_fingerprint(
-                    user_input.get(CONF_SSL_FINGERPRINT)
-                )
+                ssl_fingerprint = normalize_ssl_fingerprint(user_input.get(CONF_SSL_FINGERPRINT))
             except ValueError:
                 errors["base"] = "invalid_ssl_fingerprint_format"
             else:
@@ -277,9 +283,7 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                             ANALYTICS_ANONYMOUS_ID_KEY,
                             self._config_entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
                         )
-                        entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = anonymous_id or str(
-                            uuid.uuid4()
-                        )
+                        entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = anonymous_id or str(uuid.uuid4())
                     else:
                         entry_data.pop(ANALYTICS_ANONYMOUS_ID_KEY, None)
 
@@ -352,6 +356,34 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                             DEFAULT_TIME_SERIES_POLL_INTERVAL,
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+                    vol.Optional(
+                        CONF_GPIO_RESTORE_ENABLED,
+                        default=self._config_entry.options.get(
+                            CONF_GPIO_RESTORE_ENABLED,
+                            DEFAULT_GPIO_RESTORE_ENABLED,
+                        ),
+                    ): bool,
+                    vol.Optional(
+                        CONF_GPIO_RESTORE_VALIDITY_MINUTES,
+                        default=self._config_entry.options.get(
+                            CONF_GPIO_RESTORE_VALIDITY_MINUTES,
+                            DEFAULT_GPIO_RESTORE_VALIDITY_MINUTES,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+                    vol.Optional(
+                        CONF_GPIO_RESTORE_SYSTEM_STOP,
+                        default=self._config_entry.options.get(
+                            CONF_GPIO_RESTORE_SYSTEM_STOP,
+                            DEFAULT_GPIO_RESTORE_SYSTEM_STOP,
+                        ),
+                    ): bool,
+                    vol.Optional(
+                        CONF_GPIO_RESTORE_FREE_COOLING,
+                        default=self._config_entry.options.get(
+                            CONF_GPIO_RESTORE_FREE_COOLING,
+                            DEFAULT_GPIO_RESTORE_FREE_COOLING,
+                        ),
+                    ): bool,
                     vol.Optional(
                         CONF_SSL_FINGERPRINT,
                         default=default_ssl_fingerprint,

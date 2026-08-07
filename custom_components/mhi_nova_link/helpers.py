@@ -35,6 +35,7 @@ _FALSY_TOKENS: frozenset[str] = frozenset(
     }
 )
 
+
 def get_zone_time_series_datasets(zone: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     """Return all time series datasets attached to a zone."""
     datasets: dict[str, dict[str, Any]] = {}

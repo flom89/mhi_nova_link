@@ -100,9 +100,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: NovaRcConfigEntry) -> bo
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    opt_in = entry.options.get(
-        CONF_ANALYTICS_OPT_IN, entry.data.get(CONF_ANALYTICS_OPT_IN)
-    )
+    opt_in = entry.options.get(CONF_ANALYTICS_OPT_IN, entry.data.get(CONF_ANALYTICS_OPT_IN))
     anonymous_id = entry.options.get(
         ANALYTICS_ANONYMOUS_ID_KEY,
         entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
