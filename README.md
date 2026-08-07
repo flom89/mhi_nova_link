@@ -11,7 +11,7 @@
 
 MHI Nova Link lets you control your Mitsubishi Heavy Industries system in Home Assistant when your setup uses a **CompTrol 4Web NOVA RC** gateway.
 
-Current integration version: **2.3.1**
+Current integration version: **2.3.2**
 
 ## Hardware Reference
 

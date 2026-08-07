@@ -256,6 +256,9 @@
           "skipped_user_interaction_before_first_try": "Vor erstem Versuch übersprungen (Benutzerinteraktion)",
           "skipped_user_interaction_before_recheck": "Vor Nachprüfung übersprungen (Benutzerinteraktion)",
           "failed_after_retry": "Nach Wiederholung fehlgeschlagen",
+          "restore_disabled": "Wiederherstellung deaktiviert",
+          "snapshot_missing": "Snapshot fehlt",
+          "snapshot_empty": "Snapshot leer",
           "snapshot_expired": "Snapshot abgelaufen",
           "error": "Fehler",
           "user_interaction": "Benutzerinteraktion"

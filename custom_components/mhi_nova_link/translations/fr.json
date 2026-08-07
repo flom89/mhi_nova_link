@@ -256,6 +256,9 @@
           "skipped_user_interaction_before_first_try": "Ignoré avant le premier essai (interaction utilisateur)",
           "skipped_user_interaction_before_recheck": "Ignoré avant la revérification (interaction utilisateur)",
           "failed_after_retry": "Échec après le nouvel essai",
+          "restore_disabled": "Restauration désactivée",
+          "snapshot_missing": "Instantané manquant",
+          "snapshot_empty": "Instantané vide",
           "snapshot_expired": "Instantané expiré",
           "error": "Erreur",
           "user_interaction": "Interaction utilisateur"

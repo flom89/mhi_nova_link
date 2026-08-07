@@ -256,6 +256,9 @@
           "skipped_user_interaction_before_first_try": "Omitido antes del primer intento (interacción del usuario)",
           "skipped_user_interaction_before_recheck": "Omitido antes de la reverificación (interacción del usuario)",
           "failed_after_retry": "Falló tras el reintento",
+          "restore_disabled": "Restauración deshabilitada",
+          "snapshot_missing": "Falta la instantánea",
+          "snapshot_empty": "Instantánea vacía",
           "snapshot_expired": "Instantánea expirada",
           "error": "Error",
           "user_interaction": "Interacción del usuario"
