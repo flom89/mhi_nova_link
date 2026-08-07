@@ -136,7 +136,10 @@ class NovaRcGatewayControlSwitch(CoordinatorEntity[NovaRcDataUpdateCoordinator],
         self._ensure_write_allowed()
         mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
         if callable(mark_user_interaction):
-            mark_user_interaction(f"switch.async_turn_on_{self._gpio_function.lower()}")
+            mark_user_interaction(
+                f"switch.async_turn_on_{self._gpio_function.lower()}",
+                emit_status=False,
+            )
         capture_restore = getattr(self.coordinator, "async_capture_restore_snapshot", None)
         if callable(capture_restore):
             await capture_restore(self._gpio_function)
@@ -149,7 +152,10 @@ class NovaRcGatewayControlSwitch(CoordinatorEntity[NovaRcDataUpdateCoordinator],
         self._ensure_write_allowed()
         mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
         if callable(mark_user_interaction):
-            mark_user_interaction(f"switch.async_turn_off_{self._gpio_function.lower()}")
+            mark_user_interaction(
+                f"switch.async_turn_off_{self._gpio_function.lower()}",
+                emit_status=False,
+            )
         result = await self.coordinator.api.async_set_gpio_active_high(self._gpio_id, True)
         if result:
             await self.coordinator.async_request_refresh()

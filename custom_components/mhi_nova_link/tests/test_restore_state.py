@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -59,6 +59,7 @@ def _build_coordinator(
             CONF_GPIO_RESTORE_SYSTEM_STOP: restore_system_stop,
             CONF_GPIO_RESTORE_VALIDITY_MINUTES: restore_validity_minutes,
         },
+        data={},
     )
     coordinator = NovaRcDataUpdateCoordinator(hass, api, entry)
     coordinator.async_request_refresh = AsyncMock()
@@ -93,6 +94,28 @@ async def test_capture_restore_snapshot_persists_zone_state() -> None:
     assert snapshot["zones"][0]["zoneId"] == 1
     assert snapshot["zones"][0]["operationMode"] == "AUTO"
     coordinator._restore_store.async_save.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_capture_restore_snapshot_sets_restore_disabled_status() -> None:
+    """Capture should expose a clear status when restore is not enabled."""
+    coordinator, _ = _build_coordinator(restore_enabled=False)
+    coordinator.data = [{"zoneId": 1, "running": True}]
+
+    await coordinator.async_capture_restore_snapshot(GPIO_SOURCE_SYSTEM_STOP)
+
+    assert coordinator.restore_diagnostics["last_event"]["state"] == "restore_disabled"
+
+
+@pytest.mark.asyncio
+async def test_restore_after_release_sets_restore_disabled_status() -> None:
+    """Restore should expose a clear status when restore is not enabled."""
+    coordinator, _ = _build_coordinator(restore_enabled=False)
+    coordinator._restore_state_loaded = True
+
+    await coordinator.async_restore_after_release(GPIO_SOURCE_SYSTEM_STOP)
+
+    assert coordinator.restore_diagnostics["last_event"]["state"] == "restore_disabled"
 
 
 @pytest.mark.asyncio
@@ -258,3 +281,52 @@ async def test_restore_after_release_applies_snapshot_and_schedules_validation()
     assert called_source == GPIO_SOURCE_SYSTEM_STOP
     assert called_snapshot == snapshot
     assert isinstance(called_scheduled_at, datetime)
+
+
+def test_mark_user_interaction_without_status_emit_keeps_restore_event() -> None:
+    """Lock toggle bookkeeping should not overwrite restore lifecycle status."""
+    coordinator, _ = _build_coordinator()
+
+    coordinator._set_restore_status(GPIO_SOURCE_SYSTEM_STOP, state="writeback_scheduled")
+    coordinator.async_mark_user_interaction("switch.async_turn_off_system_stop", emit_status=False)
+
+    diagnostics = coordinator.restore_diagnostics
+    assert diagnostics["last_event"]["state"] == "writeback_scheduled"
+    assert diagnostics["last_user_interaction_at"] is not None
+
+
+def test_restore_option_falls_back_to_entry_data() -> None:
+    """Restore enablement should also honor migrated settings in entry data."""
+    coordinator, _ = _build_coordinator(restore_enabled=False)
+    coordinator.config_entry.options = {}
+    coordinator.config_entry.data = {
+        CONF_GPIO_RESTORE_ENABLED: True,
+        CONF_GPIO_RESTORE_SYSTEM_STOP: True,
+    }
+
+    assert coordinator._restore_enabled_for_source(GPIO_SOURCE_SYSTEM_STOP)
+
+
+def test_restore_option_handles_string_bools() -> None:
+    """Restore settings stored as strings should be interpreted correctly."""
+    coordinator, _ = _build_coordinator(restore_enabled=False)
+    coordinator.config_entry.options = {
+        CONF_GPIO_RESTORE_ENABLED: "true",
+        CONF_GPIO_RESTORE_SYSTEM_STOP: "true",
+    }
+
+    assert coordinator._restore_enabled_for_source(GPIO_SOURCE_SYSTEM_STOP)
+
+
+def test_restore_option_from_mapping_proxy_options() -> None:
+    """Restore settings should be read from Mapping-like config containers."""
+    coordinator, _ = _build_coordinator(restore_enabled=False)
+    coordinator.config_entry.options = MappingProxyType(
+        {
+            CONF_GPIO_RESTORE_ENABLED: True,
+            CONF_GPIO_RESTORE_SYSTEM_STOP: True,
+        }
+    )
+    coordinator.config_entry.data = MappingProxyType({})
+
+    assert coordinator._restore_enabled_for_source(GPIO_SOURCE_SYSTEM_STOP)

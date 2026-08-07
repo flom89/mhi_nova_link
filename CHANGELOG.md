@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.2] - 2026-08-07
+
+### Fixed
+- Restore status no longer sticks on `user_interaction` during operation-lock and external-cooling toggle flows.
+- Restore enablement resolution now correctly reads Home Assistant config-entry mapping objects and data fallbacks.
+- Restore diagnostics now expose `effective_restore_config` and explicit status states (`restore_disabled`, `snapshot_missing`, `snapshot_empty`) for faster runtime troubleshooting.
+
+### Changed
+- Improved restore-state option parsing with robust boolean normalization for persisted values.
+
+### Quality
+- Added regression tests for mapping-backed option resolution and non-overwriting restore status behavior during lock toggles.
+
 ## [2.3.1] - 2026-08-07
 
 ### Added

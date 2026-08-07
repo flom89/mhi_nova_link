@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -149,6 +150,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
     async def async_capture_restore_snapshot(self, source: str) -> None:
         """Persist the current zone state for later restore."""
         if not self._restore_enabled_for_source(source):
+            self._set_restore_status(source, state="restore_disabled")
             return
 
         await self._async_ensure_restore_state_loaded()
@@ -175,6 +177,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             zones_snapshot.append(snapshot_zone)
 
         if not zones_snapshot:
+            self._set_restore_status(source, state="snapshot_empty")
             return
 
         snapshot = {
@@ -197,11 +200,13 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
     async def async_restore_after_release(self, source: str) -> None:
         """Restore previously saved zone state after a lock source is released."""
         if not self._restore_enabled_for_source(source):
+            self._set_restore_status(source, state="restore_disabled")
             return
 
         await self._async_ensure_restore_state_loaded()
         snapshot = self._restore_state.get("snapshots", {}).get(source)
         if not isinstance(snapshot, dict):
+            self._set_restore_status(source, state="snapshot_missing")
             return
 
         if self._snapshot_is_expired(snapshot):
@@ -219,9 +224,11 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         )
         self._schedule_restore_validation(source, snapshot, scheduled_at)
 
-    def async_mark_user_interaction(self, action: str) -> None:
+    def async_mark_user_interaction(self, action: str, *, emit_status: bool = True) -> None:
         """Record the timestamp of a user-triggered write command."""
         self._last_user_interaction_at = datetime.now(UTC)
+        if not emit_status:
+            return
         self._restore_last_event = {
             "source": self._restore_last_event.get("source"),
             "state": "user_interaction",
@@ -244,6 +251,15 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 "first_writeback_delay_seconds": _RESTORE_FIRST_WRITEBACK_DELAY_SECONDS,
                 "recheck_delay_seconds": _RESTORE_RECHECK_DELAY_SECONDS,
                 "post_retry_verify_delay_seconds": _RESTORE_POST_RETRY_VERIFY_DELAY_SECONDS,
+            },
+            "effective_restore_config": {
+                "enabled": self._restore_is_enabled(),
+                "system_stop_enabled": self._restore_system_stop_enabled(),
+                "free_cooling_enabled": self._restore_free_cooling_enabled(),
+                "validity_minutes": self._get_option(
+                    CONF_GPIO_RESTORE_VALIDITY_MINUTES,
+                    DEFAULT_GPIO_RESTORE_VALIDITY_MINUTES,
+                ),
             },
             "sources": self._restore_status_by_source,
         }
@@ -576,30 +592,70 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if source not in (GPIO_SOURCE_SYSTEM_STOP, GPIO_SOURCE_FREE_COOLING):
             return False
 
-        if not self._get_option(CONF_GPIO_RESTORE_ENABLED, DEFAULT_GPIO_RESTORE_ENABLED):
+        if not self._restore_is_enabled():
             return False
 
         if source == GPIO_SOURCE_SYSTEM_STOP:
-            return bool(
-                self._get_option(
-                    CONF_GPIO_RESTORE_SYSTEM_STOP,
-                    DEFAULT_GPIO_RESTORE_SYSTEM_STOP,
-                )
-            )
+            return self._restore_system_stop_enabled()
 
-        return bool(
+        return self._restore_free_cooling_enabled()
+
+    def _restore_is_enabled(self) -> bool:
+        """Return whether restore is globally enabled."""
+        return self._coerce_bool_option(
+            self._get_option(CONF_GPIO_RESTORE_ENABLED, DEFAULT_GPIO_RESTORE_ENABLED),
+            DEFAULT_GPIO_RESTORE_ENABLED,
+        )
+
+    def _restore_system_stop_enabled(self) -> bool:
+        """Return whether restore is enabled for system-stop releases."""
+        return self._coerce_bool_option(
+            self._get_option(
+                CONF_GPIO_RESTORE_SYSTEM_STOP,
+                DEFAULT_GPIO_RESTORE_SYSTEM_STOP,
+            ),
+            DEFAULT_GPIO_RESTORE_SYSTEM_STOP,
+        )
+
+    def _restore_free_cooling_enabled(self) -> bool:
+        """Return whether restore is enabled for free-cooling releases."""
+        return self._coerce_bool_option(
             self._get_option(
                 CONF_GPIO_RESTORE_FREE_COOLING,
                 DEFAULT_GPIO_RESTORE_FREE_COOLING,
-            )
+            ),
+            DEFAULT_GPIO_RESTORE_FREE_COOLING,
         )
+
+    @staticmethod
+    def _coerce_bool_option(value: Any, default: bool) -> bool:
+        """Convert persisted option values to booleans safely."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off", ""}:
+                return False
+            return default
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if value is None:
+            return default
+        return bool(value)
 
     def _get_option(self, key: str, default: Any) -> Any:
         """Return a config entry option with a fallback default."""
         options = getattr(self.config_entry, "options", None)
-        if not isinstance(options, dict):
-            return default
-        return options.get(key, default)
+        if isinstance(options, Mapping) and key in options:
+            return options[key]
+
+        data = getattr(self.config_entry, "data", None)
+        if isinstance(data, Mapping) and key in data:
+            return data[key]
+
+        return default
 
 
 def _get_update_interval(entry: Any | None) -> timedelta:

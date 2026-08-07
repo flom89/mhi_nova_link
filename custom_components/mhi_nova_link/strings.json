@@ -240,6 +240,9 @@
           "skipped_user_interaction_before_first_try": "Skipped before first try (user interaction)",
           "skipped_user_interaction_before_recheck": "Skipped before recheck (user interaction)",
           "failed_after_retry": "Failed after retry",
+          "restore_disabled": "Restore disabled",
+          "snapshot_missing": "Snapshot missing",
+          "snapshot_empty": "Snapshot empty",
           "snapshot_expired": "Snapshot expired",
           "error": "Error",
           "user_interaction": "User interaction"
