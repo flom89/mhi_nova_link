@@ -313,9 +313,6 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
                         )
                     }
 
-                    await self.hass.config_entries.async_reload(
-                        self._config_entry.entry_id
-                    )
                     return self.async_create_entry(title="", data=options_data)
 
         default_ssl_fingerprint = self._config_entry.options.get(
