@@ -244,23 +244,76 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
             except ValueError:
                 errors["base"] = "invalid_ssl_fingerprint_format"
             else:
-                entry_data = dict(user_input)
-                if ssl_fingerprint:
-                    entry_data[CONF_SSL_FINGERPRINT] = ssl_fingerprint
-                else:
-                    entry_data.pop(CONF_SSL_FINGERPRINT, None)
-                if entry_data.get(CONF_ANALYTICS_OPT_IN):
-                    anonymous_id = self._config_entry.options.get(
-                        ANALYTICS_ANONYMOUS_ID_KEY,
-                        self._config_entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
+                new_host = user_input[CONF_HOST]
+                session = async_get_clientsession(self.hass)
+                try:
+                    _, auto_fingerprint = await async_login_with_autopin(
+                        host=new_host,
+                        session=session,
+                        username=user_input.get(CONF_USERNAME, ""),
+                        **{CONF_PASSWORD: user_input.get(CONF_PASSWORD, "")},
+                        ssl_fingerprint=ssl_fingerprint,
                     )
-                    entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = anonymous_id or str(
-                        uuid.uuid4()
-                    )
+                except CannotConnect:
+                    errors["base"] = "cannot_connect"
+                except InvalidAuth:
+                    errors["base"] = "invalid_auth"
+                except InvalidCertificate:
+                    errors["base"] = "invalid_ssl_fingerprint"
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.exception("Unexpected error during options flow")
+                    errors["base"] = "unknown"
                 else:
-                    entry_data.pop(ANALYTICS_ANONYMOUS_ID_KEY, None)
+                    if auto_fingerprint:
+                        ssl_fingerprint = auto_fingerprint
 
-                return self.async_create_entry(title="", data=entry_data)
+                    entry_data = dict(user_input)
+                    if ssl_fingerprint:
+                        entry_data[CONF_SSL_FINGERPRINT] = ssl_fingerprint
+                    else:
+                        entry_data.pop(CONF_SSL_FINGERPRINT, None)
+                    if entry_data.get(CONF_ANALYTICS_OPT_IN):
+                        anonymous_id = self._config_entry.options.get(
+                            ANALYTICS_ANONYMOUS_ID_KEY,
+                            self._config_entry.data.get(ANALYTICS_ANONYMOUS_ID_KEY),
+                        )
+                        entry_data[ANALYTICS_ANONYMOUS_ID_KEY] = anonymous_id or str(
+                            uuid.uuid4()
+                        )
+                    else:
+                        entry_data.pop(ANALYTICS_ANONYMOUS_ID_KEY, None)
+
+                    # Persist the (possibly changed) host into entry.data
+                    updated_data = dict(self._config_entry.data)
+                    updated_data[CONF_HOST] = new_host
+                    if ssl_fingerprint:
+                        updated_data[CONF_SSL_FINGERPRINT] = ssl_fingerprint
+                    else:
+                        updated_data.pop(CONF_SSL_FINGERPRINT, None)
+                    updated_data[CONF_USERNAME] = user_input.get(CONF_USERNAME, "")
+                    updated_data[CONF_PASSWORD] = user_input.get(CONF_PASSWORD, "")
+
+                    self.hass.config_entries.async_update_entry(
+                        self._config_entry,
+                        title=f"CompTrol 4Web NOVA RC ({new_host})",
+                        unique_id=new_host,
+                        data=updated_data,
+                    )
+
+                    # Remove host/credentials from the options dict (they live in data)
+                    options_data = {
+                        k: v
+                        for k, v in entry_data.items()
+                        if k
+                        not in (
+                            CONF_HOST,
+                            CONF_USERNAME,
+                            CONF_PASSWORD,
+                            CONF_SSL_FINGERPRINT,
+                        )
+                    }
+
+                    return self.async_create_entry(title="", data=options_data)
 
         default_ssl_fingerprint = self._config_entry.options.get(
             CONF_SSL_FINGERPRINT,
@@ -275,10 +328,16 @@ class NovaRcOptionsFlow(config_entries.OptionsFlow):
             self._config_entry.data.get(CONF_PASSWORD, ""),
         )
 
+        default_host = self._config_entry.data.get(CONF_HOST, "")
+
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        CONF_HOST,
+                        default=default_host,
+                    ): str,
                     vol.Optional(
                         CONF_POLL_INTERVAL,
                         default=self._config_entry.options.get(

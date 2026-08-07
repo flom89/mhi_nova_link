@@ -40,6 +40,7 @@ class DummyConfigEntries:
         data: dict[str, str] | None = None,
         options: dict[str, str] | None = None,
         title: str | None = None,
+        unique_id: str | None = None,
     ) -> None:
         """Mimic Home Assistant's in-memory entry update behavior."""
         if data is not None:
@@ -48,6 +49,11 @@ class DummyConfigEntries:
             entry.options = options
         if title is not None:
             entry.title = title
+        if unique_id is not None:
+            entry.unique_id = unique_id
+
+    async def async_reload(self, entry_id: str) -> None:
+        """Pretend to reload an entry (no-op in tests)."""
 
 
 class DummyHass(SimpleNamespace):
@@ -419,6 +425,7 @@ async def test_options_flow_accepts_updated_credentials(
 ) -> None:
     """Options flow should store updated gateway credentials."""
     entry = SimpleNamespace(
+        entry_id="test-entry-id",
         options={},
         data={
             CONF_HOST: "gateway.local",
@@ -431,20 +438,31 @@ async def test_options_flow_accepts_updated_credentials(
     flow = config_flow_module.NovaRcOptionsFlow(entry)
     flow.hass = hass
 
-    result = await flow.async_step_init(
-        {
-            "poll_interval": 10,
-            "time_series_poll_interval": 60,
-            CONF_SSL_FINGERPRINT: "",
-            CONF_USERNAME: "new-user",
-            CONF_PASSWORD: "new-secret",
-        }
-    )
+    with patch(
+        "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+        new_callable=AsyncMock,
+        return_value=(object(), None),
+    ):
+        result = await flow.async_step_init(
+            {
+                CONF_HOST: "gateway.local",
+                "poll_interval": 10,
+                "time_series_poll_interval": 60,
+                CONF_SSL_FINGERPRINT: "",
+                CONF_USERNAME: "new-user",
+                CONF_PASSWORD: "new-secret",
+            }
+        )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_USERNAME] == "new-user"
-    assert result["data"][CONF_PASSWORD] == "new-secret"
+    assert entry.data[CONF_USERNAME] == "new-user"
+    assert entry.data[CONF_PASSWORD] == "new-secret"
     assert result["data"]["time_series_poll_interval"] == 60
+    assert CONF_USERNAME not in result["data"]
+    assert CONF_PASSWORD not in result["data"]
 
 
 async def test_options_flow_generates_analytics_id_when_enabling_tracking(
@@ -453,6 +471,7 @@ async def test_options_flow_generates_analytics_id_when_enabling_tracking(
 ) -> None:
     """Enabling analytics in options should persist an anonymous ID."""
     entry = SimpleNamespace(
+        entry_id="test-entry-id",
         options={},
         data={
             CONF_HOST: "gateway.local",
@@ -466,16 +485,25 @@ async def test_options_flow_generates_analytics_id_when_enabling_tracking(
     flow = config_flow_module.NovaRcOptionsFlow(entry)
     flow.hass = hass
 
-    result = await flow.async_step_init(
-        {
-            "poll_interval": 10,
-            "time_series_poll_interval": 60,
-            CONF_SSL_FINGERPRINT: "",
-            CONF_USERNAME: "user",
-            CONF_PASSWORD: "secret",
-            config_flow_module.CONF_ANALYTICS_OPT_IN: True,
-        }
-    )
+    with patch(
+        "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+        new_callable=AsyncMock,
+        return_value=(object(), None),
+    ):
+        result = await flow.async_step_init(
+            {
+                CONF_HOST: "gateway.local",
+                "poll_interval": 10,
+                "time_series_poll_interval": 60,
+                CONF_SSL_FINGERPRINT: "",
+                CONF_USERNAME: "user",
+                CONF_PASSWORD: "secret",
+                config_flow_module.CONF_ANALYTICS_OPT_IN: True,
+            }
+        )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][config_flow_module.CONF_ANALYTICS_OPT_IN] is True

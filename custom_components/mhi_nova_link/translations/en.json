@@ -58,7 +58,8 @@
           "ssl_fingerprint": "SSL fingerprint (SHA256, optional)",
           "username": "Username",
           "password": "Password",
-          "analytics_opt_in": "Share anonymous usage statistics"
+          "analytics_opt_in": "Share anonymous usage statistics",
+          "host": "IP address / hostname"
         }
       }
     }
@@ -195,30 +196,74 @@
       }
     },
     "select": {
-      "louver_position": {"name": "Air guide louver"},
-      "vane_position": {"name": "Swing louver"}
+      "louver_position": {
+        "name": "Air guide louver"
+      },
+      "vane_position": {
+        "name": "Swing louver"
+      }
     },
     "sensor": {
-      "room_temperature": {"name": "Temperature"},
-      "setpoint": {"name": "Setpoint"},
-      "cooling_temperature_min": {"name": "Cooling temperature minimum"},
-      "cooling_temperature_max": {"name": "Cooling temperature maximum"},
-      "heating_temperature_min": {"name": "Heating temperature minimum"},
-      "heating_temperature_max": {"name": "Heating temperature maximum"},
-      "indoor_unit_temperature": {"name": "Indoor unit temperature"},
-      "indoor_unit_setpoint": {"name": "Indoor unit setpoint"},
-      "indoor_unit_operation_mode": {"name": "Indoor unit mode"},
-      "indoor_unit_fan_speed": {"name": "Indoor unit fan"},
-      "outdoor_air_temperature": {"name": "Outdoor air temperature"},
-      "compressor_frequency": {"name": "Compressor frequency"},
-      "compressor_current": {"name": "Compressor current"},
-      "compressor_power": {"name": "Compressor power"},
-      "protection_state": {"name": "Protection state"},
-      "indoor_capacity": {"name": "Indoor unit capacity"},
-      "indoor_heat_exchanger_1_low_temp": {"name": "Indoor unit discharge temperature"},
-      "outdoor_heat_exchanger_1_low_temp": {"name": "Outdoor heat exchanger bottom temperature"},
-      "outdoor_heat_exchanger_1_high_temp": {"name": "Outdoor heat exchanger top temperature"},
-      "gateway_software_version": {"name": "Gateway software version"},
+      "room_temperature": {
+        "name": "Temperature"
+      },
+      "setpoint": {
+        "name": "Setpoint"
+      },
+      "cooling_temperature_min": {
+        "name": "Cooling temperature minimum"
+      },
+      "cooling_temperature_max": {
+        "name": "Cooling temperature maximum"
+      },
+      "heating_temperature_min": {
+        "name": "Heating temperature minimum"
+      },
+      "heating_temperature_max": {
+        "name": "Heating temperature maximum"
+      },
+      "indoor_unit_temperature": {
+        "name": "Indoor unit temperature"
+      },
+      "indoor_unit_setpoint": {
+        "name": "Indoor unit setpoint"
+      },
+      "indoor_unit_operation_mode": {
+        "name": "Indoor unit mode"
+      },
+      "indoor_unit_fan_speed": {
+        "name": "Indoor unit fan"
+      },
+      "outdoor_air_temperature": {
+        "name": "Outdoor air temperature"
+      },
+      "compressor_frequency": {
+        "name": "Compressor frequency"
+      },
+      "compressor_current": {
+        "name": "Compressor current"
+      },
+      "compressor_power": {
+        "name": "Compressor power"
+      },
+      "protection_state": {
+        "name": "Protection state"
+      },
+      "indoor_capacity": {
+        "name": "Indoor unit capacity"
+      },
+      "indoor_heat_exchanger_1_low_temp": {
+        "name": "Indoor unit discharge temperature"
+      },
+      "outdoor_heat_exchanger_1_low_temp": {
+        "name": "Outdoor heat exchanger bottom temperature"
+      },
+      "outdoor_heat_exchanger_1_high_temp": {
+        "name": "Outdoor heat exchanger top temperature"
+      },
+      "gateway_software_version": {
+        "name": "Gateway software version"
+      },
       "operation_mode": {
         "name": "Mode",
         "state": {
