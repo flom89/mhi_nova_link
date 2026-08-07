@@ -301,6 +301,10 @@
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Vorherigen Betrieb nach Aufhebung der Sperre wiederherstellen",
+          "gpio_restore_validity_minutes": "Gültigkeitsfenster für Wiederherstellung (Minuten)",
+          "gpio_restore_system_stop": "Wiederherstellung für Betriebssperre anwenden",
+          "gpio_restore_free_cooling": "Wiederherstellung für Externe Kühlung anwenden",
           "ssl_fingerprint": "SSL-Fingerprint (SHA256, optional)",
           "username": "Benutzername",
           "password": "Passwort",

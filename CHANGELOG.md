@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 ## [2.3.0] - 2026-08-07
 
 ### Added
-- Configurable operation-state restore workflow for Betriebssperre and Externe Kuehlung.
+- Configurable operation-state restore workflow for Betriebssperre and Externe Kühlung.
 - Persistent restore snapshots with per-source controls and validity-window handling.
 - Fail-safe restore validation that retries once after release when runtime values diverge.
 - Extended regression coverage for restore persistence, lock behavior, options flow, and gateway controls.
