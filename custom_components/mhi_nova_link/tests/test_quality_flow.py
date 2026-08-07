@@ -1,14 +1,23 @@
 """Run quality-focused regression tests for NOVA_RC."""
 
+from collections.abc import Generator
 from types import SimpleNamespace
+from typing import Any, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-import custom_components.mhi_nova_link as integration_module
-import custom_components.mhi_nova_link.config_flow as config_flow_module
+import custom_components.mhi_nova_link as integration_pkg
+import custom_components.mhi_nova_link.config_flow as config_flow_pkg
+from custom_components.mhi_nova_link.const import (
+    CONF_GPIO_RESTORE_ENABLED,
+    CONF_GPIO_RESTORE_FREE_COOLING,
+    CONF_GPIO_RESTORE_SYSTEM_STOP,
+    CONF_GPIO_RESTORE_VALIDITY_MINUTES,
+)
 
 CONF_SSL_FINGERPRINT = "ssl_fingerprint"
 
@@ -26,9 +35,7 @@ class DummyConfigEntries:
         """Record platform setup calls without doing any real Home Assistant work."""
         self._entries[entry.entry_id] = platforms
 
-    async def async_unload_platforms(
-        self, entry: object, platforms: tuple[object, ...]
-    ) -> bool:
+    async def async_unload_platforms(self, entry: object, platforms: tuple[object, ...]) -> bool:
         """Pretend to unload platforms successfully."""
         self._entries.pop(entry.entry_id, None)
         return True
@@ -73,13 +80,13 @@ class DummyHass(SimpleNamespace):
 
 
 @pytest.fixture(name="hass")
-def hass_fixture() -> DummyHass:
+def hass_fixture() -> HomeAssistant:
     """Provide a lightweight Home Assistant stub for integration tests."""
-    return DummyHass()
+    return cast(HomeAssistant, DummyHass())
 
 
 @pytest.fixture(autouse=True)
-def patch_update_coordinator_report_usage() -> None:
+def patch_update_coordinator_report_usage() -> Generator[None, None, None]:
     """Disable frame usage reporting for lightweight unit test stubs."""
     with patch("homeassistant.helpers.frame.report_usage"):
         yield
@@ -88,36 +95,52 @@ def patch_update_coordinator_report_usage() -> None:
 class DummyConfigEntry(SimpleNamespace):
     """Minimal config-entry stub for setup/unload regression tests."""
 
-    def __init__(self, domain: str, data: dict[str, str]) -> None:
+    domain: str
+    data: dict[str, str]
+    options: dict[str, Any]
+    entry_id: str
+    title: str
+
+    def __init__(
+        self,
+        domain: str,
+        data: dict[str, str],
+        *,
+        options: dict[str, Any] | None = None,
+    ) -> None:
         """Initialize the minimal config-entry stub."""
         super().__init__(
             domain=domain,
             data=data,
-            options={},
+            options=options or {},
             entry_id="entry-id",
             title="NOVA_RC",
         )
 
-    def add_to_hass(self, hass: object) -> None:
+    def add_to_hass(self, hass: HomeAssistant | None) -> None:
         """Register the entry with Home Assistant for test purposes."""
+        assert hass is not None
         hass.config_entries._entries[self.entry_id] = self  # noqa: SLF001
+
+    def async_on_unload(self, func: object) -> None:
+        """Accept unload callbacks required by DataUpdateCoordinator."""
 
 
 @pytest.fixture(name="integration_module")
 def integration_module_fixture() -> object:
     """Return the integration package from the custom component path."""
-    return integration_module
+    return integration_pkg
 
 
 @pytest.fixture(name="config_flow_module")
 def config_flow_module_fixture() -> object:
     """Return the integration config flow module."""
-    return config_flow_module
+    return config_flow_pkg
 
 
 async def test_config_flow_creates_entry_when_login_succeeds(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """A successful login should proceed to the analytics step and then create a config entry."""
     mock_client = AsyncMock()
@@ -132,7 +155,6 @@ async def test_config_flow_creates_entry_when_login_succeeds(
             return_value=(mock_client, None),
         ),
     ):
-
         flow = config_flow_module.NovaRcConfigFlow()
         flow.hass = hass
         flow.context = {}
@@ -153,9 +175,7 @@ async def test_config_flow_creates_entry_when_login_succeeds(
     assert result["step_id"] == "analytics"
 
     # Submit the analytics step (opting out)
-    result2 = await flow.async_step_analytics(
-        {config_flow_module.CONF_ANALYTICS_OPT_IN: False}
-    )
+    result2 = await flow.async_step_analytics({config_flow_module.CONF_ANALYTICS_OPT_IN: False})
     assert result2["type"] is FlowResultType.CREATE_ENTRY
     assert result2["title"] == "CompTrol 4Web NOVA RC (gateway.local)"
     assert result2["data"][config_flow_module.CONF_ANALYTICS_OPT_IN] is False
@@ -163,7 +183,7 @@ async def test_config_flow_creates_entry_when_login_succeeds(
 
 async def test_config_flow_returns_form_for_invalid_auth(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Authentication errors should surface as a form error."""
     with (
@@ -177,7 +197,6 @@ async def test_config_flow_returns_form_for_invalid_auth(
             side_effect=config_flow_module.InvalidAuth,
         ),
     ):
-
         flow = config_flow_module.NovaRcConfigFlow()
         flow.hass = hass
         flow.context = {}
@@ -197,7 +216,7 @@ async def test_config_flow_returns_form_for_invalid_auth(
 
 async def test_config_flow_returns_form_for_invalid_fingerprint_format(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Invalid fingerprint input should fail validation before login."""
     with patch(
@@ -223,7 +242,7 @@ async def test_config_flow_returns_form_for_invalid_fingerprint_format(
 
 async def test_config_flow_returns_form_for_invalid_gateway_certificate(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Certificate validation failures should map to a dedicated flow error."""
     with (
@@ -237,7 +256,6 @@ async def test_config_flow_returns_form_for_invalid_gateway_certificate(
             side_effect=config_flow_module.InvalidCertificate,
         ),
     ):
-
         flow = config_flow_module.NovaRcConfigFlow()
         flow.hass = hass
         flow.context = {}
@@ -257,7 +275,7 @@ async def test_config_flow_returns_form_for_invalid_gateway_certificate(
 
 async def test_config_flow_auto_pins_fingerprint_for_self_signed_gateway(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """When no fingerprint is provided, the flow should auto-discover and store one."""
     mock_client = AsyncMock()
@@ -290,16 +308,14 @@ async def test_config_flow_auto_pins_fingerprint_for_self_signed_gateway(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "analytics"
 
-    result2 = await flow.async_step_analytics(
-        {config_flow_module.CONF_ANALYTICS_OPT_IN: False}
-    )
+    result2 = await flow.async_step_analytics({config_flow_module.CONF_ANALYTICS_OPT_IN: False})
     assert result2["type"] is FlowResultType.CREATE_ENTRY
     assert result2["data"][CONF_SSL_FINGERPRINT] == "cc" * 32
 
 
 async def test_setup_and_unload_entry(
     integration_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """The integration should set up and unload config entries cleanly."""
     entry = DummyConfigEntry(
@@ -310,8 +326,8 @@ async def test_setup_and_unload_entry(
             CONF_PASSWORD: "secret",
             CONF_SSL_FINGERPRINT: "aa" * 32,
         },
+        options={CONF_SSL_FINGERPRINT: "bb" * 32},
     )
-    entry.options = {CONF_SSL_FINGERPRINT: "bb" * 32}
     entry.add_to_hass(hass)
 
     mock_client = AsyncMock()
@@ -342,7 +358,7 @@ async def test_setup_and_unload_entry(
 
 async def test_setup_auto_pins_fingerprint_when_missing(
     integration_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Setup should auto-discover and pin a fingerprint for self-signed gateways."""
     entry = DummyConfigEntry(
@@ -352,8 +368,8 @@ async def test_setup_auto_pins_fingerprint_when_missing(
             CONF_USERNAME: "user",
             CONF_PASSWORD: "secret",
         },
+        options={},
     )
-    entry.options = {}
     entry.add_to_hass(hass)
 
     mock_client = AsyncMock()
@@ -380,7 +396,7 @@ async def test_setup_auto_pins_fingerprint_when_missing(
 
 async def test_setup_uses_username_and_password_from_options(
     integration_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Setup should use credentials from options when they are configured."""
     entry = DummyConfigEntry(
@@ -391,12 +407,12 @@ async def test_setup_uses_username_and_password_from_options(
             CONF_PASSWORD: "old-secret",
             CONF_SSL_FINGERPRINT: "aa" * 32,
         },
+        options={
+            CONF_USERNAME: "new-user",
+            CONF_PASSWORD: "new-secret",
+            CONF_SSL_FINGERPRINT: "aa" * 32,
+        },
     )
-    entry.options = {
-        CONF_USERNAME: "new-user",
-        CONF_PASSWORD: "new-secret",
-        CONF_SSL_FINGERPRINT: "aa" * 32,
-    }
     entry.add_to_hass(hass)
 
     mock_client = AsyncMock()
@@ -421,7 +437,7 @@ async def test_setup_uses_username_and_password_from_options(
 
 async def test_options_flow_accepts_updated_credentials(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Options flow should store updated gateway credentials."""
     entry = SimpleNamespace(
@@ -438,19 +454,26 @@ async def test_options_flow_accepts_updated_credentials(
     flow = config_flow_module.NovaRcOptionsFlow(entry)
     flow.hass = hass
 
-    with patch(
-        "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
-        return_value=object(),
-    ), patch(
-        "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
-        new_callable=AsyncMock,
-        return_value=(object(), None),
+    with (
+        patch(
+            "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch(
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(object(), None),
+        ),
     ):
         result = await flow.async_step_init(
             {
                 CONF_HOST: "gateway.local",
                 "poll_interval": 10,
                 "time_series_poll_interval": 60,
+                CONF_GPIO_RESTORE_ENABLED: True,
+                CONF_GPIO_RESTORE_VALIDITY_MINUTES: 90,
+                CONF_GPIO_RESTORE_SYSTEM_STOP: True,
+                CONF_GPIO_RESTORE_FREE_COOLING: False,
                 CONF_SSL_FINGERPRINT: "",
                 CONF_USERNAME: "new-user",
                 CONF_PASSWORD: "new-secret",
@@ -461,13 +484,17 @@ async def test_options_flow_accepts_updated_credentials(
     assert entry.data[CONF_USERNAME] == "new-user"
     assert entry.data[CONF_PASSWORD] == "new-secret"
     assert result["data"]["time_series_poll_interval"] == 60
+    assert result["data"][CONF_GPIO_RESTORE_ENABLED] is True
+    assert result["data"][CONF_GPIO_RESTORE_VALIDITY_MINUTES] == 90
+    assert result["data"][CONF_GPIO_RESTORE_SYSTEM_STOP] is True
+    assert result["data"][CONF_GPIO_RESTORE_FREE_COOLING] is False
     assert CONF_USERNAME not in result["data"]
     assert CONF_PASSWORD not in result["data"]
 
 
 async def test_options_flow_generates_analytics_id_when_enabling_tracking(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Enabling analytics in options should persist an anonymous ID."""
     entry = SimpleNamespace(
@@ -485,13 +512,16 @@ async def test_options_flow_generates_analytics_id_when_enabling_tracking(
     flow = config_flow_module.NovaRcOptionsFlow(entry)
     flow.hass = hass
 
-    with patch(
-        "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
-        return_value=object(),
-    ), patch(
-        "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
-        new_callable=AsyncMock,
-        return_value=(object(), None),
+    with (
+        patch(
+            "custom_components.mhi_nova_link.config_flow.async_get_clientsession",
+            return_value=object(),
+        ),
+        patch(
+            "custom_components.mhi_nova_link.config_flow.async_login_with_autopin",
+            new_callable=AsyncMock,
+            return_value=(object(), None),
+        ),
     ):
         result = await flow.async_step_init(
             {
@@ -512,7 +542,7 @@ async def test_options_flow_generates_analytics_id_when_enabling_tracking(
 
 async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
     integration_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Setup should backfill an anonymous ID if analytics are enabled without one."""
     entry = DummyConfigEntry(
@@ -524,8 +554,8 @@ async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
             CONF_SSL_FINGERPRINT: "aa" * 32,
             integration_module.CONF_ANALYTICS_OPT_IN: True,
         },
+        options={integration_module.CONF_ANALYTICS_OPT_IN: True},
     )
-    entry.options = {integration_module.CONF_ANALYTICS_OPT_IN: True}
     entry.add_to_hass(hass)
 
     mock_client = AsyncMock()
@@ -549,16 +579,15 @@ async def test_setup_generates_missing_analytics_id_for_opted_in_entries(
             return_value=None,
         ),
     ):
-
         assert await integration_module.async_setup_entry(hass, entry)
         assert integration_module.ANALYTICS_ANONYMOUS_ID_KEY in entry.data
         assert entry.data[integration_module.ANALYTICS_ANONYMOUS_ID_KEY]
-        assert hass.created_tasks
+        assert cast(DummyHass, hass).created_tasks
 
 
 async def test_reauth_confirm_updates_credentials_and_reloads_entry(
     config_flow_module: object,
-    hass: DummyHass,
+    hass: HomeAssistant,
 ) -> None:
     """Reauth confirmation should validate credentials, update data, and reload."""
     entry = SimpleNamespace(
@@ -572,9 +601,11 @@ async def test_reauth_confirm_updates_credentials_and_reloads_entry(
         options={},
     )
     hass.config_entries._entries[entry.entry_id] = entry  # noqa: SLF001
-    hass.config_entries.async_get_entry = lambda entry_id: hass.config_entries._entries.get(  # noqa: SLF001
-        entry_id
-    )
+
+    def _async_get_entry(entry_id: str) -> object | None:
+        return hass.config_entries._entries.get(entry_id)  # noqa: SLF001
+
+    hass.config_entries.async_get_entry = _async_get_entry
     hass.config_entries.async_reload = AsyncMock(return_value=True)
 
     with (

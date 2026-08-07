@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from homeassistant.components.climate import HVACMode
 from homeassistant.const import Platform, UnitOfElectricCurrent, UnitOfPower
+from homeassistant.exceptions import HomeAssistantError
 
 import custom_components.mhi_nova_link.api as api_module
 import custom_components.mhi_nova_link.binary_sensor as binary_sensor_module
@@ -25,6 +26,7 @@ import custom_components.mhi_nova_link.switch as switch_module
 def integration_module_fixture() -> object:
     """Return the sensor module for tests that need it via fixture injection."""
     return sensor_module
+
 
 def test_integration_loads_sensor_and_binary_sensor_platforms() -> None:
     """The integration should forward the sensor and binary sensor platforms."""
@@ -215,12 +217,8 @@ def test_build_time_series_identifiers_deduplicates_repeated_references() -> Non
 def test_build_time_series_identifiers_use_zone_scoped_outdoor_reference() -> None:
     """Outdoor-unit identifiers should stay scoped to the current zone id."""
 
-    zone_1_ids = api_module.build_time_series_identifiers(
-        {"zoneId": 1, "indoorUnits": []}
-    )
-    zone_2_ids = api_module.build_time_series_identifiers(
-        {"zoneId": 2, "indoorUnits": []}
-    )
+    zone_1_ids = api_module.build_time_series_identifiers({"zoneId": 1, "indoorUnits": []})
+    zone_2_ids = api_module.build_time_series_identifiers({"zoneId": 2, "indoorUnits": []})
 
     assert {
         "reference": "/outdoor_unit/1",
@@ -243,9 +241,7 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
     with (integration_dir / "strings.json").open(encoding="utf-8") as handle:
         strings = json.load(handle)
 
-    with (integration_dir / "translations" / "en.json").open(
-        encoding="utf-8"
-    ) as handle:
+    with (integration_dir / "translations" / "en.json").open(encoding="utf-8") as handle:
         translations = json.load(handle)
 
     expected_paths = [
@@ -374,20 +370,17 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
         for entity in added_entities
     )
     assert any(
-        isinstance(entity, integration_module.NovaRcTemperatureSensor)
-        for entity in added_entities
+        isinstance(entity, integration_module.NovaRcTemperatureSensor) for entity in added_entities
     )
     assert any(
-        isinstance(entity, integration_module.NovaRcSetpointSensor)
-        for entity in added_entities
+        isinstance(entity, integration_module.NovaRcSetpointSensor) for entity in added_entities
     )
     assert any(
         isinstance(entity, integration_module.NovaRcOperationModeSensor)
         for entity in added_entities
     )
     assert any(
-        isinstance(entity, integration_module.NovaRcFanSpeedSensor)
-        for entity in added_entities
+        isinstance(entity, integration_module.NovaRcFanSpeedSensor) for entity in added_entities
     )
     assert not any(
         isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
@@ -558,13 +551,8 @@ async def test_select_setup_entry_creates_zone_select_entities() -> None:
     await select_module.async_setup_entry(hass, entry, add_entities)
 
     assert len(added_entities) == 2
-    assert any(
-        isinstance(entity, select_module.NovaRcLouverSelect)
-        for entity in added_entities
-    )
-    assert any(
-        isinstance(entity, select_module.NovaRcVaneSelect) for entity in added_entities
-    )
+    assert any(isinstance(entity, select_module.NovaRcLouverSelect) for entity in added_entities)
+    assert any(isinstance(entity, select_module.NovaRcVaneSelect) for entity in added_entities)
 
 
 @pytest.mark.asyncio
@@ -599,16 +587,12 @@ async def test_switch_setup_entry_creates_zone_switch_entities() -> None:
     await switch_module.async_setup_entry(hass, entry, add_entities)
 
     assert len(added_entities) == 3
+    assert any(isinstance(entity, switch_module.NovaRc3DAutoSwitch) for entity in added_entities)
     assert any(
-        isinstance(entity, switch_module.NovaRc3DAutoSwitch) for entity in added_entities
+        isinstance(entity, switch_module.NovaRcSystemStopSwitch) for entity in added_entities
     )
     assert any(
-        isinstance(entity, switch_module.NovaRcSystemStopSwitch)
-        for entity in added_entities
-    )
-    assert any(
-        isinstance(entity, switch_module.NovaRcFreeCoolingSwitch)
-        for entity in added_entities
+        isinstance(entity, switch_module.NovaRcFreeCoolingSwitch) for entity in added_entities
     )
 
 
@@ -706,9 +690,7 @@ async def test_binary_sensor_setup_creates_indoor_unit_running_entities() -> Non
         for entity in added_entities
     )
     assert any(
-        isinstance(
-            entity, binary_sensor_module.NovaRcGatewayUpdateAvailableBinarySensor
-        )
+        isinstance(entity, binary_sensor_module.NovaRcGatewayUpdateAvailableBinarySensor)
         for entity in added_entities
     )
 
@@ -885,14 +867,10 @@ def test_dataset_is_on_parses_yes_no_labels() -> None:
     """Boolean helpers should understand common yes/no labels from the gateway."""
 
     assert helpers_module.dataset_is_on("compressor_active", {"data": {"value": "Ja"}})
-    assert not helpers_module.dataset_is_on(
-        "compressor_active", {"data": {"value": "Nein"}}
-    )
+    assert not helpers_module.dataset_is_on("compressor_active", {"data": {"value": "Nein"}})
 
 
-def test_compressor_binary_sensor_uses_frequency_fallback_when_active_flag_is_false() -> (
-    None
-):
+def test_compressor_binary_sensor_uses_frequency_fallback_when_active_flag_is_false() -> None:
     """Compressor should be considered active when frequency is above zero."""
 
     coordinator = SimpleNamespace(
@@ -977,9 +955,7 @@ def test_protection_state_sensor_parses_nested_normal_value(
                             "id": "ou_indication_protection_state_comp",
                             "reference": "/outdoor_unit/1",
                             "data": {"normal": True},
-                            "options": {
-                                "options": [{"value": "normal", "label": "Normal"}]
-                            },
+                            "options": {"options": [{"value": "normal", "label": "Normal"}]},
                         }
                     ]
                 },
@@ -1462,7 +1438,80 @@ async def test_free_cooling_switch_toggles_active_high_for_low_active_logic() ->
     assert not entity.is_on
 
     await entity.async_turn_on()
-    api.async_set_gpio_active_high.assert_awaited_once_with(
-        "/gpio/sequencing_stop", False
-    )
+    api.async_set_gpio_active_high.assert_awaited_once_with("/gpio/sequencing_stop", False)
     coordinator.async_request_refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_system_stop_switch_captures_snapshot_and_restores_on_release() -> None:
+    """System-stop switch should capture and restore state around lock lifecycle."""
+
+    api = SimpleNamespace(host="gateway", async_set_gpio_active_high=AsyncMock(return_value=True))
+    coordinator = SimpleNamespace(
+        data=[],
+        gpio_active_high={"SYSTEM_STOP": True},
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        is_user_control_locked=False,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
+        async_capture_restore_snapshot=AsyncMock(),
+        async_restore_after_release=AsyncMock(),
+    )
+    entity = switch_module.NovaRcSystemStopSwitch(coordinator)
+
+    await entity.async_turn_on()
+    coordinator.async_capture_restore_snapshot.assert_awaited_once_with("SYSTEM_STOP")
+
+    await entity.async_turn_off()
+    coordinator.async_restore_after_release.assert_awaited_once_with("SYSTEM_STOP")
+
+
+@pytest.mark.asyncio
+async def test_locked_controls_are_unavailable_and_block_writes() -> None:
+    """Controls should be unavailable and reject writes while operation lock is active."""
+
+    api = SimpleNamespace(
+        host="gateway",
+        async_set_gpio_active_high=AsyncMock(return_value=True),
+        async_set_zone_state=AsyncMock(),
+    )
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 1,
+                "running": True,
+                "operationMode": "AUTO",
+                "fanSpeed": "AUTO",
+                "vanePosition": "AUTO",
+                "patchOptions": {},
+            }
+        ],
+        gpio_active_high={"SYSTEM_STOP": False, "FREE_COOLING": True},
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=api,
+        last_update_success=True,
+        is_user_control_locked=True,
+        async_add_listener=lambda callback: lambda: None,
+        async_request_refresh=AsyncMock(),
+    )
+
+    free_cooling = switch_module.NovaRcFreeCoolingSwitch(coordinator)
+    system_stop = switch_module.NovaRcSystemStopSwitch(coordinator)
+    climate = climate_module.NovaRcZoneClimate(coordinator, 1)
+    vane = select_module.NovaRcVaneSelect(coordinator, 1)
+
+    assert not free_cooling.available
+    assert system_stop.available
+    assert not climate.available
+    assert not vane.available
+
+    with pytest.raises(HomeAssistantError):
+        await climate.async_set_hvac_mode(HVACMode.COOL)
+
+    with pytest.raises(HomeAssistantError):
+        await vane.async_select_option("Auto")
+
+    with pytest.raises(HomeAssistantError):
+        await free_cooling.async_turn_on()

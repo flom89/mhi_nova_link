@@ -3,6 +3,7 @@
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import NovaRcConfigEntry
@@ -58,6 +59,16 @@ async def async_setup_entry(
 class NovaRcBaseSelect(NovaRcZoneEntity, SelectEntity):
     """Base implementation for NOVA_RC select entities."""
 
+    @property
+    def available(self) -> bool:
+        """Return whether this control is available in the UI."""
+        return super().available and not getattr(self.coordinator, "is_user_control_locked", False)
+
+    def _ensure_write_allowed(self) -> None:
+        """Block user writes while operation lock is active."""
+        if getattr(self.coordinator, "is_user_control_locked", False):
+            raise HomeAssistantError("Betriebssperre aktiv: Änderung nicht erlaubt")
+
 
 class NovaRcLouverSelect(NovaRcBaseSelect):
     """Select entity for the louver position."""
@@ -111,10 +122,9 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
 
     async def async_select_option(self, option: str) -> None:
         """Change the louver position on the gateway."""
+        self._ensure_write_allowed()
         raw_val = LOUVER_REVERSE_MAP.get(option, option)
-        await self.coordinator.api.async_set_zone_state(
-            self.zone_id, louver_position=raw_val
-        )
+        await self.coordinator.api.async_set_zone_state(self.zone_id, louver_position=raw_val)
         await self.coordinator.async_request_refresh()
 
 
@@ -175,8 +185,7 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
 
     async def async_select_option(self, option: str) -> None:
         """Change the vane position on the gateway."""
+        self._ensure_write_allowed()
         raw_val = VANE_REVERSE_MAP.get(option, option)
-        await self.coordinator.api.async_set_zone_state(
-            self.zone_id, vane_position=raw_val
-        )
+        await self.coordinator.api.async_set_zone_state(self.zone_id, vane_position=raw_val)
         await self.coordinator.async_request_refresh()

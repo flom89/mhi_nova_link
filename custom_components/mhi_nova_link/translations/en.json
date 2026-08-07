@@ -55,6 +55,10 @@
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restore previous operation after lock is released",
+          "gpio_restore_validity_minutes": "Restore validity window (minutes)",
+          "gpio_restore_system_stop": "Apply restore to operation lock",
+          "gpio_restore_free_cooling": "Apply restore to external cooling",
           "ssl_fingerprint": "SSL fingerprint (SHA256, optional)",
           "username": "Username",
           "password": "Password",

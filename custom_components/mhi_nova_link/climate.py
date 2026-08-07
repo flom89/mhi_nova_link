@@ -17,6 +17,7 @@ from homeassistant.components.climate.const import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import NovaRcConfigEntry
@@ -82,9 +83,7 @@ async def async_setup_entry(
     else:
         coordinator = hass.data[entry.domain][entry.entry_id]
 
-    entities = [
-        NovaRcZoneClimate(coordinator, zone["zoneId"]) for zone in coordinator.data
-    ]
+    entities = [NovaRcZoneClimate(coordinator, zone["zoneId"]) for zone in coordinator.data]
     async_add_entities(entities)
 
 
@@ -195,9 +194,7 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
     def swing_modes(self) -> list[str] | None:
         """Return the available swing modes from the API."""
         patch_opts = self._zone_data.get("patchOptions") or {}
-        raw_positions = (
-            patch_opts.get("vanePosition") or patch_opts.get("louverPosition") or []
-        )
+        raw_positions = patch_opts.get("vanePosition") or patch_opts.get("louverPosition") or []
 
         modes = []
         for raw in raw_positions:
@@ -210,9 +207,7 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
     @property
     def swing_mode(self) -> str | None:
         """Return the current swing mode."""
-        raw_vane = self._zone_data.get("vanePosition") or self._zone_data.get(
-            "louverPosition"
-        )
+        raw_vane = self._zone_data.get("vanePosition") or self._zone_data.get("louverPosition")
         if raw_vane is None:
             return None
         if not isinstance(raw_vane, str):
@@ -231,8 +226,19 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         temp_range = self._zone_data.get("temperatureRangeHeating") or {}
         return temp_range.get("upper", 30.0)
 
+    @property
+    def available(self) -> bool:
+        """Return whether this control is available in the UI."""
+        return super().available and not getattr(self.coordinator, "is_user_control_locked", False)
+
+    def _ensure_write_allowed(self) -> None:
+        """Block user writes while operation lock is active."""
+        if getattr(self.coordinator, "is_user_control_locked", False):
+            raise HomeAssistantError("Betriebssperre aktiv: Änderung nicht erlaubt")
+
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Turn the HVAC mode on or off."""
+        self._ensure_write_allowed()
         was_running = bool(self._zone_data.get("running"))
         if hvac_mode == HVACMode.OFF:
             await self.coordinator.api.async_set_zone_state(self.zone_id, running=False)
@@ -248,22 +254,21 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set the target temperature."""
+        self._ensure_write_allowed()
         if (temp := kwargs.get(ATTR_TEMPERATURE)) is not None:
             await self.coordinator.api.async_set_zone_state(self.zone_id, setpoint=temp)
             await self.coordinator.async_request_refresh()
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set the fan mode."""
+        self._ensure_write_allowed()
         if mhi_fan := FAN_MODE_REVERSE_MAP.get(fan_mode):
-            await self.coordinator.api.async_set_zone_state(
-                self.zone_id, fan_speed=mhi_fan
-            )
+            await self.coordinator.api.async_set_zone_state(self.zone_id, fan_speed=mhi_fan)
             await self.coordinator.async_request_refresh()
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         """Set the swing mode."""
+        self._ensure_write_allowed()
         raw_vane = SWING_MODE_REVERSE_MAP.get(swing_mode, swing_mode)
-        await self.coordinator.api.async_set_zone_state(
-            self.zone_id, vane_position=raw_vane
-        )
+        await self.coordinator.api.async_set_zone_state(self.zone_id, vane_position=raw_vane)
         await self.coordinator.async_request_refresh()

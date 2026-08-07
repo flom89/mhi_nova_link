@@ -101,9 +101,7 @@ def normalize_ssl_fingerprint(value: str | None) -> str | None:
     try:
         int(compact, 16)
     except ValueError as err:
-        raise ValueError(
-            "Fingerprint must be a valid hexadecimal SHA256 value"
-        ) from err
+        raise ValueError("Fingerprint must be a valid hexadecimal SHA256 value") from err
 
     return compact
 
@@ -111,9 +109,7 @@ def normalize_ssl_fingerprint(value: str | None) -> str | None:
 def _raise_if_auth_rejected(status: int, response_text: str, operation: str) -> None:
     """Raise InvalidAuth for HTTP auth failures."""
     if status in (401, 403):
-        _LOGGER.error(
-            "Authentication error in %s (%s): %s", operation, status, response_text
-        )
+        _LOGGER.error("Authentication error in %s (%s): %s", operation, status, response_text)
         raise InvalidAuth("Authentication rejected.")
 
 
@@ -142,11 +138,7 @@ def _get_time_series_update_interval(configured_interval: Any) -> int:
 
 def _format_utc_timestamp(timestamp: datetime) -> str:
     """Return a GraphQL-friendly UTC timestamp string."""
-    return (
-        timestamp.astimezone(UTC)
-        .isoformat(timespec="milliseconds")
-        .replace("+00:00", "Z")
-    )
+    return timestamp.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def build_time_series_period(
@@ -179,14 +171,11 @@ def build_time_series_identifiers(zone: dict[str, Any]) -> list[dict[str, str]]:
     identifiers: list[dict[str, str]] = []
     for dataset_id in sorted(DEFAULT_TIME_SERIES_DATASET_IDS):
         if dataset_id.startswith("ou_"):
-            identifiers.append(
-                {"reference": f"/outdoor_unit/{zone_id}", "id": dataset_id}
-            )
+            identifiers.append({"reference": f"/outdoor_unit/{zone_id}", "id": dataset_id})
             continue
 
         identifiers.extend(
-            {"reference": reference, "id": dataset_id}
-            for reference in indoor_references
+            {"reference": reference, "id": dataset_id} for reference in indoor_references
         )
 
     return identifiers
@@ -219,16 +208,12 @@ def normalize_notifications_payload(data: dict[str, Any]) -> dict[str, Any]:
 
     notifications = notification.get("notifications") or []
     active_notifications = [
-        item
-        for item in notifications
-        if isinstance(item, dict) and item.get("active") is True
+        item for item in notifications if isinstance(item, dict) and item.get("active") is True
     ]
 
     errors = notification.get("errors") or []
     active_errors = [
-        item
-        for item in errors
-        if isinstance(item, dict) and item.get("priority") is not None
+        item for item in errors if isinstance(item, dict) and item.get("priority") is not None
     ]
 
     return {
@@ -294,9 +279,7 @@ def normalize_zones_payload(data: dict[str, Any]) -> list[dict[str, Any]]:
         zone = xybus.get("zone")
         zones = [zone] if zone else []
 
-    return [
-        z for z in zones if isinstance(z, dict) and z.get("__typename") == "XYBusZone"
-    ]
+    return [z for z in zones if isinstance(z, dict) and z.get("__typename") == "XYBusZone"]
 
 
 def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
@@ -312,9 +295,7 @@ def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
         if isinstance(information, dict)
         else None
     )
-    available_release = (
-        cloud.get("availableSoftwareRelease", {}) if isinstance(cloud, dict) else {}
-    )
+    available_release = cloud.get("availableSoftwareRelease", {}) if isinstance(cloud, dict) else {}
     available_version = (
         available_release.get("version", {}).get("asString")
         if isinstance(available_release, dict)
@@ -332,9 +313,7 @@ def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
         else None,
         "available_version": available_version,
         "update_available": bool(available_version),
-        "automatic_check": settings.get("automaticCheck")
-        if isinstance(settings, dict)
-        else None,
+        "automatic_check": settings.get("automaticCheck") if isinstance(settings, dict) else None,
         "automatic_install": settings.get("automaticInstall")
         if isinstance(settings, dict)
         else None,
@@ -394,7 +373,6 @@ async def async_login_with_autopin(
     return pinned_client, discovered_fingerprint
 
 
-
 class NovaRcApiClient:
     """GraphQL client for NOVA_RC."""
 
@@ -420,13 +398,9 @@ class NovaRcApiClient:
         normalized_fingerprint = normalize_ssl_fingerprint(ssl_fingerprint)
         self._ssl_context: bool | aiohttp.Fingerprint = True
         if normalized_fingerprint:
-            self._ssl_context = aiohttp.Fingerprint(
-                binascii.unhexlify(normalized_fingerprint)
-            )
+            self._ssl_context = aiohttp.Fingerprint(binascii.unhexlify(normalized_fingerprint))
 
-        configured_ts_interval = _get_time_series_update_interval(
-            time_series_poll_interval
-        )
+        configured_ts_interval = _get_time_series_update_interval(time_series_poll_interval)
         self._time_series_update_interval = timedelta(seconds=configured_ts_interval)
         self._time_series_last_fetch: dict[int, datetime] = {}
         self._time_series_cache: dict[int, dict[str, Any]] = {}
@@ -481,9 +455,7 @@ class NovaRcApiClient:
         try:
             ssl_object = writer.get_extra_info("ssl_object")
             if ssl_object is None:
-                raise CannotConnect(
-                    "No TLS session established while reading certificate"
-                )
+                raise CannotConnect("No TLS session established while reading certificate")
 
             certificate = ssl_object.getpeercert(binary_form=True)
             if not certificate:
@@ -503,10 +475,7 @@ class NovaRcApiClient:
     @staticmethod
     def _zone_has_airflow_values(zone: dict[str, Any]) -> bool:
         """Return whether a zone already reports both airflow selector values."""
-        return (
-            zone.get("louverPosition") is not None
-            and zone.get("vanePosition") is not None
-        )
+        return zone.get("louverPosition") is not None and zone.get("vanePosition") is not None
 
     async def async_login(self, username: str, password: str) -> bool:
         """Validate connectivity and store authentication credentials."""
@@ -544,9 +513,7 @@ class NovaRcApiClient:
                 _raise_if_auth_rejected(response.status, text, "GetZones")
 
                 if response.status != 200:
-                    _LOGGER.error(
-                        "GetZones returned HTTP error (%s): %s", response.status, text
-                    )
+                    _LOGGER.error("GetZones returned HTTP error (%s): %s", response.status, text)
                     raise CannotConnect(f"HTTP error: {response.status}")
 
                 data = await response.json()
@@ -555,9 +522,7 @@ class NovaRcApiClient:
                     raise CannotConnect("GraphQL query error")
 
                 zones = normalize_zones_payload(data)
-                await asyncio.gather(
-                    *[self._attach_time_series_data(zone) for zone in zones]
-                )
+                await asyncio.gather(*[self._attach_time_series_data(zone) for zone in zones])
 
                 return zones
 
@@ -709,9 +674,7 @@ class NovaRcApiClient:
                     _LOGGER.debug("GPIO query error: %s", data.get("errors"))
                     return {}, {}
 
-                return normalize_gpios_payload(data), normalize_gpio_active_high_payload(
-                    data
-                )
+                return normalize_gpios_payload(data), normalize_gpio_active_high_payload(data)
 
         except (
             aiohttp_exceptions.ServerFingerprintMismatch,
@@ -746,9 +709,7 @@ class NovaRcApiClient:
 
                 data = await response.json()
                 if "errors" in data:
-                    _LOGGER.debug(
-                        "Gateway update-info query error: %s", data.get("errors")
-                    )
+                    _LOGGER.debug("Gateway update-info query error: %s", data.get("errors"))
                     return {}
 
                 return normalize_gateway_update_payload(data)
@@ -854,11 +815,7 @@ class NovaRcApiClient:
                             continue
 
                         last_point = next(
-                            (
-                                point
-                                for point in reversed(points)
-                                if isinstance(point, dict)
-                            ),
+                            (point for point in reversed(points) if isinstance(point, dict)),
                             None,
                         )
                         if last_point is None:
@@ -905,9 +862,7 @@ class NovaRcApiClient:
         ) as err:
             raise InvalidCertificate("TLS certificate validation failed") from err
         except (TimeoutError, aiohttp.ClientError) as err:
-            _LOGGER.debug(
-                "Time-series request failed for zone %s: %s", zone.get("zoneId"), err
-            )
+            _LOGGER.debug("Time-series request failed for zone %s: %s", zone.get("zoneId"), err)
             if cached_payload is not None:
                 zone["timeSeries"] = cached_payload
 
@@ -965,9 +920,7 @@ class NovaRcApiClient:
                 _raise_if_auth_rejected(response.status, text, "PatchZone")
 
                 if response.status != 200:
-                    _LOGGER.error(
-                        "Mutation returned HTTP error (%s): %s", response.status, text
-                    )
+                    _LOGGER.error("Mutation returned HTTP error (%s): %s", response.status, text)
                     return False
 
                 response_json = await response.json()
@@ -976,10 +929,7 @@ class NovaRcApiClient:
                     return False
 
                 job = (
-                    response_json.get("data", {})
-                    .get("xybus", {})
-                    .get("zone", {})
-                    .get("patch", {})
+                    response_json.get("data", {}).get("xybus", {}).get("zone", {}).get("patch", {})
                 )
                 _LOGGER.debug(
                     "Patch job started for zone %s (data: %s): %s",
@@ -1036,9 +986,7 @@ class NovaRcApiClient:
 
                 response_json = await response.json()
                 if "errors" in response_json:
-                    _LOGGER.error(
-                        "SetActiveHigh GraphQL error: %s", response_json["errors"]
-                    )
+                    _LOGGER.error("SetActiveHigh GraphQL error: %s", response_json["errors"])
                     return False
 
                 result = response_json.get("data", {}).get("gpio", {}).get("setActiveHigh")
