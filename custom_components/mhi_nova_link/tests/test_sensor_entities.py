@@ -270,6 +270,7 @@ def test_translation_assets_cover_entity_and_config_strings() -> None:
         ("entity", "sensor", "indoor_heat_exchanger_1_low_temp", "name"),
         ("entity", "sensor", "outdoor_heat_exchanger_1_low_temp", "name"),
         ("entity", "sensor", "outdoor_heat_exchanger_1_high_temp", "name"),
+        ("entity", "sensor", "restore_status", "name"),
         ("entity", "switch", "betriebssperre", "name"),
         ("entity", "switch", "externe_kuehlung", "name"),
     ]
@@ -349,6 +350,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
             "SYSTEM_FAULT": False,
         },
         gateway_update={"installed_version": "3.2.5", "update_available": False},
+        restore_diagnostics={"last_event": {"state": "idle"}},
         config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
         api=SimpleNamespace(host="gateway"),
         last_update_success=True,
@@ -364,9 +366,13 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
 
-    assert len(added_entities) == 18
+    assert len(added_entities) == 19
     assert any(
         isinstance(entity, integration_module.NovaRcGatewaySoftwareVersionSensor)
+        for entity in added_entities
+    )
+    assert any(
+        isinstance(entity, integration_module.NovaRcRestoreStatusSensor)
         for entity in added_entities
     )
     assert any(
@@ -386,6 +392,38 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
         isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
         for entity in added_entities
     )
+
+
+def test_restore_status_sensor_exposes_restore_diagnostics(integration_module: object) -> None:
+    """Restore diagnostic sensor should expose latest restore lifecycle details."""
+    coordinator = SimpleNamespace(
+        data=[],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+        restore_diagnostics={
+            "last_event": {
+                "source": "SYSTEM_STOP",
+                "state": "validated_after_first_try",
+                "updated_at": "2026-08-07T10:00:00+00:00",
+            },
+            "timings": {
+                "first_writeback_delay_seconds": 10,
+                "recheck_delay_seconds": 5,
+            },
+            "sources": {
+                "SYSTEM_STOP": {"state": "validated_after_first_try"},
+            },
+        },
+    )
+
+    sensor = integration_module.NovaRcRestoreStatusSensor(coordinator)
+
+    assert sensor.native_value == "validated_after_first_try"
+    attrs = sensor.extra_state_attributes
+    assert attrs["last_event"]["source"] == "SYSTEM_STOP"
+    assert attrs["timings"]["first_writeback_delay_seconds"] == 10
 
 
 @pytest.mark.asyncio

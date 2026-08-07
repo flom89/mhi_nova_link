@@ -22,7 +22,11 @@
         "description": "Passe an, wie oft das Gateway für Updates abgefragt wird.",
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
-          "time_series_poll_interval": "Timeseries Polling Interval"
+          "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Vorherigen Betrieb nach Aufhebung der Sperre wiederherstellen",
+          "gpio_restore_validity_minutes": "Gültigkeitsfenster für Wiederherstellung (Minuten)",
+          "gpio_restore_system_stop": "Wiederherstellung für Betriebssperre anwenden",
+          "gpio_restore_free_cooling": "Wiederherstellung für Externe Kühlung anwenden"
         }
       },
       "reauth_confirm": {
@@ -238,6 +242,24 @@
       },
       "gateway_software_version": {
         "name": "Gateway-Softwareversion"
+      },
+      "restore_status": {
+        "name": "Wiederherstellungsstatus",
+        "state": {
+          "idle": "Leerlauf",
+          "snapshot_captured": "Snapshot erfasst",
+          "writeback_scheduled": "Rückschreiben geplant",
+          "writeback_first_try": "Erster Rückschreibversuch",
+          "validated_after_first_try": "Nach erstem Versuch bestätigt",
+          "writeback_retry": "Rückschreib-Wiederholung",
+          "validated_after_retry": "Nach Wiederholung bestätigt",
+          "skipped_user_interaction_before_first_try": "Vor erstem Versuch übersprungen (Benutzerinteraktion)",
+          "skipped_user_interaction_before_recheck": "Vor Nachprüfung übersprungen (Benutzerinteraktion)",
+          "failed_after_retry": "Nach Wiederholung fehlgeschlagen",
+          "snapshot_expired": "Snapshot abgelaufen",
+          "error": "Fehler",
+          "user_interaction": "Benutzerinteraktion"
+        }
       },
       "operation_mode": {
         "name": "Modus",

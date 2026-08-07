@@ -14,6 +14,9 @@ from custom_components.mhi_nova_link.const import (
     CONF_GPIO_RESTORE_VALIDITY_MINUTES,
 )
 from custom_components.mhi_nova_link.coordinator import (
+    _RESTORE_FIRST_WRITEBACK_DELAY_SECONDS,
+    _RESTORE_POST_RETRY_VERIFY_DELAY_SECONDS,
+    _RESTORE_RECHECK_DELAY_SECONDS,
     GPIO_SOURCE_SYSTEM_STOP,
     NovaRcDataUpdateCoordinator,
 )
@@ -123,20 +126,119 @@ async def test_restore_validation_retries_once_on_mismatch() -> None:
     }
 
     coordinator._snapshot_matches_current_state = Mock(return_value=False)
+    coordinator._async_snapshot_matches_gateway_state = AsyncMock(return_value=False)
     coordinator._async_apply_snapshot = AsyncMock(return_value=True)
     coordinator._async_clear_snapshot = AsyncMock()
+    scheduled_at = datetime.now(UTC)
 
-    with patch("custom_components.mhi_nova_link.coordinator.asyncio.sleep", new=AsyncMock()):
-        await coordinator._async_validate_restore(GPIO_SOURCE_SYSTEM_STOP, snapshot)
+    sleep_mock = AsyncMock()
+    with patch("custom_components.mhi_nova_link.coordinator.asyncio.sleep", new=sleep_mock):
+        await coordinator._async_validate_restore(
+            GPIO_SOURCE_SYSTEM_STOP,
+            snapshot,
+            scheduled_at,
+        )
 
+    assert coordinator._async_apply_snapshot.await_count == 2
+    assert coordinator._async_snapshot_matches_gateway_state.await_count == 2
+    assert coordinator.async_request_refresh.await_count == 2
+    sleep_mock.assert_any_await(_RESTORE_FIRST_WRITEBACK_DELAY_SECONDS)
+    sleep_mock.assert_any_await(_RESTORE_RECHECK_DELAY_SECONDS)
+    sleep_mock.assert_any_await(_RESTORE_POST_RETRY_VERIFY_DELAY_SECONDS)
+    coordinator._async_clear_snapshot.assert_awaited_once_with(GPIO_SOURCE_SYSTEM_STOP)
+
+
+@pytest.mark.asyncio
+async def test_restore_validation_success_after_initial_delay_without_retry() -> None:
+    """Validation should stop after the first check when restored values already match."""
+    coordinator, _ = _build_coordinator()
+    snapshot = {
+        "created_at": datetime.now(UTC).isoformat(),
+        "source": GPIO_SOURCE_SYSTEM_STOP,
+        "zones": [{"zoneId": 1, "running": True}],
+    }
+
+    coordinator._snapshot_matches_current_state = Mock(return_value=True)
+    coordinator._async_snapshot_matches_gateway_state = AsyncMock(return_value=False)
+    coordinator._async_apply_snapshot = AsyncMock(return_value=True)
+    coordinator._async_clear_snapshot = AsyncMock()
+    scheduled_at = datetime.now(UTC)
+
+    sleep_mock = AsyncMock()
+    with patch("custom_components.mhi_nova_link.coordinator.asyncio.sleep", new=sleep_mock):
+        await coordinator._async_validate_restore(
+            GPIO_SOURCE_SYSTEM_STOP,
+            snapshot,
+            scheduled_at,
+        )
+
+    coordinator._async_apply_snapshot.assert_awaited_once_with(snapshot)
+    coordinator._async_snapshot_matches_gateway_state.assert_not_awaited()
+    coordinator.async_request_refresh.assert_awaited_once()
+    sleep_mock.assert_any_await(_RESTORE_FIRST_WRITEBACK_DELAY_SECONDS)
+    sleep_mock.assert_any_await(_RESTORE_RECHECK_DELAY_SECONDS)
+    coordinator._async_clear_snapshot.assert_awaited_once_with(GPIO_SOURCE_SYSTEM_STOP)
+
+
+@pytest.mark.asyncio
+async def test_restore_validation_uses_zone_query_match_before_retry() -> None:
+    """Gateway zone-query match should skip retry even when coordinator state lags."""
+    coordinator, _ = _build_coordinator()
+    snapshot = {
+        "created_at": datetime.now(UTC).isoformat(),
+        "source": GPIO_SOURCE_SYSTEM_STOP,
+        "zones": [{"zoneId": 1, "running": True}],
+    }
+
+    coordinator._snapshot_matches_current_state = Mock(return_value=False)
+    coordinator._async_snapshot_matches_gateway_state = AsyncMock(return_value=True)
+    coordinator._async_apply_snapshot = AsyncMock(return_value=True)
+    coordinator._async_clear_snapshot = AsyncMock()
+    scheduled_at = datetime.now(UTC)
+
+    sleep_mock = AsyncMock()
+    with patch("custom_components.mhi_nova_link.coordinator.asyncio.sleep", new=sleep_mock):
+        await coordinator._async_validate_restore(
+            GPIO_SOURCE_SYSTEM_STOP,
+            snapshot,
+            scheduled_at,
+        )
+
+    coordinator._async_snapshot_matches_gateway_state.assert_awaited_once_with(snapshot)
     coordinator._async_apply_snapshot.assert_awaited_once_with(snapshot)
     assert coordinator.async_request_refresh.await_count == 2
     coordinator._async_clear_snapshot.assert_awaited_once_with(GPIO_SOURCE_SYSTEM_STOP)
 
 
 @pytest.mark.asyncio
+async def test_restore_validation_skips_when_user_interacted_after_release() -> None:
+    """Restore should not write back when user interacted after release."""
+    coordinator, _ = _build_coordinator()
+    snapshot = {
+        "created_at": datetime.now(UTC).isoformat(),
+        "source": GPIO_SOURCE_SYSTEM_STOP,
+        "zones": [{"zoneId": 1, "running": True}],
+    }
+    coordinator._async_apply_snapshot = AsyncMock(return_value=True)
+    coordinator._async_clear_snapshot = AsyncMock()
+
+    scheduled_at = datetime.now(UTC)
+    coordinator._last_user_interaction_at = scheduled_at + timedelta(seconds=1)
+
+    with patch("custom_components.mhi_nova_link.coordinator.asyncio.sleep", new=AsyncMock()):
+        await coordinator._async_validate_restore(
+            GPIO_SOURCE_SYSTEM_STOP,
+            snapshot,
+            scheduled_at,
+        )
+
+    coordinator._async_apply_snapshot.assert_not_awaited()
+    coordinator._async_clear_snapshot.assert_awaited_once_with(GPIO_SOURCE_SYSTEM_STOP)
+
+
+@pytest.mark.asyncio
 async def test_restore_after_release_applies_snapshot_and_schedules_validation() -> None:
-    """Restore should apply snapshot and schedule delayed validation."""
+    """Restore should schedule delayed writeback and validation."""
     coordinator, _ = _build_coordinator()
     coordinator._restore_state_loaded = True
     snapshot = {
@@ -145,13 +247,14 @@ async def test_restore_after_release_applies_snapshot_and_schedules_validation()
         "zones": [{"zoneId": 1, "running": True}],
     }
     coordinator._restore_state["snapshots"][GPIO_SOURCE_SYSTEM_STOP] = snapshot
-    coordinator._async_apply_snapshot = AsyncMock(return_value=True)
     coordinator._schedule_restore_validation = Mock()
 
     await coordinator.async_restore_after_release(GPIO_SOURCE_SYSTEM_STOP)
 
-    coordinator._async_apply_snapshot.assert_awaited_once_with(snapshot)
-    coordinator._schedule_restore_validation.assert_called_once_with(
-        GPIO_SOURCE_SYSTEM_STOP,
-        snapshot,
+    coordinator._schedule_restore_validation.assert_called_once()
+    called_source, called_snapshot, called_scheduled_at = (
+        coordinator._schedule_restore_validation.call_args.args
     )
+    assert called_source == GPIO_SOURCE_SYSTEM_STOP
+    assert called_snapshot == snapshot
+    assert isinstance(called_scheduled_at, datetime)

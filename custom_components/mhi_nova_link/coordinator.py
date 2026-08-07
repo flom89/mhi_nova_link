@@ -33,7 +33,11 @@ _LOGGER = logging.getLogger(__name__)
 GPIO_SOURCE_SYSTEM_STOP = "SYSTEM_STOP"
 GPIO_SOURCE_FREE_COOLING = "FREE_COOLING"
 _RESTORE_STORE_VERSION = 1
-_RESTORE_VALIDATION_DELAY_SECONDS = 6
+_RESTORE_FIRST_WRITEBACK_DELAY_SECONDS = 10
+_RESTORE_RECHECK_DELAY_SECONDS = 5
+_RESTORE_POST_RETRY_VERIFY_DELAY_SECONDS = 2
+_RESTORE_GATEWAY_VERIFY_ATTEMPTS = 2
+_RESTORE_GATEWAY_VERIFY_RETRY_DELAY_SECONDS = 1
 
 
 class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
@@ -77,6 +81,16 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self._restore_state_loaded = False
         self._restore_lock = asyncio.Lock()
         self._restore_validation_tasks: dict[str, asyncio.Task[None]] = {}
+        self._last_user_interaction_at: datetime | None = None
+        self._restore_status_by_source: dict[str, dict[str, Any]] = {
+            GPIO_SOURCE_SYSTEM_STOP: {"state": "idle"},
+            GPIO_SOURCE_FREE_COOLING: {"state": "idle"},
+        }
+        self._restore_last_event: dict[str, Any] = {
+            "source": None,
+            "state": "idle",
+            "updated_at": None,
+        }
 
     async def _async_update_data(self) -> list[dict[str, Any]]:
         """Fetch the latest zone data from the GraphQL gateway."""
@@ -174,6 +188,12 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             if self._restore_store is not None:
                 await self._restore_store.async_save(self._restore_state)
 
+        self._set_restore_status(
+            source,
+            state="snapshot_captured",
+            zone_count=len(zones_snapshot),
+        )
+
     async def async_restore_after_release(self, source: str) -> None:
         """Restore previously saved zone state after a lock source is released."""
         if not self._restore_enabled_for_source(source):
@@ -186,11 +206,47 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
         if self._snapshot_is_expired(snapshot):
             _LOGGER.debug("Skipping restore for %s because snapshot is expired", source)
+            self._set_restore_status(source, state="snapshot_expired")
             await self._async_clear_snapshot(source)
             return
 
-        await self._async_apply_snapshot(snapshot)
-        self._schedule_restore_validation(source, snapshot)
+        scheduled_at = datetime.now(UTC)
+        self._set_restore_status(
+            source,
+            state="writeback_scheduled",
+            first_try_delay_seconds=_RESTORE_FIRST_WRITEBACK_DELAY_SECONDS,
+            recheck_delay_seconds=_RESTORE_RECHECK_DELAY_SECONDS,
+        )
+        self._schedule_restore_validation(source, snapshot, scheduled_at)
+
+    def async_mark_user_interaction(self, action: str) -> None:
+        """Record the timestamp of a user-triggered write command."""
+        self._last_user_interaction_at = datetime.now(UTC)
+        self._restore_last_event = {
+            "source": self._restore_last_event.get("source"),
+            "state": "user_interaction",
+            "action": action,
+            "updated_at": self._last_user_interaction_at.isoformat(),
+        }
+        self.async_update_listeners()
+
+    @property
+    def restore_diagnostics(self) -> dict[str, Any]:
+        """Expose restore diagnostics for sensor/diagnostics consumers."""
+        return {
+            "last_event": self._restore_last_event,
+            "last_user_interaction_at": (
+                self._last_user_interaction_at.isoformat()
+                if self._last_user_interaction_at is not None
+                else None
+            ),
+            "timings": {
+                "first_writeback_delay_seconds": _RESTORE_FIRST_WRITEBACK_DELAY_SECONDS,
+                "recheck_delay_seconds": _RESTORE_RECHECK_DELAY_SECONDS,
+                "post_retry_verify_delay_seconds": _RESTORE_POST_RETRY_VERIFY_DELAY_SECONDS,
+            },
+            "sources": self._restore_status_by_source,
+        }
 
     async def _async_ensure_restore_state_loaded(self) -> None:
         """Load restore state from persistent storage once."""
@@ -298,38 +354,170 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         await self.async_request_refresh()
         return all_ok
 
-    def _schedule_restore_validation(self, source: str, snapshot: dict[str, Any]) -> None:
+    def _schedule_restore_validation(
+        self,
+        source: str,
+        snapshot: dict[str, Any],
+        scheduled_at: datetime,
+    ) -> None:
         """Schedule delayed restore validation and one retry if needed."""
         task = self._restore_validation_tasks.get(source)
         if task is not None and not task.done():
             task.cancel()
 
         self._restore_validation_tasks[source] = self.hass.async_create_task(
-            self._async_validate_restore(source, snapshot)
+            self._async_validate_restore(source, snapshot, scheduled_at)
         )
 
-    async def _async_validate_restore(self, source: str, snapshot: dict[str, Any]) -> None:
-        """Validate restored values and retry once when values drift."""
+    async def _async_validate_restore(
+        self,
+        source: str,
+        snapshot: dict[str, Any],
+        scheduled_at: datetime,
+    ) -> None:
+        """Apply delayed restore, then validate and retry once when values drift."""
         try:
-            await asyncio.sleep(_RESTORE_VALIDATION_DELAY_SECONDS)
+            await asyncio.sleep(_RESTORE_FIRST_WRITEBACK_DELAY_SECONDS)
+            if self._has_user_interaction_since(scheduled_at):
+                _LOGGER.debug(
+                    "Skipping restore writeback for %s because of user interaction",
+                    source,
+                )
+                self._set_restore_status(source, state="skipped_user_interaction_before_first_try")
+                return
+
+            self._set_restore_status(source, state="writeback_first_try")
+            await self._async_apply_snapshot(snapshot)
+
+            await asyncio.sleep(_RESTORE_RECHECK_DELAY_SECONDS)
+            if self._has_user_interaction_since(scheduled_at):
+                _LOGGER.debug(
+                    "Skipping restore retry for %s because of user interaction",
+                    source,
+                )
+                self._set_restore_status(source, state="skipped_user_interaction_before_recheck")
+                return
+
             await self.async_request_refresh()
 
             if self._snapshot_matches_current_state(snapshot):
+                _LOGGER.debug(
+                    "Restore validation successful for %s after first writeback",
+                    source,
+                )
+                self._set_restore_status(
+                    source, state="validated_after_first_try", matched_via="coordinator"
+                )
+                return
+
+            if await self._async_snapshot_matches_gateway_state(snapshot):
+                _LOGGER.debug(
+                    "Restore validation for %s confirmed by zone queries after first writeback",
+                    source,
+                )
+                self._set_restore_status(
+                    source, state="validated_after_first_try", matched_via="zone_query"
+                )
+                await self.async_request_refresh()
                 return
 
             _LOGGER.warning(
                 "Restore validation failed for %s, retrying snapshot apply once",
                 source,
             )
+            self._set_restore_status(source, state="writeback_retry")
             await self._async_apply_snapshot(snapshot)
-            await asyncio.sleep(2)
+            await asyncio.sleep(_RESTORE_POST_RETRY_VERIFY_DELAY_SECONDS)
             await self.async_request_refresh()
+
+            if self._snapshot_matches_current_state(snapshot):
+                _LOGGER.debug(
+                    "Restore validation successful for %s after retry",
+                    source,
+                )
+                self._set_restore_status(
+                    source, state="validated_after_retry", matched_via="coordinator"
+                )
+                return
+
+            if await self._async_snapshot_matches_gateway_state(snapshot):
+                _LOGGER.debug(
+                    "Restore validation for %s confirmed by zone queries after retry",
+                    source,
+                )
+                self._set_restore_status(
+                    source, state="validated_after_retry", matched_via="zone_query"
+                )
+                await self.async_request_refresh()
+                return
+
+            _LOGGER.warning(
+                "Restore validation still failing for %s after retry",
+                source,
+            )
+            self._set_restore_status(source, state="failed_after_retry")
         except asyncio.CancelledError:
             raise
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.warning("Restore validation error for %s: %s", source, err)
+            self._set_restore_status(source, state="error", error=str(err))
         finally:
             await self._async_clear_snapshot(source)
+
+    def _has_user_interaction_since(self, marker: datetime) -> bool:
+        """Return whether a user-triggered write happened after the marker."""
+        return (
+            self._last_user_interaction_at is not None and self._last_user_interaction_at > marker
+        )
+
+    def _set_restore_status(self, source: str, *, state: str, **extra: Any) -> None:
+        """Update restore status diagnostics for one source."""
+        updated_at = datetime.now(UTC).isoformat()
+        status = {
+            "state": state,
+            "updated_at": updated_at,
+            **extra,
+        }
+        self._restore_status_by_source[source] = status
+        self._restore_last_event = {
+            "source": source,
+            "state": state,
+            "updated_at": updated_at,
+            **extra,
+        }
+        self.async_update_listeners()
+
+    async def _async_snapshot_matches_gateway_state(self, snapshot: dict[str, Any]) -> bool:
+        """Check snapshot against fresh per-zone GetZone responses."""
+        zones = snapshot.get("zones")
+        if not isinstance(zones, list):
+            return False
+
+        for attempt in range(_RESTORE_GATEWAY_VERIFY_ATTEMPTS):
+            all_match = True
+
+            for zone_snapshot in zones:
+                if not isinstance(zone_snapshot, dict):
+                    continue
+
+                zone_id = zone_snapshot.get("zoneId")
+                if not isinstance(zone_id, int):
+                    return False
+
+                zone = await self.api.async_get_zone(zone_id)
+                if not isinstance(zone, dict) or not self._zone_matches_snapshot(
+                    zone, zone_snapshot
+                ):
+                    all_match = False
+                    break
+
+            if all_match:
+                return True
+
+            if attempt < _RESTORE_GATEWAY_VERIFY_ATTEMPTS - 1:
+                await asyncio.sleep(_RESTORE_GATEWAY_VERIFY_RETRY_DELAY_SECONDS)
+
+        return False
 
     def _snapshot_matches_current_state(self, snapshot: dict[str, Any]) -> bool:
         """Check whether current coordinator data matches a saved snapshot."""
@@ -353,27 +541,33 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             current_zone = by_zone_id.get(zone_id)
             if not isinstance(current_zone, dict):
                 return False
+            if not self._zone_matches_snapshot(current_zone, zone_snapshot):
+                return False
 
-            for key in (
-                "running",
-                "operationMode",
-                "fanSpeed",
-                "louverPosition",
-                "vanePosition",
-                "flap3dAuto",
+        return True
+
+    def _zone_matches_snapshot(self, zone: dict[str, Any], zone_snapshot: dict[str, Any]) -> bool:
+        """Return whether one zone payload matches one snapshot payload."""
+        for key in (
+            "running",
+            "operationMode",
+            "fanSpeed",
+            "louverPosition",
+            "vanePosition",
+            "flap3dAuto",
+        ):
+            if key in zone_snapshot and zone.get(key) != zone_snapshot.get(key):
+                return False
+
+        if "setpoint" in zone_snapshot:
+            current_setpoint = zone.get("setpoint")
+            saved_setpoint = zone_snapshot.get("setpoint")
+            if (
+                not isinstance(current_setpoint, (int, float))
+                or not isinstance(saved_setpoint, (int, float))
+                or abs(float(current_setpoint) - float(saved_setpoint)) > 0.2
             ):
-                if key in zone_snapshot and current_zone.get(key) != zone_snapshot.get(key):
-                    return False
-
-            if "setpoint" in zone_snapshot:
-                current_setpoint = current_zone.get("setpoint")
-                saved_setpoint = zone_snapshot.get("setpoint")
-                if (
-                    not isinstance(current_setpoint, (int, float))
-                    or not isinstance(saved_setpoint, (int, float))
-                    or abs(float(current_setpoint) - float(saved_setpoint)) > 0.2
-                ):
-                    return False
+                return False
 
         return True
 

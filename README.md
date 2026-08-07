@@ -11,7 +11,7 @@
 
 MHI Nova Link lets you control your Mitsubishi Heavy Industries system in Home Assistant when your setup uses a **CompTrol 4Web NOVA RC** gateway.
 
-Current integration version: **2.3.0**
+Current integration version: **2.3.1**
 
 ## Hardware Reference
 
@@ -94,6 +94,24 @@ The integration provides diagnostics export in Home Assistant. Sensitive values 
 - **TLS fingerprint error**: update the fingerprint in options or clear it to let auto-pinning run again.
 - **Missing/partial entities**: verify gateway permissions and reload the integration.
 - **Reauthentication requested**: complete the reauth flow from the integration card.
+- **Restore behavior after lock release unclear**: check the diagnostic sensor **Restore status** on the gateway device.
+
+Restore status quick guide:
+
+- `writeback_scheduled`: restore queued after lock/cooling release.
+- `writeback_first_try`: first writeback started.
+- `validated_after_first_try`: restore succeeded after first writeback.
+- `writeback_retry`: second writeback attempt started.
+- `validated_after_retry`: restore succeeded after retry.
+- `skipped_user_interaction_before_first_try` or `skipped_user_interaction_before_recheck`: restore skipped because user changed values in HA UI.
+- `failed_after_retry`: restore still mismatched after retry.
+- `error`: unexpected restore exception.
+
+Timing model:
+
+- First writeback starts after 10 seconds.
+- Recheck runs 5 seconds later.
+- Retry runs only if mismatch persists and no newer user input was detected.
 
 ## Important Note for Operation Lock / External Cooling
 

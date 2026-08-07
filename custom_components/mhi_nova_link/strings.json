@@ -31,7 +31,11 @@
         "description": "Adjust how often the gateway is polled for updates.",
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
-          "time_series_poll_interval": "Timeseries Polling Interval"
+          "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restore previous operation after lock is released",
+          "gpio_restore_validity_minutes": "Restore validity window (minutes)",
+          "gpio_restore_system_stop": "Apply restore to operation lock",
+          "gpio_restore_free_cooling": "Apply restore to external cooling"
         }
       }
     },
@@ -223,6 +227,24 @@
       "outdoor_heat_exchanger_1_low_temp": {"name": "Outdoor heat exchanger bottom temperature"},
       "outdoor_heat_exchanger_1_high_temp": {"name": "Outdoor heat exchanger top temperature"},
       "gateway_software_version": {"name": "Gateway software version"},
+      "restore_status": {
+        "name": "Restore status",
+        "state": {
+          "idle": "Idle",
+          "snapshot_captured": "Snapshot captured",
+          "writeback_scheduled": "Writeback scheduled",
+          "writeback_first_try": "Writeback first try",
+          "validated_after_first_try": "Validated after first try",
+          "writeback_retry": "Writeback retry",
+          "validated_after_retry": "Validated after retry",
+          "skipped_user_interaction_before_first_try": "Skipped before first try (user interaction)",
+          "skipped_user_interaction_before_recheck": "Skipped before recheck (user interaction)",
+          "failed_after_retry": "Failed after retry",
+          "snapshot_expired": "Snapshot expired",
+          "error": "Error",
+          "user_interaction": "User interaction"
+        }
+      },
       "operation_mode": {
         "name": "Mode",
         "state": {

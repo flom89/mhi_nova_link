@@ -65,6 +65,9 @@ class NovaRc3DAutoSwitch(NovaRcZoneEntity, SwitchEntity):
         """Enable 3D auto mode on the gateway."""
         if getattr(self.coordinator, "is_user_control_locked", False):
             raise HomeAssistantError("Betriebssperre aktiv: Änderung nicht erlaubt")
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction("switch.async_turn_on_3d_auto")
         await self.coordinator.api.async_set_zone_state(self.zone_id, flap3d_auto=True)
         await self.coordinator.async_request_refresh()
 
@@ -72,6 +75,9 @@ class NovaRc3DAutoSwitch(NovaRcZoneEntity, SwitchEntity):
         """Disable 3D auto mode on the gateway."""
         if getattr(self.coordinator, "is_user_control_locked", False):
             raise HomeAssistantError("Betriebssperre aktiv: Änderung nicht erlaubt")
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction("switch.async_turn_off_3d_auto")
         await self.coordinator.api.async_set_zone_state(self.zone_id, flap3d_auto=False)
         await self.coordinator.async_request_refresh()
 
@@ -128,6 +134,9 @@ class NovaRcGatewayControlSwitch(CoordinatorEntity[NovaRcDataUpdateCoordinator],
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable the logical active state by using LOW as active level."""
         self._ensure_write_allowed()
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction(f"switch.async_turn_on_{self._gpio_function.lower()}")
         capture_restore = getattr(self.coordinator, "async_capture_restore_snapshot", None)
         if callable(capture_restore):
             await capture_restore(self._gpio_function)
@@ -138,6 +147,9 @@ class NovaRcGatewayControlSwitch(CoordinatorEntity[NovaRcDataUpdateCoordinator],
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable the logical active state by using HIGH as active level."""
         self._ensure_write_allowed()
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction(f"switch.async_turn_off_{self._gpio_function.lower()}")
         result = await self.coordinator.api.async_set_gpio_active_high(self._gpio_id, True)
         if result:
             await self.coordinator.async_request_refresh()
