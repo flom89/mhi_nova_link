@@ -35,6 +35,7 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = []
     entities.append(NovaRcGatewaySoftwareVersionSensor(coordinator))
+    entities.append(NovaRcRestoreStatusSensor(coordinator))
     for zone in coordinator.data:
         zone_id = zone.get("zoneId")
         if zone_id is None:
@@ -139,6 +140,48 @@ class NovaRcGatewaySoftwareVersionSensor(
             "automatic_install": info.get("automatic_install"),
         }
         return {key: value for key, value in attributes.items() if value is not None}
+
+
+class NovaRcRestoreStatusSensor(CoordinatorEntity[NovaRcDataUpdateCoordinator], SensorEntity):
+    """Gateway-level diagnostic sensor for restore lifecycle state."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "restore_status"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:history"
+
+    def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
+        """Initialize the restore status diagnostic sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.api.host}_gateway_restore_status"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return Home Assistant device metadata for the gateway info device."""
+        entry_id = (
+            self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
+        )
+        return build_gateway_device_info(
+            entry_id,
+            identifier_suffix="gateway_info",
+            name="Gateway",
+        )
+
+    @property
+    def native_value(self) -> str:
+        """Return the current restore lifecycle state."""
+        diagnostics = getattr(self.coordinator, "restore_diagnostics", {})
+        last_event = diagnostics.get("last_event", {}) if isinstance(diagnostics, dict) else {}
+        state = last_event.get("state") if isinstance(last_event, dict) else None
+        return state if isinstance(state, str) and state else "idle"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return structured restore diagnostics."""
+        diagnostics = getattr(self.coordinator, "restore_diagnostics", {})
+        if not isinstance(diagnostics, dict):
+            return {}
+        return diagnostics
 
 
 class NovaRcTemperatureSensor(NovaRcBaseSensor):

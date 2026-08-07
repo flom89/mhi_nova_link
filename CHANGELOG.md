@@ -2,10 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.1] - 2026-08-07
+
+### Added
+- Gateway diagnostic sensor for restore lifecycle visibility (`restore_status`) including retry/skip outcome states.
+
+### Changed
+- Restore execution now uses a delayed scheduler: first writeback after 10 seconds, recheck after 5 seconds, and one retry when needed.
+- Restore retry path now respects newer Home Assistant user interactions to avoid overriding manual user changes.
+- Restore validation keeps using direct zone-query verification to distinguish gateway state from coordinator refresh lag.
+
+### Fixed
+- Translation coverage aligned for restore-related option labels across locale files.
+- Translation key support added for the new restore diagnostic sensor and its state values.
+
 ## [2.3.0] - 2026-08-07
 
 ### Added
-- Configurable operation-state restore workflow for Betriebssperre and Externe Kuehlung.
+- Configurable operation-state restore workflow for Betriebssperre and Externe Kühlung.
 - Persistent restore snapshots with per-source controls and validity-window handling.
 - Fail-safe restore validation that retries once after release when runtime values diverge.
 - Extended regression coverage for restore persistence, lock behavior, options flow, and gateway controls.

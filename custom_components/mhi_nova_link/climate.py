@@ -239,6 +239,9 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Turn the HVAC mode on or off."""
         self._ensure_write_allowed()
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction("climate.async_set_hvac_mode")
         was_running = bool(self._zone_data.get("running"))
         if hvac_mode == HVACMode.OFF:
             await self.coordinator.api.async_set_zone_state(self.zone_id, running=False)
@@ -256,6 +259,9 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         """Set the target temperature."""
         self._ensure_write_allowed()
         if (temp := kwargs.get(ATTR_TEMPERATURE)) is not None:
+            mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+            if callable(mark_user_interaction):
+                mark_user_interaction("climate.async_set_temperature")
             await self.coordinator.api.async_set_zone_state(self.zone_id, setpoint=temp)
             await self.coordinator.async_request_refresh()
 
@@ -263,12 +269,18 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         """Set the fan mode."""
         self._ensure_write_allowed()
         if mhi_fan := FAN_MODE_REVERSE_MAP.get(fan_mode):
+            mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+            if callable(mark_user_interaction):
+                mark_user_interaction("climate.async_set_fan_mode")
             await self.coordinator.api.async_set_zone_state(self.zone_id, fan_speed=mhi_fan)
             await self.coordinator.async_request_refresh()
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
         """Set the swing mode."""
         self._ensure_write_allowed()
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction("climate.async_set_swing_mode")
         raw_vane = SWING_MODE_REVERSE_MAP.get(swing_mode, swing_mode)
         await self.coordinator.api.async_set_zone_state(self.zone_id, vane_position=raw_vane)
         await self.coordinator.async_request_refresh()

@@ -123,6 +123,9 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
     async def async_select_option(self, option: str) -> None:
         """Change the louver position on the gateway."""
         self._ensure_write_allowed()
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction("select.async_select_louver")
         raw_val = LOUVER_REVERSE_MAP.get(option, option)
         await self.coordinator.api.async_set_zone_state(self.zone_id, louver_position=raw_val)
         await self.coordinator.async_request_refresh()
@@ -186,6 +189,9 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
     async def async_select_option(self, option: str) -> None:
         """Change the vane position on the gateway."""
         self._ensure_write_allowed()
+        mark_user_interaction = getattr(self.coordinator, "async_mark_user_interaction", None)
+        if callable(mark_user_interaction):
+            mark_user_interaction("select.async_select_vane")
         raw_val = VANE_REVERSE_MAP.get(option, option)
         await self.coordinator.api.async_set_zone_state(self.zone_id, vane_position=raw_val)
         await self.coordinator.async_request_refresh()

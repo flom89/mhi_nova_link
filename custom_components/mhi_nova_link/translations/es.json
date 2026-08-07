@@ -22,7 +22,11 @@
         "description": "Ajusta la frecuencia con la que se consulta la puerta de enlace para actualizarse.",
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
-          "time_series_poll_interval": "Timeseries Polling Interval"
+          "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restaurar la operación anterior al desactivar el bloqueo",
+          "gpio_restore_validity_minutes": "Ventana de validez de restauración (minutos)",
+          "gpio_restore_system_stop": "Aplicar restauración al bloqueo de operación",
+          "gpio_restore_free_cooling": "Aplicar restauración al enfriamiento externo"
         }
       },
       "reauth_confirm": {
@@ -239,6 +243,24 @@
       "gateway_software_version": {
         "name": "Versión de software del gateway"
       },
+      "restore_status": {
+        "name": "Estado de restauración",
+        "state": {
+          "idle": "Inactivo",
+          "snapshot_captured": "Instantánea capturada",
+          "writeback_scheduled": "Escritura programada",
+          "writeback_first_try": "Primer intento de escritura",
+          "validated_after_first_try": "Validado tras el primer intento",
+          "writeback_retry": "Reintento de escritura",
+          "validated_after_retry": "Validado tras el reintento",
+          "skipped_user_interaction_before_first_try": "Omitido antes del primer intento (interacción del usuario)",
+          "skipped_user_interaction_before_recheck": "Omitido antes de la reverificación (interacción del usuario)",
+          "failed_after_retry": "Falló tras el reintento",
+          "snapshot_expired": "Instantánea expirada",
+          "error": "Error",
+          "user_interaction": "Interacción del usuario"
+        }
+      },
       "operation_mode": {
         "name": "Modo",
         "state": {
@@ -301,6 +323,10 @@
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restaurar la operación anterior al desactivar el bloqueo",
+          "gpio_restore_validity_minutes": "Ventana de validez de restauración (minutos)",
+          "gpio_restore_system_stop": "Aplicar restauración al bloqueo operativo",
+          "gpio_restore_free_cooling": "Aplicar restauración al enfriamiento externo",
           "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)",
           "username": "Nombre de usuario",
           "password": "Contraseña",

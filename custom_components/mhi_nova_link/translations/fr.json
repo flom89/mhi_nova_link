@@ -22,7 +22,11 @@
         "description": "Ajustez la fréquence à laquelle la passerelle est interrogée pour les mises à jour.",
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
-          "time_series_poll_interval": "Timeseries Polling Interval"
+          "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restaurer le fonctionnement précédent après la levée du verrouillage",
+          "gpio_restore_validity_minutes": "Fenêtre de validité de restauration (minutes)",
+          "gpio_restore_system_stop": "Appliquer la restauration au verrouillage de fonctionnement",
+          "gpio_restore_free_cooling": "Appliquer la restauration au refroidissement externe"
         }
       },
       "reauth_confirm": {
@@ -239,6 +243,24 @@
       "gateway_software_version": {
         "name": "Version logicielle de la passerelle"
       },
+      "restore_status": {
+        "name": "État de restauration",
+        "state": {
+          "idle": "Inactif",
+          "snapshot_captured": "Instantané capturé",
+          "writeback_scheduled": "Réécriture planifiée",
+          "writeback_first_try": "Premier essai de réécriture",
+          "validated_after_first_try": "Validé après le premier essai",
+          "writeback_retry": "Nouvel essai de réécriture",
+          "validated_after_retry": "Validé après le nouvel essai",
+          "skipped_user_interaction_before_first_try": "Ignoré avant le premier essai (interaction utilisateur)",
+          "skipped_user_interaction_before_recheck": "Ignoré avant la revérification (interaction utilisateur)",
+          "failed_after_retry": "Échec après le nouvel essai",
+          "snapshot_expired": "Instantané expiré",
+          "error": "Erreur",
+          "user_interaction": "Interaction utilisateur"
+        }
+      },
       "operation_mode": {
         "name": "Mode",
         "state": {
@@ -301,6 +323,10 @@
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restaurer le fonctionnement précédent après la levée du verrouillage",
+          "gpio_restore_validity_minutes": "Fenêtre de validité de restauration (minutes)",
+          "gpio_restore_system_stop": "Appliquer la restauration au verrouillage de fonctionnement",
+          "gpio_restore_free_cooling": "Appliquer la restauration au refroidissement externe",
           "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)",
           "username": "Nom d'utilisateur",
           "password": "Mot de passe",
