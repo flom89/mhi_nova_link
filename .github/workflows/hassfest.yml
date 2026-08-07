@@ -8,6 +8,8 @@ on:
 jobs:
   validate:
     runs-on: "ubuntu-latest"
+    permissions:
+      contents: read
     steps:
       - uses: "actions/checkout@v4"
       # Pinned to latest commit on master as of 2026-08-03.
