@@ -1,6 +1,6 @@
 # MHI Nova Link for Home Assistant
 
-<img src="custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
+<img src="https://raw.githubusercontent.com/flom89/mhi_nova_link/main/custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/flom89/mhi_nova_link?label=Release)](https://github.com/flom89/mhi_nova_link/releases)
