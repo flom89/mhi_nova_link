@@ -1,8 +1,8 @@
 # MHI Nova Link for Home Assistant
 
-<img src="custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
+<img src="https://raw.githubusercontent.com/flom89/mhi_nova_link/main/custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/flom89/mhi_nova_link/blob/main/LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/flom89/mhi_nova_link?label=Release)](https://github.com/flom89/mhi_nova_link/releases)
 [![Validate](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml)
 [![Hassfest](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml)
@@ -11,7 +11,7 @@
 
 MHI Nova Link lets you control your Mitsubishi Heavy Industries system in Home Assistant when your setup uses a **CompTrol 4Web NOVA RC** gateway.
 
-Current integration version: **2.1.1**
+Current integration version: **2.1.2**
 
 ## Hardware Reference
 
@@ -106,22 +106,10 @@ For complete user guides, setup walkthroughs, troubleshooting, and updates, see 
 
 https://github.com/flom89/mhi_nova_link/wiki
 
-## Quality and Testing
-
-Quality information below reflects the current repository state and links to live results.
-
-- Validate workflow: https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml
-- Hassfest workflow: https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml
-- Latest successful Validate run: https://github.com/flom89/mhi_nova_link/actions/runs/31066035369
-- Latest successful Hassfest run: https://github.com/flom89/mhi_nova_link/actions/runs/31117859543
-- Automated test suite size: 127 tests
-- Most recent local run in this environment (2026-08-06): 126 passed, 1 failed
-- Releases are published with version tags so users can track stable versions clearly.
-
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/flom89/mhi_nova_link/blob/main/CONTRIBUTING.md).
 
 ## License
 
-GPL-3.0. See [LICENSE](LICENSE).
+GPL-3.0. See [LICENSE](https://github.com/flom89/mhi_nova_link/blob/main/LICENSE).

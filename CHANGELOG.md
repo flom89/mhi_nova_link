@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.1.2] - 2026-08-07
+
+### Changed
+- README reworked for end-user clarity: removed internal quality/testing section, fixed all relative links to absolute GitHub URLs for correct rendering in HACS.
+
 ## [2.1.1] - 2026-08-07
 
 ### Fixed
