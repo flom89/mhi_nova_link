@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/flom89/mhi_nova_link/main/custom_components/mhi_nova_link/brand/logo.png" alt="MHI Nova logo" width="320" />
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/flom89/mhi_nova_link/blob/main/LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/flom89/mhi_nova_link?label=Release)](https://github.com/flom89/mhi_nova_link/releases)
 [![Validate](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/main.yml)
 [![Hassfest](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml/badge.svg)](https://github.com/flom89/mhi_nova_link/actions/workflows/hassfest.yml)
