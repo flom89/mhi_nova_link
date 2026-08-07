@@ -2,12 +2,17 @@ name: Validate
 
 on:
   push:
+    branches: ["main"]
   pull_request:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
 permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-hacs:
@@ -21,38 +26,41 @@ jobs:
   test:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v7"
+      - uses: "actions/checkout@v4"
       - name: Set up Python
-        uses: "actions/setup-python@v7"
+        uses: "actions/setup-python@v5"
         with:
           python-version: "3.12"
+          cache: "pip"
       - name: Install dependencies
-        run: pip install homeassistant pytest pytest-asyncio
+        run: pip install -r requirements-dev.txt
       - name: Run tests
         run: pytest -q custom_components/mhi_nova_link/tests
 
   lint:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v7"
+      - uses: "actions/checkout@v4"
       - name: Set up Python
-        uses: "actions/setup-python@v7"
+        uses: "actions/setup-python@v5"
         with:
           python-version: "3.12"
-      - name: Install ruff
-        run: pip install ruff
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
       - name: Run ruff
         run: ruff check custom_components/mhi_nova_link
 
   type-check:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v7"
+      - uses: "actions/checkout@v4"
       - name: Set up Python
-        uses: "actions/setup-python@v7"
+        uses: "actions/setup-python@v5"
         with:
           python-version: "3.12"
-      - name: Install mypy
-        run: pip install mypy homeassistant
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
       - name: Run mypy
         run: mypy custom_components/mhi_nova_link --ignore-missing-imports --no-error-summary
