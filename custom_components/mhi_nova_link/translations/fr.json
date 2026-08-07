@@ -301,6 +301,10 @@
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restaurer le fonctionnement précédent après la levée du verrouillage",
+          "gpio_restore_validity_minutes": "Fenêtre de validité de restauration (minutes)",
+          "gpio_restore_system_stop": "Appliquer la restauration au verrouillage de fonctionnement",
+          "gpio_restore_free_cooling": "Appliquer la restauration au refroidissement externe",
           "ssl_fingerprint": "Empreinte SSL (SHA256, optionnel)",
           "username": "Nom d'utilisateur",
           "password": "Mot de passe",

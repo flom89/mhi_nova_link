@@ -27,6 +27,7 @@ The integration is designed for installations using the CompTrol 4Web / 4WebNRC 
 - Complete setup directly in the Home Assistant UI.
 - Reauthenticate easily if credentials change.
 - Use with self-signed gateway certificates (automatic fingerprint handling is supported).
+- Configure automatic restore of the previous operating state after operation lock / external cooling is released.
 - Keep diagnostics safer with sensitive values redacted.
 - Use the integration in English, German, Italian, Spanish, or French.
 

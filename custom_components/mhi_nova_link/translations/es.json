@@ -301,6 +301,10 @@
         "data": {
           "poll_interval": "ZoneQueries Polling Interval",
           "time_series_poll_interval": "Timeseries Polling Interval",
+          "gpio_restore_enabled": "Restaurar la operación anterior al desactivar el bloqueo",
+          "gpio_restore_validity_minutes": "Ventana de validez de restauración (minutos)",
+          "gpio_restore_system_stop": "Aplicar restauración al bloqueo operativo",
+          "gpio_restore_free_cooling": "Aplicar restauración al enfriamiento externo",
           "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)",
           "username": "Nombre de usuario",
           "password": "Contraseña",
