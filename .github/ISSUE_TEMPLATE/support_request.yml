@@ -1,0 +1,72 @@
+name: Support request
+description: Get help with setup, configuration, or expected usage.
+title: "[Support]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for setup/help questions.
+
+        For known setup steps and troubleshooting, first check the wiki:
+        https://github.com/flom89/mhi_nova_link/wiki
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-checks
+      options:
+        - label: I read the wiki documentation and troubleshooting section.
+          required: true
+        - label: I searched existing issues and did not find an answer.
+          required: true
+
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration version
+      placeholder: 2.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.8.0
+    validations:
+      required: true
+
+  - type: input
+    id: gateway_model
+    attributes:
+      label: Gateway model
+      placeholder: CompTrol 4Web NOVA RC / 4WebNRC
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Describe what you are trying to do and where it fails.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_tried
+    attributes:
+      label: What have you already tried?
+      description: Include steps you already attempted.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output (optional)
+      description: Paste logs if available. Remove secrets before submitting.
+      render: shell
+    validations:
+      required: false

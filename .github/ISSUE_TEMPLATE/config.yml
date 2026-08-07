@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: User Documentation (Wiki)
+    url: https://github.com/flom89/mhi_nova_link/wiki
+    about: Setup guides, troubleshooting, and usage documentation.
+  - name: Security Issues
+    url: https://github.com/flom89/mhi_nova_link/security/policy
+    about: Please report security vulnerabilities according to the security policy.
+  - name: Home Assistant Community Forum
+    url: https://community.home-assistant.io/
+    about: Ask general Home Assistant questions and get community support.
