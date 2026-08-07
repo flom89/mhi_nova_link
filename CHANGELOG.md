@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.2.0] - 2026-08-07
+
+### Added
+- Options flow now allows editing the gateway IP address / hostname after initial setup, removing the need to delete and re-add the integration when the gateway address changes.
+
 ## [2.1.2] - 2026-08-07
 
 ### Changed

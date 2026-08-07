@@ -304,7 +304,8 @@
           "ssl_fingerprint": "Fingerprint SSL (SHA256, opcional)",
           "username": "Nombre de usuario",
           "password": "Contraseña",
-          "analytics_opt_in": "Compartir estadísticas de uso anónimas"
+          "analytics_opt_in": "Compartir estadísticas de uso anónimas",
+          "host": "Dirección IP / nombre de host"
         }
       }
     }
