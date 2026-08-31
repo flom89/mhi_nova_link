@@ -6,6 +6,7 @@ import hashlib
 import logging
 import os
 import ssl
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlsplit
@@ -404,6 +405,7 @@ class NovaRcApiClient:
         self._time_series_update_interval = timedelta(seconds=configured_ts_interval)
         self._time_series_last_fetch: dict[int, datetime] = {}
         self._time_series_cache: dict[int, dict[str, Any]] = {}
+        self._initial_zones: list[dict[str, Any]] | None = None
 
     def _get_cached_time_series(self, zone_id: int) -> dict[str, Any] | None:
         """Return cached time-series payload for a zone."""
@@ -487,6 +489,7 @@ class NovaRcApiClient:
         except (CannotConnect, InvalidAuth, aiohttp.ClientError, ValueError) as err:
             _LOGGER.error("Connection setup failed: %s", err)
             raise
+        self._initial_zones = zones
 
         _LOGGER.info(
             "Successfully connected to gateway. %d active zones found.",
@@ -494,8 +497,15 @@ class NovaRcApiClient:
         )
         return True
 
+    def take_initial_zones(self) -> list[dict[str, Any]] | None:
+        """Return and clear the zone data retrieved during login."""
+        initial_zones = self._initial_zones
+        self._initial_zones = None
+        return initial_zones
+
     async def async_get_zones(self) -> list[dict[str, Any]]:
-        """Fetch all active zones and their properties."""
+        """Fetch all active zones and their properties without historical data."""
+        started_at = time.monotonic()
         try:
             async with self.session.post(
                 self.endpoint,
@@ -522,8 +532,11 @@ class NovaRcApiClient:
                     raise CannotConnect("GraphQL query error")
 
                 zones = normalize_zones_payload(data)
-                await asyncio.gather(*[self._attach_time_series_data(zone) for zone in zones])
-
+                _LOGGER.debug(
+                    "GetZones returned %d active zones in %.2f seconds",
+                    len(zones),
+                    time.monotonic() - started_at,
+                )
                 return zones
 
         except (
@@ -535,7 +548,16 @@ class NovaRcApiClient:
         except aiohttp.ClientError as err:
             raise CannotConnect(f"Connection error: {err}") from err
         except TimeoutError as err:
+            _LOGGER.warning(
+                "GetZones timed out after %.2f seconds",
+                time.monotonic() - started_at,
+            )
             raise CannotConnect("Timeout while fetching zones") from err
+
+    async def async_enrich_time_series(self, zones: list[dict[str, Any]]) -> None:
+        """Attach optional historical data to zones one request at a time."""
+        for zone in zones:
+            await self._attach_time_series_data(zone)
 
     async def async_get_zone(self, zone_id: int) -> dict[str, Any] | None:
         """Fetch one zone payload with full detail."""
