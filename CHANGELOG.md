@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.3] - 2026-08-31
+
+### Maintenance
+- Bumped release metadata and documentation to version 2.3.3.
+
 ## [2.3.2] - 2026-08-07
 
 ### Fixed
