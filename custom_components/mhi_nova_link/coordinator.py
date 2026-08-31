@@ -98,7 +98,8 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         """Fetch the latest zone data from the GraphQL gateway."""
         await self._async_ensure_restore_state_loaded()
         try:
-            initial_zones = self.api.take_initial_zones()
+            take_initial_zones = getattr(self.api, "take_initial_zones", None)
+            initial_zones = take_initial_zones() if take_initial_zones else None
             zones_request = (
                 asyncio.sleep(0, result=initial_zones)
                 if initial_zones is not None
@@ -146,6 +147,8 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
     def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
         """Schedule optional historical data after the lightweight refresh completes."""
+        if not hasattr(self.api, "async_enrich_time_series"):
+            return
         if self._time_series_enrichment_task and not self._time_series_enrichment_task.done():
             return
         self._time_series_enrichment_task = self.hass.async_create_task(
