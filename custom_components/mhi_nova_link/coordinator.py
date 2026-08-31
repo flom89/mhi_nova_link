@@ -83,6 +83,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self._restore_lock = asyncio.Lock()
         self._restore_validation_tasks: dict[str, asyncio.Task[None]] = {}
         self._time_series_enrichment_task: asyncio.Task[None] | None = None
+        self._time_series_enrichment_generation = 0
         self._last_user_interaction_at: datetime | None = None
         self._restore_status_by_source: dict[str, dict[str, Any]] = {
             GPIO_SOURCE_SYSTEM_STOP: {"state": "idle"},
@@ -149,13 +150,16 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         """Schedule optional historical data after the lightweight refresh completes."""
         if not hasattr(self.api, "async_enrich_time_series"):
             return
+        self._time_series_enrichment_generation += 1
         if self._time_series_enrichment_task and not self._time_series_enrichment_task.done():
-            return
+            self._time_series_enrichment_task.cancel()
         self._time_series_enrichment_task = self.hass.async_create_task(
-            self._async_enrich_time_series(zones)
+            self._async_enrich_time_series(zones, self._time_series_enrichment_generation)
         )
 
-    async def _async_enrich_time_series(self, zones: list[dict[str, Any]]) -> None:
+    async def _async_enrich_time_series(
+        self, zones: list[dict[str, Any]], generation: int
+    ) -> None:
         """Fetch historical data sequentially and publish it when complete."""
         try:
             await self.api.async_enrich_time_series(zones)
@@ -163,7 +167,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             _LOGGER.exception("Time-series enrichment failed")
             return
 
-        if self.data is zones:
+        if generation == self._time_series_enrichment_generation:
             self.async_set_updated_data(zones)
 
     @property

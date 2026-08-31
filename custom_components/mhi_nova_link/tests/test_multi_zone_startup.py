@@ -96,3 +96,31 @@ async def test_time_series_failure_does_not_fail_lightweight_refresh() -> None:
     assert len(zones) == 4
     api.async_get_zones.assert_not_awaited()
     api.async_enrich_time_series.assert_awaited_once_with(zones)
+
+
+@pytest.mark.asyncio
+async def test_new_refresh_replaces_stale_time_series_enrichment() -> None:
+    """A newer zone refresh should supersede its unfinished history request."""
+    first_started = asyncio.Event()
+    release_second = asyncio.Event()
+    completed_zones: list[list[dict[str, object]]] = []
+
+    async def enrich(zones: list[dict[str, object]]) -> None:
+        if zones[0]["zoneId"] == 1:
+            first_started.set()
+            await asyncio.Event().wait()
+        await release_second.wait()
+        completed_zones.append(zones)
+
+    api = SimpleNamespace(async_enrich_time_series=enrich)
+    coordinator = NovaRcDataUpdateCoordinator(DummyHass(), api)
+    first_zones = [{"zoneId": 1}]
+    second_zones = [{"zoneId": 2}]
+
+    coordinator._async_schedule_time_series_enrichment(first_zones)
+    await first_started.wait()
+    coordinator._async_schedule_time_series_enrichment(second_zones)
+    release_second.set()
+    await coordinator._time_series_enrichment_task
+
+    assert completed_zones == [second_zones]
