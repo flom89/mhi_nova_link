@@ -82,6 +82,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         self._restore_state_loaded = False
         self._restore_lock = asyncio.Lock()
         self._restore_validation_tasks: dict[str, asyncio.Task[None]] = {}
+        self._time_series_enrichment_task: asyncio.Task[None] | None = None
         self._last_user_interaction_at: datetime | None = None
         self._restore_status_by_source: dict[str, dict[str, Any]] = {
             GPIO_SOURCE_SYSTEM_STOP: {"state": "idle"},
@@ -97,8 +98,14 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         """Fetch the latest zone data from the GraphQL gateway."""
         await self._async_ensure_restore_state_loaded()
         try:
+            initial_zones = self.api.take_initial_zones()
+            zones_request = (
+                asyncio.sleep(0, result=initial_zones)
+                if initial_zones is not None
+                else self.api.async_get_zones()
+            )
             data, notifications, gpios_payload, gateway_update = await asyncio.gather(
-                self.api.async_get_zones(),
+                zones_request,
                 self.api.async_get_notifications(),
                 self.api.async_get_gpios(),
                 self.api.async_get_gateway_update_information(),
@@ -134,7 +141,27 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             and previous_installed_version is not None
         ):
             self.gateway_update["installed_version"] = previous_installed_version
+        self._async_schedule_time_series_enrichment(data)
         return data
+
+    def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
+        """Schedule optional historical data after the lightweight refresh completes."""
+        if self._time_series_enrichment_task and not self._time_series_enrichment_task.done():
+            return
+        self._time_series_enrichment_task = self.hass.async_create_task(
+            self._async_enrich_time_series(zones)
+        )
+
+    async def _async_enrich_time_series(self, zones: list[dict[str, Any]]) -> None:
+        """Fetch historical data sequentially and publish it when complete."""
+        try:
+            await self.api.async_enrich_time_series(zones)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Time-series enrichment failed")
+            return
+
+        if self.data is zones:
+            self.async_set_updated_data(zones)
 
     @property
     def is_system_stop_active(self) -> bool:
