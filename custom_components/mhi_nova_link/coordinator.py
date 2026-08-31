@@ -163,6 +163,8 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         """Fetch historical data sequentially and publish it when complete."""
         try:
             await self.api.async_enrich_time_series(zones)
+        except asyncio.CancelledError:
+            raise
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Time-series enrichment failed")
             return
