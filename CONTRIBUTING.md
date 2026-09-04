@@ -79,7 +79,7 @@ This project follows [Semantic Versioning](https://semver.org/). The version mus
 - `custom_components/mhi_nova_link/pyproject.toml` (`version` field)
 - `CHANGELOG.md` (new section at the top)
 
-The current release version is 2.3.3.
+The current release version is 2.3.5.
 
 For architecture changes, ensure:
 
