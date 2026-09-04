@@ -68,6 +68,55 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
         return {}
 
 
+class NovaRcIndoorUnitEntity(NovaRcZoneEntity):
+    """Common base for indoor-unit-scoped entities within a zone.
+
+    Each indoor unit is modeled as its own Home Assistant device, linked to its
+    zone via ``via_device``. Without this, multiple indoor units sharing a zone
+    would render as duplicate entities with identical names on the same device.
+    """
+
+    def __init__(
+        self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int, indoor_unit_id: int
+    ) -> None:
+        """Initialize the entity for a specific indoor unit within a zone."""
+        super().__init__(coordinator, zone_id)
+        self.indoor_unit_id = indoor_unit_id
+
+    @property
+    def _indoor_unit_data(self) -> dict[str, Any]:
+        """Return the latest indoor-unit payload for the entity."""
+        return self.get_indoor_unit_data(self.indoor_unit_id)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return Home Assistant device metadata for the indoor unit."""
+        zone_device_info = super().device_info
+        entry_id = (
+            self.coordinator.config_entry.entry_id if self.coordinator.config_entry else "unknown"
+        )
+        indoor_unit_name = (
+            self._indoor_unit_data.get("displayName")
+            or self._indoor_unit_data.get("name")
+            or f"Indoor unit {self.indoor_unit_id}"
+        )
+        device_info: DeviceInfo = {
+            "identifiers": {
+                (
+                    DOMAIN,
+                    f"{entry_id}_{self.zone_id}_indoor_{self.indoor_unit_id}",
+                )
+            },
+            "name": f"{zone_device_info['name']} {indoor_unit_name}",
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
+            "via_device": (DOMAIN, f"{entry_id}_{self.zone_id}"),
+        }
+        if "sw_version" in zone_device_info:
+            device_info["sw_version"] = zone_device_info["sw_version"]
+        return device_info
+
+
 def build_gateway_device_info(entry_id: str, *, identifier_suffix: str, name: str) -> DeviceInfo:
     """Build consistent gateway device info metadata."""
     return {
