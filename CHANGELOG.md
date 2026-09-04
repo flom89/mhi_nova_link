@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.5] - 2026-09-04
+
+### Compatibility
+- Preserved the 2.3.3 entity IDs and zone-level entity set.
+- Kept the new per-indoor-unit device architecture for multi-unit zones,
+  with each indoor unit linked to its zone device.
+- Avoided adding duplicate indoor-unit entities for one-to-one zone mappings.
+
+### Maintenance
+- Verified all English, German, Italian, Spanish, and French translation keys
+  are complete and aligned with `strings.json`.
+
 ## [2.3.3] - 2026-08-31
 
 ### Maintenance

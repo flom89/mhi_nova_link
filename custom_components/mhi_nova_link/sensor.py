@@ -68,9 +68,12 @@ async def async_setup_entry(
                 continue
             indoor_unit_ids.append(indoor_unit_id)
 
-        # Each indoor unit is modeled as its own device (see
-        # NovaRcIndoorUnitEntity), so every connected indoor unit gets its own
-        # set of sensors regardless of how many indoor units the zone has.
+        # Keep the 2.3.3 entity set for one-to-one zone mappings: zone-level
+        # sensors already expose the same values without creating duplicates.
+        if len(indoor_unit_ids) <= 1:
+            continue
+
+        # Each indoor unit in a multi-unit zone is modeled as its own device.
         for indoor_unit_id in indoor_unit_ids:
             entities.append(NovaRcIndoorUnitTemperatureSensor(coordinator, zone_id, indoor_unit_id))
             entities.append(NovaRcIndoorUnitSetpointSensor(coordinator, zone_id, indoor_unit_id))

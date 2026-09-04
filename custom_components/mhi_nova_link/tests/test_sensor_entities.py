@@ -399,7 +399,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
 
-    assert len(added_entities) == 23
+    assert len(added_entities) == 19
     assert any(
         isinstance(entity, integration_module.NovaRcGatewaySoftwareVersionSensor)
         for entity in added_entities
@@ -421,7 +421,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
     assert any(
         isinstance(entity, integration_module.NovaRcFanSpeedSensor) for entity in added_entities
     )
-    assert any(
+    assert not any(
         isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
         for entity in added_entities
     )

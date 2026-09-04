@@ -39,8 +39,8 @@ body:
     id: integration_version
     attributes:
       label: Integration version
-      description: "Example: 2.3.3"
-      placeholder: 2.3.3
+      description: "Example: 2.3.5"
+      placeholder: 2.3.5
     validations:
       required: true
 
