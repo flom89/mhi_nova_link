@@ -175,6 +175,39 @@ def test_indoor_unit_temperature_sensor_reads_indoor_unit_state(
     assert sensor.native_value == 19.5
 
 
+def test_indoor_unit_sensors_get_distinct_devices_within_same_zone(
+    integration_module: object,
+) -> None:
+    """Indoor units in the same zone must not share a device, or their entities collide."""
+    coordinator = SimpleNamespace(
+        data=[
+            {
+                "zoneId": 2,
+                "name": "Zone A",
+                "indoorUnits": [
+                    {"indoorUnitId": 7, "displayName": "Office"},
+                    {"indoorUnitId": 8, "displayName": "Hallway"},
+                ],
+            }
+        ],
+        config_entry=SimpleNamespace(domain="mhi_nova", entry_id="entry-id"),
+        api=SimpleNamespace(host="gateway"),
+        last_update_success=True,
+        async_add_listener=lambda callback: lambda: None,
+    )
+
+    sensor_office = integration_module.NovaRcIndoorUnitTemperatureSensor(coordinator, 2, 7)
+    sensor_hallway = integration_module.NovaRcIndoorUnitTemperatureSensor(coordinator, 2, 8)
+
+    office_device_info = sensor_office.device_info
+    hallway_device_info = sensor_hallway.device_info
+
+    assert office_device_info["identifiers"] != hallway_device_info["identifiers"]
+    assert office_device_info["name"] == "Zone A Office"
+    assert hallway_device_info["name"] == "Zone A Hallway"
+    assert office_device_info["via_device"] == (entity_module.DOMAIN, "entry-id_2")
+
+
 def test_build_time_series_identifiers_uses_zone_and_indoor_unit_references() -> None:
     """The time-series request builder should create identifiers for indoor and outdoor units."""
     identifiers = api_module.build_time_series_identifiers(
@@ -366,7 +399,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
 
     await integration_module.async_setup_entry(hass, entry, add_entities)
 
-    assert len(added_entities) == 19
+    assert len(added_entities) == 23
     assert any(
         isinstance(entity, integration_module.NovaRcGatewaySoftwareVersionSensor)
         for entity in added_entities
@@ -388,7 +421,7 @@ async def test_setup_entry_creates_meaningful_zone_sensors(
     assert any(
         isinstance(entity, integration_module.NovaRcFanSpeedSensor) for entity in added_entities
     )
-    assert not any(
+    assert any(
         isinstance(entity, integration_module.NovaRcIndoorUnitTemperatureSensor)
         for entity in added_entities
     )
@@ -430,7 +463,7 @@ def test_restore_status_sensor_exposes_restore_diagnostics(integration_module: o
 async def test_setup_entry_creates_indoor_unit_sensors_for_multi_indoor_zone(
     integration_module: object,
 ) -> None:
-    """Indoor-unit sensors should only be added for zones with multiple indoor units."""
+    """Indoor-unit sensors should be added for each distinct indoor unit in a zone."""
     coordinator = SimpleNamespace(
         data=[
             {

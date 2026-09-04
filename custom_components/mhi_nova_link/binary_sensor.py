@@ -1,7 +1,5 @@
 """Implement binary sensor entities for NOVA_RC."""
 
-from typing import Any
-
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -15,7 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity, build_gateway_device_info
+from .entity import NovaRcIndoorUnitEntity, NovaRcZoneEntity, build_gateway_device_info
 from .helpers import dataset_is_on, get_dataset_value, get_zone_time_series_datasets
 
 
@@ -75,6 +73,10 @@ async def async_setup_entry(
 
 class NovaRcBaseBinarySensor(NovaRcZoneEntity, BinarySensorEntity):
     """Base implementation for zone binary sensors."""
+
+
+class NovaRcIndoorUnitBaseBinarySensor(NovaRcIndoorUnitEntity, BinarySensorEntity):
+    """Base implementation for indoor-unit-scoped binary sensors."""
 
 
 class NovaRcGatewayBinarySensor(CoordinatorEntity[NovaRcDataUpdateCoordinator], BinarySensorEntity):
@@ -351,7 +353,7 @@ class NovaRcDefrostingBinarySensor(NovaRcBaseBinarySensor):
         return dataset_is_on("defrosting_active", dataset)
 
 
-class NovaRcIndoorUnitRunningBinarySensor(NovaRcBaseBinarySensor):
+class NovaRcIndoorUnitRunningBinarySensor(NovaRcIndoorUnitBaseBinarySensor):
     """Running state for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_running"
@@ -364,15 +366,10 @@ class NovaRcIndoorUnitRunningBinarySensor(NovaRcBaseBinarySensor):
         indoor_unit_id: int,
     ) -> None:
         """Initialize the indoor-unit running binary sensor."""
-        super().__init__(coordinator, zone_id)
-        self.indoor_unit_id = indoor_unit_id
+        super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = (
             f"{coordinator.api.host}_zone_{zone_id}_indoor_{indoor_unit_id}_running"
         )
-
-    @property
-    def _indoor_unit_data(self) -> dict[str, Any]:
-        return self.get_indoor_unit_data(self.indoor_unit_id)
 
     @property
     def is_on(self) -> bool:
@@ -384,7 +381,7 @@ class NovaRcIndoorUnitRunningBinarySensor(NovaRcBaseBinarySensor):
         return bool(value)
 
 
-class NovaRcIndoorUnitFilterBinarySensor(NovaRcBaseBinarySensor):
+class NovaRcIndoorUnitFilterBinarySensor(NovaRcIndoorUnitBaseBinarySensor):
     """Filter reminder for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_filter_sign"
@@ -398,15 +395,10 @@ class NovaRcIndoorUnitFilterBinarySensor(NovaRcBaseBinarySensor):
         indoor_unit_id: int,
     ) -> None:
         """Initialize the indoor-unit filter binary sensor."""
-        super().__init__(coordinator, zone_id)
-        self.indoor_unit_id = indoor_unit_id
+        super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = (
             f"{coordinator.api.host}_zone_{zone_id}_indoor_{indoor_unit_id}_filter"
         )
-
-    @property
-    def _indoor_unit_data(self) -> dict[str, Any]:
-        return self.get_indoor_unit_data(self.indoor_unit_id)
 
     @property
     def is_on(self) -> bool:

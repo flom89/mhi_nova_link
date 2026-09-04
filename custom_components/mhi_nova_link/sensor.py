@@ -17,7 +17,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity, build_gateway_device_info
+from .entity import NovaRcIndoorUnitEntity, NovaRcZoneEntity, build_gateway_device_info
 from .helpers import get_dataset_value, get_zone_time_series_datasets
 
 
@@ -68,11 +68,9 @@ async def async_setup_entry(
                 continue
             indoor_unit_ids.append(indoor_unit_id)
 
-        # If one indoor unit is mapped 1:1 to a zone, zone-level sensors already
-        # cover the same metrics and would look duplicated in the frontend.
-        if len(indoor_unit_ids) <= 1:
-            continue
-
+        # Each indoor unit is modeled as its own device (see
+        # NovaRcIndoorUnitEntity), so every connected indoor unit gets its own
+        # set of sensors regardless of how many indoor units the zone has.
         for indoor_unit_id in indoor_unit_ids:
             entities.append(NovaRcIndoorUnitTemperatureSensor(coordinator, zone_id, indoor_unit_id))
             entities.append(NovaRcIndoorUnitSetpointSensor(coordinator, zone_id, indoor_unit_id))
@@ -86,6 +84,16 @@ async def async_setup_entry(
 
 class NovaRcBaseSensor(NovaRcZoneEntity, SensorEntity):
     """Base implementation for NOVA_RC sensors."""
+
+    @property
+    def available(self) -> bool:
+        """Return whether the zone is currently available from the gateway."""
+        available = self._zone_data.get("available")
+        return True if available is None else bool(available)
+
+
+class NovaRcIndoorUnitBaseSensor(NovaRcIndoorUnitEntity, SensorEntity):
+    """Base implementation for indoor-unit-scoped NOVA_RC sensors."""
 
     @property
     def available(self) -> bool:
@@ -362,7 +370,7 @@ class NovaRcFanSpeedSensor(NovaRcBaseSensor):
         return fan_translation.get(raw_fan, raw_fan.lower() if raw_fan else None)
 
 
-class NovaRcIndoorUnitTemperatureSensor(NovaRcBaseSensor):
+class NovaRcIndoorUnitTemperatureSensor(NovaRcIndoorUnitBaseSensor):
     """Temperature sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_temperature"
@@ -377,13 +385,8 @@ class NovaRcIndoorUnitTemperatureSensor(NovaRcBaseSensor):
         indoor_unit_id: int,
     ) -> None:
         """Initialize the indoor-unit temperature sensor."""
-        super().__init__(coordinator, zone_id)
-        self.indoor_unit_id = indoor_unit_id
+        super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_indoor_{indoor_unit_id}_temp"
-
-    @property
-    def _indoor_unit_data(self) -> dict[str, Any]:
-        return self.get_indoor_unit_data(self.indoor_unit_id)
 
     @property
     def native_value(self) -> float | None:
@@ -399,7 +402,7 @@ class NovaRcIndoorUnitTemperatureSensor(NovaRcBaseSensor):
         return float(value) if isinstance(value, (int, float)) else None
 
 
-class NovaRcIndoorUnitSetpointSensor(NovaRcBaseSensor):
+class NovaRcIndoorUnitSetpointSensor(NovaRcIndoorUnitBaseSensor):
     """Setpoint sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_setpoint"
@@ -414,15 +417,10 @@ class NovaRcIndoorUnitSetpointSensor(NovaRcBaseSensor):
         indoor_unit_id: int,
     ) -> None:
         """Initialize the indoor-unit setpoint sensor."""
-        super().__init__(coordinator, zone_id)
-        self.indoor_unit_id = indoor_unit_id
+        super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = (
             f"{coordinator.api.host}_zone_{zone_id}_indoor_{indoor_unit_id}_setpoint"
         )
-
-    @property
-    def _indoor_unit_data(self) -> dict[str, Any]:
-        return self.get_indoor_unit_data(self.indoor_unit_id)
 
     @property
     def native_value(self) -> float | None:
@@ -435,7 +433,7 @@ class NovaRcIndoorUnitSetpointSensor(NovaRcBaseSensor):
         return float(value) if isinstance(value, (int, float)) else None
 
 
-class NovaRcIndoorUnitOperationModeSensor(NovaRcBaseSensor):
+class NovaRcIndoorUnitOperationModeSensor(NovaRcIndoorUnitBaseSensor):
     """Operation mode sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_operation_mode"
@@ -447,13 +445,8 @@ class NovaRcIndoorUnitOperationModeSensor(NovaRcBaseSensor):
         indoor_unit_id: int,
     ) -> None:
         """Initialize the indoor-unit operation-mode sensor."""
-        super().__init__(coordinator, zone_id)
-        self.indoor_unit_id = indoor_unit_id
+        super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_indoor_{indoor_unit_id}_mode"
-
-    @property
-    def _indoor_unit_data(self) -> dict[str, Any]:
-        return self.get_indoor_unit_data(self.indoor_unit_id)
 
     @property
     def native_value(self) -> str | None:
@@ -475,7 +468,7 @@ class NovaRcIndoorUnitOperationModeSensor(NovaRcBaseSensor):
         return mode_translation.get(raw_mode, raw_mode.lower() if raw_mode else None)
 
 
-class NovaRcIndoorUnitFanSpeedSensor(NovaRcBaseSensor):
+class NovaRcIndoorUnitFanSpeedSensor(NovaRcIndoorUnitBaseSensor):
     """Fan speed sensor for an individual indoor unit."""
 
     _attr_translation_key = "indoor_unit_fan_speed"
@@ -487,13 +480,8 @@ class NovaRcIndoorUnitFanSpeedSensor(NovaRcBaseSensor):
         indoor_unit_id: int,
     ) -> None:
         """Initialize the indoor-unit fan-speed sensor."""
-        super().__init__(coordinator, zone_id)
-        self.indoor_unit_id = indoor_unit_id
+        super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_indoor_{indoor_unit_id}_fan"
-
-    @property
-    def _indoor_unit_data(self) -> dict[str, Any]:
-        return self.get_indoor_unit_data(self.indoor_unit_id)
 
     @property
     def native_value(self) -> str | None:
