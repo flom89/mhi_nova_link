@@ -66,7 +66,8 @@
           "ssl_fingerprint": "SSL fingerprint (SHA256, optional)",
           "username": "Username",
           "password": "Password",
-          "analytics_opt_in": "Share anonymous usage statistics"
+          "analytics_opt_in": "Share anonymous usage statistics",
+          "host": "IP address / hostname"
         }
       }
     }
