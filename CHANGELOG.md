@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.6] - 2026-09-05
+
+### Release readiness
+- Bumped integration and package metadata to version 2.3.6.
+- Updated current-version references across the documentation and issue templates.
+- Verified English, German, Italian, Spanish, and French translations contain the
+  complete key set defined by `strings.json`.
+
 ## [2.3.5] - 2026-09-04
 
 ### Compatibility
