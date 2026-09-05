@@ -5,7 +5,7 @@ from typing import Any
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, MODEL
+from .const import DOMAIN, MANUFACTURER, MODEL, MODEL_INDOOR_UNIT, MODEL_ZONE
 from .coordinator import NovaRcDataUpdateCoordinator
 
 
@@ -54,7 +54,9 @@ class NovaRcZoneEntity(CoordinatorEntity[NovaRcDataUpdateCoordinator]):
             },
             "name": f"{zone_name}",
             "manufacturer": MANUFACTURER,
-            "model": MODEL,
+            "model": MODEL_ZONE,
+            "model_id": f"Zone {self.zone_id}",
+            "via_device": (DOMAIN, f"{entry_id}_gateway_info"),
         }
         if sw_version is not None:
             device_info["sw_version"] = sw_version
@@ -109,7 +111,8 @@ class NovaRcIndoorUnitEntity(NovaRcZoneEntity):
             },
             "name": f"{zone_device_info['name']} {indoor_unit_name}",
             "manufacturer": MANUFACTURER,
-            "model": MODEL,
+            "model": MODEL_INDOOR_UNIT,
+            "model_id": f"Zone {self.zone_id} / Device {self.indoor_unit_id}",
             "via_device": (DOMAIN, f"{entry_id}_{self.zone_id}"),
         }
         if "sw_version" in zone_device_info:
@@ -117,11 +120,22 @@ class NovaRcIndoorUnitEntity(NovaRcZoneEntity):
         return device_info
 
 
-def build_gateway_device_info(entry_id: str, *, identifier_suffix: str, name: str) -> DeviceInfo:
-    """Build consistent gateway device info metadata."""
-    return {
+def build_gateway_device_info(
+    entry_id: str, *, identifier_suffix: str, name: str, via_gateway: bool = True
+) -> DeviceInfo:
+    """Build consistent gateway device info metadata.
+
+    All gateway-level devices are linked via ``via_device`` to the main
+    "Gateway" device (``identifier_suffix="gateway_info"``) so Home Assistant
+    renders a single top-level gateway with its sub-devices nested beneath
+    it, except for the main gateway device itself.
+    """
+    device_info: DeviceInfo = {
         "identifiers": {(DOMAIN, f"{entry_id}_{identifier_suffix}")},
         "name": name,
         "manufacturer": MANUFACTURER,
         "model": MODEL,
     }
+    if via_gateway and identifier_suffix != "gateway_info":
+        device_info["via_device"] = (DOMAIN, f"{entry_id}_gateway_info")
+    return device_info

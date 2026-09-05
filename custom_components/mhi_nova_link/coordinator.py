@@ -27,6 +27,8 @@ from .const import (
     DEFAULT_POLL_INTERVAL,
     DOMAIN,
     UPDATE_INTERVAL_ENV_VAR,
+    ZONE_CACHE_PRUNE_POLLS,
+    ZONE_OFFLINE_DEBOUNCE_POLLS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,6 +62,8 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         )
         self.api = api
         self.config_entry = entry
+        self._zone_cache: dict[int, dict[str, Any]] = {}
+        self._zone_missing_streak: dict[int, int] = {}
         self.gpios: dict[str, bool] = {}
         self.gpio_active_high: dict[str, bool] = {}
         self.gateway_update: dict[str, Any] = {}
@@ -143,8 +147,82 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             and previous_installed_version is not None
         ):
             self.gateway_update["installed_version"] = previous_installed_version
+        data = self._stabilize_zones(data)
         self._async_schedule_time_series_enrichment(data)
         return data
+
+    def _stabilize_zones(self, zones: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Smooth out transient zone drop-outs reported by the gateway bus.
+
+        The gateway occasionally reports a zone as briefly offline (either by
+        omitting it from the response as an ``OfflineZone``, or by reporting
+        ``available: False`` on it) for a single poll cycle even though the
+        zone bus is otherwise healthy. Treating every such blip as a real
+        outage caused zone entities to flap between their last known value
+        and "unknown" every few seconds. A zone is only surfaced as
+        unavailable once it has been missing/offline for several consecutive
+        polls, and the last known-good payload keeps being served (marked
+        unavailable) instead of disappearing entirely.
+        """
+        stabilized: list[dict[str, Any]] = []
+        seen_zone_ids: set[int] = set()
+
+        for zone in zones:
+            zone_id = zone.get("zoneId")
+            if not isinstance(zone_id, int):
+                stabilized.append(zone)
+                continue
+
+            seen_zone_ids.add(zone_id)
+            if zone.get("available") is False:
+                stabilized.append(self._debounce_offline_zone(zone_id, zone))
+                continue
+
+            self._zone_missing_streak[zone_id] = 0
+            self._zone_cache[zone_id] = zone
+            stabilized.append(zone)
+
+        for zone_id, cached in list(self._zone_cache.items()):
+            if zone_id in seen_zone_ids:
+                continue
+            if self._zone_missing_streak.get(zone_id, 0) >= ZONE_CACHE_PRUNE_POLLS:
+                # The zone has been gone for a very long time (e.g. removed
+                # from the gateway configuration); stop tracking it so the
+                # cache does not grow unbounded.
+                del self._zone_cache[zone_id]
+                self._zone_missing_streak.pop(zone_id, None)
+                continue
+            stabilized.append(self._debounce_offline_zone(zone_id, cached))
+
+        return stabilized
+
+    def _debounce_offline_zone(self, zone_id: int, fallback: dict[str, Any]) -> dict[str, Any]:
+        """Return the payload to use for a zone reported missing/offline."""
+        if zone_id not in self._zone_cache:
+            # The zone has never been seen online, so there is no known-good
+            # payload to absorb the blip into; report it as offline as-is.
+            # The streak is seeded at the debounce threshold (rather than 1)
+            # purely so the missing-poll counter below already reflects a
+            # confirmed-offline zone for pruning purposes; it does not mean
+            # any debounce cycles were actually skipped for this zone.
+            offline_zone = dict(fallback)
+            offline_zone["available"] = False
+            self._zone_cache[zone_id] = offline_zone
+            self._zone_missing_streak[zone_id] = ZONE_OFFLINE_DEBOUNCE_POLLS
+            return offline_zone
+
+        streak = self._zone_missing_streak.get(zone_id, 0) + 1
+        self._zone_missing_streak[zone_id] = streak
+        cached = self._zone_cache[zone_id]
+
+        if streak < ZONE_OFFLINE_DEBOUNCE_POLLS:
+            # Absorb the blip: keep reporting the last known-good data.
+            return cached
+
+        offline_zone = dict(cached)
+        offline_zone["available"] = False
+        self._zone_cache[zone_id] = offline_zone
+        return offline_zone
 
     def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
         """Schedule optional historical data after the lightweight refresh completes."""
@@ -157,9 +235,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             self._async_enrich_time_series(zones, self._time_series_enrichment_generation)
         )
 
-    async def _async_enrich_time_series(
-        self, zones: list[dict[str, Any]], generation: int
-    ) -> None:
+    async def _async_enrich_time_series(self, zones: list[dict[str, Any]], generation: int) -> None:
         """Fetch historical data sequentially and publish it when complete."""
         try:
             await self.api.async_enrich_time_series(zones)
