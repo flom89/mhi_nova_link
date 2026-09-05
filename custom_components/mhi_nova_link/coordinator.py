@@ -201,6 +201,10 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if zone_id not in self._zone_cache:
             # The zone has never been seen online, so there is no known-good
             # payload to absorb the blip into; report it as offline as-is.
+            # The streak is seeded at the debounce threshold (rather than 1)
+            # purely so the missing-poll counter below already reflects a
+            # confirmed-offline zone for pruning purposes; it does not mean
+            # any debounce cycles were actually skipped for this zone.
             offline_zone = dict(fallback)
             offline_zone["available"] = False
             self._zone_cache[zone_id] = offline_zone
