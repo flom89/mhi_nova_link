@@ -5,6 +5,13 @@ from typing import Final
 DOMAIN: Final = "mhi_nova_link"
 MANUFACTURER: Final = "STULZ GmbH"
 MODEL: Final = "CompTrol 4Web NOVA RC"
+MODEL_ZONE: Final = "NOVA RC Zone"
+MODEL_INDOOR_UNIT: Final = "NOVA RC Indoor Unit"
+
+# Hardware topology: a single gateway exposes up to four XYBus zones, and each
+# zone can have up to sixteen indoor units (devices) connected to it.
+MAX_ZONES_PER_GATEWAY: Final = 4
+MAX_INDOOR_UNITS_PER_ZONE: Final = 16
 
 # Configuration keys
 CONF_HOST: Final = "host"
@@ -37,3 +44,9 @@ ANALYTICS_PING_URL: Final = f"{_SUPABASE_URL}/rest/v1/install_pings"
 # Environment override for the coordinator poll interval
 UPDATE_INTERVAL_ENV_VAR: Final = "NOVA_RC_UPDATE_INTERVAL_SECONDS"
 TIME_SERIES_UPDATE_INTERVAL_ENV_VAR: Final = "NOVA_RC_TIME_SERIES_UPDATE_INTERVAL_SECONDS"
+
+# Number of consecutive polls a zone must be reported offline/missing before it
+# is actually surfaced as unavailable. This absorbs single-poll blips from the
+# gateway's XYBus reporting instead of flapping entities between their last
+# known value and "unknown" every poll cycle.
+ZONE_OFFLINE_DEBOUNCE_POLLS: Final = 2
