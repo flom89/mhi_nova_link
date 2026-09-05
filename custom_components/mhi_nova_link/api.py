@@ -154,14 +154,24 @@ def build_time_series_period(
     }
 
 
+def _coerce_mapping(value: Any) -> dict[str, Any]:
+    """Return a dict for payload normalization while tolerating unexpected input."""
+    return value if isinstance(value, dict) else {}
+
+
 def build_time_series_identifiers(zone: dict[str, Any]) -> list[dict[str, str]]:
     """Build a time-series identifier list for a zone and its indoor units."""
+    if not isinstance(zone, dict):
+        return []
+
     zone_id = zone.get("zoneId")
     if zone_id is None:
         return []
 
     indoor_references = [f"/indoor_unit/{zone_id}"]
     for indoor_unit in zone.get("indoorUnits", []) or []:
+        if not isinstance(indoor_unit, dict):
+            continue
         indoor_unit_id = indoor_unit.get("indoorUnitId")
         if indoor_unit_id is not None:
             indoor_references.append(f"/indoor_unit/{indoor_unit_id}")
@@ -185,9 +195,11 @@ def build_time_series_identifiers(zone: dict[str, Any]) -> list[dict[str, str]]:
 def normalize_time_series_payload(data: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Normalize the time-series payload into a lookup keyed by dataset id."""
     datasets: dict[str, dict[str, Any]] = {}
-
-    payload = data.get("data", {}).get("timeSeries", {})
-    items = payload.get("dataSetsWithData") or payload.get("dataSets") or []
+    payload = _coerce_mapping(data).get("data", {})
+    time_series = _coerce_mapping(payload).get("timeSeries", {})
+    items = _coerce_mapping(time_series).get("dataSetsWithData") or _coerce_mapping(
+        time_series
+    ).get("dataSets") or []
     if not isinstance(items, list):
         return datasets
 
@@ -203,10 +215,12 @@ def normalize_time_series_payload(data: dict[str, Any]) -> dict[str, dict[str, A
 
 def normalize_notifications_payload(data: dict[str, Any]) -> dict[str, Any]:
     """Normalize the notification payload into a simple dict for entity use."""
-    notification = data.get("data", {}).get("notification", {})
-    if not isinstance(notification, dict):
+    payload = _coerce_mapping(data)
+    raw_notification = _coerce_mapping(payload.get("data")).get("notification", {})
+    if not isinstance(raw_notification, dict):
         return {}
 
+    notification = _coerce_mapping(raw_notification)
     notifications = notification.get("notifications") or []
     active_notifications = [
         item for item in notifications if isinstance(item, dict) and item.get("active") is True
@@ -227,10 +241,8 @@ def normalize_notifications_payload(data: dict[str, Any]) -> dict[str, Any]:
 
 def normalize_gpios_payload(data: dict[str, Any]) -> dict[str, bool]:
     """Normalize GPIO payload into a function-to-state mapping."""
-    gpio = data.get("data", {}).get("gpio", {})
-    if not isinstance(gpio, dict):
-        return {}
-
+    gpio = _coerce_mapping(_coerce_mapping(data).get("data")).get("gpio", {})
+    gpio = _coerce_mapping(gpio)
     gpios = gpio.get("gpios") or []
     if not isinstance(gpios, list):
         return {}
@@ -249,10 +261,8 @@ def normalize_gpios_payload(data: dict[str, Any]) -> dict[str, bool]:
 
 def normalize_gpio_active_high_payload(data: dict[str, Any]) -> dict[str, bool]:
     """Normalize GPIO payload into a function-to-activeHigh mapping."""
-    gpio = data.get("data", {}).get("gpio", {})
-    if not isinstance(gpio, dict):
-        return {}
-
+    gpio = _coerce_mapping(_coerce_mapping(data).get("data")).get("gpio", {})
+    gpio = _coerce_mapping(gpio)
     gpios = gpio.get("gpios") or []
     if not isinstance(gpios, list):
         return {}
@@ -271,7 +281,9 @@ def normalize_gpio_active_high_payload(data: dict[str, Any]) -> dict[str, bool]:
 
 def normalize_zones_payload(data: dict[str, Any]) -> list[dict[str, Any]]:
     """Normalize the zone payload for both list-style and single-zone responses."""
-    xybus = data.get("data", {}).get("xybus", {})
+    payload = _coerce_mapping(data)
+    xybus = _coerce_mapping(payload.get("data")).get("xybus", {})
+    xybus = _coerce_mapping(xybus)
 
     raw_zones = xybus.get("zones")
     if raw_zones is not None:
@@ -285,37 +297,38 @@ def normalize_zones_payload(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
     """Normalize gateway software and update information for entity consumption."""
-    payload = data.get("data", {})
+    payload = _coerce_mapping(data).get("data", {})
+    payload = _coerce_mapping(payload)
     system = payload.get("system", {})
-    information = system.get("information", {}) if isinstance(system, dict) else {}
+    information = _coerce_mapping(system).get("information", {}) if isinstance(system, dict) else {}
     update = payload.get("update", {})
-    cloud = update.get("cloud", {}) if isinstance(update, dict) else {}
+    cloud = _coerce_mapping(update).get("cloud", {}) if isinstance(update, dict) else {}
 
     installed_version = (
-        information.get("installedVersion", {}).get("asString")
+        _coerce_mapping(information).get("installedVersion", {}).get("asString")
         if isinstance(information, dict)
         else None
     )
-    available_release = cloud.get("availableSoftwareRelease", {}) if isinstance(cloud, dict) else {}
+    available_release = _coerce_mapping(cloud).get("availableSoftwareRelease", {}) if isinstance(cloud, dict) else {}
     available_version = (
-        available_release.get("version", {}).get("asString")
+        _coerce_mapping(available_release).get("version", {}).get("asString")
         if isinstance(available_release, dict)
         else None
     )
-    settings = cloud.get("settings", {}) if isinstance(cloud, dict) else {}
+    settings = _coerce_mapping(cloud).get("settings", {}) if isinstance(cloud, dict) else {}
 
     return {
         "installed_version": installed_version,
-        "installed_bundle_description": information.get("installedBundleDescription")
+        "installed_bundle_description": _coerce_mapping(information).get("installedBundleDescription")
         if isinstance(information, dict)
         else None,
-        "installed_bundle_build": information.get("installedBundleBuild")
+        "installed_bundle_build": _coerce_mapping(information).get("installedBundleBuild")
         if isinstance(information, dict)
         else None,
         "available_version": available_version,
         "update_available": bool(available_version),
-        "automatic_check": settings.get("automaticCheck") if isinstance(settings, dict) else None,
-        "automatic_install": settings.get("automaticInstall")
+        "automatic_check": _coerce_mapping(settings).get("automaticCheck") if isinstance(settings, dict) else None,
+        "automatic_install": _coerce_mapping(settings).get("automaticInstall")
         if isinstance(settings, dict)
         else None,
     }
