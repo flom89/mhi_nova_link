@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mhi-nova"
-version = "2.3.5"
+version = "2.3.6"
 description = "Custom Home Assistant integration for NOVA_RC gateways"
 readme = "README.md"
 requires-python = ">=3.12"

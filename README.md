@@ -11,11 +11,11 @@
 
 MHI Nova Link lets you control your Mitsubishi Heavy Industries system in Home Assistant when your setup uses a **CompTrol 4Web NOVA RC** gateway.
 
-Current integration version: **2.3.5**
+Current integration version: **2.3.6**
 
 ## Compatibility
 
-Version 2.3.5 preserves the entity IDs and zone-level entity set from 2.3.3.
+Version 2.3.6 preserves the entity IDs and zone-level entity set from 2.3.3.
 For zones with multiple indoor units, indoor-unit entities now use separate
 Home Assistant devices linked to their zone. Zones with one indoor unit
 continue to use the existing zone-level entities without additional duplicates.
