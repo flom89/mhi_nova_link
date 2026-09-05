@@ -95,3 +95,31 @@ async def test_zone_reported_offline_recovers_immediately() -> None:
     third = await coordinator._async_update_data()
     assert third[0]["available"] is True
     assert third[0]["roomAirTemperature"] == 22.0
+
+
+@pytest.mark.asyncio
+async def test_never_seen_zone_reported_offline_is_marked_unavailable() -> None:
+    """A zone that has never been online should not be hidden as a false blip."""
+    coordinator = _make_coordinator([[{"zoneId": 5, "available": False}]])
+
+    result = await coordinator._async_update_data()
+
+    assert result[0]["zoneId"] == 5
+    assert result[0]["available"] is False
+
+
+@pytest.mark.asyncio
+async def test_long_missing_zone_is_pruned_from_cache() -> None:
+    """A zone missing for a very long time should be evicted, not retained forever."""
+    online_zone = {"zoneId": 1, "available": True}
+    coordinator = _make_coordinator([[online_zone]] + [[] for _ in range(250)])
+
+    first = await coordinator._async_update_data()
+    coordinator.data = first
+    assert 1 in coordinator._zone_cache
+
+    for _ in range(250):
+        await coordinator._async_update_data()
+
+    assert 1 not in coordinator._zone_cache
+    assert 1 not in coordinator._zone_missing_streak

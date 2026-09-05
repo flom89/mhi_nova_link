@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_POLL_INTERVAL,
     DOMAIN,
     UPDATE_INTERVAL_ENV_VAR,
+    ZONE_CACHE_PRUNE_POLLS,
     ZONE_OFFLINE_DEBOUNCE_POLLS,
 )
 
@@ -184,15 +185,31 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         for zone_id, cached in list(self._zone_cache.items()):
             if zone_id in seen_zone_ids:
                 continue
+            if self._zone_missing_streak.get(zone_id, 0) >= ZONE_CACHE_PRUNE_POLLS:
+                # The zone has been gone for a very long time (e.g. removed
+                # from the gateway configuration); stop tracking it so the
+                # cache does not grow unbounded.
+                del self._zone_cache[zone_id]
+                self._zone_missing_streak.pop(zone_id, None)
+                continue
             stabilized.append(self._debounce_offline_zone(zone_id, cached))
 
         return stabilized
 
     def _debounce_offline_zone(self, zone_id: int, fallback: dict[str, Any]) -> dict[str, Any]:
         """Return the payload to use for a zone reported missing/offline."""
+        if zone_id not in self._zone_cache:
+            # The zone has never been seen online, so there is no known-good
+            # payload to absorb the blip into; report it as offline as-is.
+            offline_zone = dict(fallback)
+            offline_zone["available"] = False
+            self._zone_cache[zone_id] = offline_zone
+            self._zone_missing_streak[zone_id] = ZONE_OFFLINE_DEBOUNCE_POLLS
+            return offline_zone
+
         streak = self._zone_missing_streak.get(zone_id, 0) + 1
         self._zone_missing_streak[zone_id] = streak
-        cached = self._zone_cache.get(zone_id, fallback)
+        cached = self._zone_cache[zone_id]
 
         if streak < ZONE_OFFLINE_DEBOUNCE_POLLS:
             # Absorb the blip: keep reporting the last known-good data.

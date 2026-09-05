@@ -50,3 +50,9 @@ TIME_SERIES_UPDATE_INTERVAL_ENV_VAR: Final = "NOVA_RC_TIME_SERIES_UPDATE_INTERVA
 # gateway's XYBus reporting instead of flapping entities between their last
 # known value and "unknown" every poll cycle.
 ZONE_OFFLINE_DEBOUNCE_POLLS: Final = 2
+
+# Number of consecutive missing polls after which a zone is evicted from the
+# coordinator's stability cache entirely (e.g. it was removed from the
+# gateway configuration), so the cache does not grow unbounded for zones
+# that will never come back online.
+ZONE_CACHE_PRUNE_POLLS: Final = 240
