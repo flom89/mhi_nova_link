@@ -14,4 +14,4 @@ jobs:
       - uses: "actions/checkout@v7"
       # Pinned to latest commit on master as of 2026-08-03.
       # Update this SHA when a newer hassfest release is available.
-      - uses: "home-assistant/actions/hassfest@a7c616ce81ccda50150bf1595786c71b1883fabb"
+      - uses: "home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93"
