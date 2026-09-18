@@ -179,6 +179,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 stabilized.append(self._debounce_offline_zone(zone_id, zone))
                 continue
 
+            zone = self._merge_with_cached_zone(zone_id, zone)
             self._zone_missing_streak[zone_id] = 0
             self._zone_cache[zone_id] = zone
             stabilized.append(zone)
@@ -242,6 +243,14 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             cached_payload = get_cached(zone_id)
             if isinstance(cached_payload, dict):
                 zone["timeSeries"] = cached_payload
+
+    def _merge_with_cached_zone(self, zone_id: int, zone: dict[str, Any]) -> dict[str, Any]:
+        """Fill missing/null fields from the last known-good zone payload."""
+        cached_zone = self._zone_cache.get(zone_id)
+        if not isinstance(cached_zone, dict):
+            return zone
+
+        return _deep_fill_missing(zone, cached_zone)
 
     def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
         """Schedule optional historical data after the lightweight refresh completes."""
@@ -814,3 +823,23 @@ def _get_update_interval(entry: Any | None) -> timedelta:
         return timedelta(seconds=DEFAULT_POLL_INTERVAL)
 
     return timedelta(seconds=max(interval, 1))
+
+
+def _deep_fill_missing(current: Any, fallback: Any) -> Any:
+    """Fill missing/None values in current payload from fallback payload."""
+    if current is None:
+        return fallback
+
+    if isinstance(current, dict) and isinstance(fallback, dict):
+        merged = dict(current)
+        for key, fallback_value in fallback.items():
+            if key not in merged:
+                merged[key] = fallback_value
+                continue
+            merged[key] = _deep_fill_missing(merged[key], fallback_value)
+        return merged
+
+    if isinstance(current, list) and isinstance(fallback, list):
+        return fallback if not current else current
+
+    return current

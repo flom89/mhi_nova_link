@@ -98,6 +98,32 @@ async def test_zone_reported_offline_recovers_immediately() -> None:
 
 
 @pytest.mark.asyncio
+async def test_online_zone_reuses_cached_values_when_payload_is_partial() -> None:
+    """A partial online payload should keep last known non-null zone values."""
+    first_zone = {
+        "zoneId": 1,
+        "available": True,
+        "roomAirTemperature": 21.5,
+        "operationMode": "cooling",
+    }
+    partial_zone = {
+        "zoneId": 1,
+        "available": True,
+        "roomAirTemperature": None,
+        "operationMode": None,
+    }
+    coordinator = _make_coordinator([[first_zone], [partial_zone]])
+
+    first = await coordinator._async_update_data()
+    coordinator.data = first
+    second = await coordinator._async_update_data()
+
+    assert second[0]["available"] is True
+    assert second[0]["roomAirTemperature"] == 21.5
+    assert second[0]["operationMode"] == "cooling"
+
+
+@pytest.mark.asyncio
 async def test_never_seen_zone_reported_offline_is_marked_unavailable() -> None:
     """A zone that has never been online should not be hidden as a false blip."""
     coordinator = _make_coordinator([[{"zoneId": 5, "available": False}]])
