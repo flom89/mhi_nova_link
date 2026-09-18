@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 from collections.abc import Mapping
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -242,7 +243,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
             cached_payload = get_cached(zone_id)
             if isinstance(cached_payload, dict):
-                zone["timeSeries"] = cached_payload
+                zone["timeSeries"] = deepcopy(cached_payload)
 
     def _merge_with_cached_zone(self, zone_id: int, zone: dict[str, Any]) -> dict[str, Any]:
         """Fill missing/null fields from the last known-good zone payload."""
