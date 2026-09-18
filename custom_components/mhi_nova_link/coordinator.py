@@ -840,6 +840,6 @@ def _deep_fill_missing(current: Any, fallback: Any) -> Any:
         return merged
 
     if isinstance(current, list) and isinstance(fallback, list):
-        return fallback if not current else current
+        return current
 
     return current
