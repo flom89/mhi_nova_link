@@ -4,7 +4,6 @@ import asyncio
 import logging
 import os
 from collections.abc import Mapping
-from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -243,7 +242,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
             cached_payload = get_cached(zone_id)
             if isinstance(cached_payload, dict):
-                zone["timeSeries"] = deepcopy(cached_payload)
+                zone["timeSeries"] = _copy_time_series_payload(cached_payload)
 
     def _merge_with_cached_zone(self, zone_id: int, zone: dict[str, Any]) -> dict[str, Any]:
         """Fill missing keys and ``None`` scalars from the last known-good payload."""
@@ -849,3 +848,17 @@ def _deep_fill_missing(current: Any, fallback: Any) -> Any:
         return current
 
     return current
+
+
+def _copy_time_series_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Copy the cache payload cheaply while isolating top-level list containers."""
+    copied = dict(payload)
+    data_sets = copied.get("dataSets")
+    if isinstance(data_sets, list):
+        copied["dataSets"] = list(data_sets)
+
+    datasets_lower = copied.get("datasets")
+    if isinstance(datasets_lower, list):
+        copied["datasets"] = list(datasets_lower)
+
+    return copied
