@@ -851,14 +851,15 @@ def _deep_fill_missing(current: Any, fallback: Any) -> Any:
 
 
 def _copy_time_series_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    """Copy the cache payload cheaply while isolating top-level list containers."""
-    copied = dict(payload)
-    data_sets = copied.get("dataSets")
-    if isinstance(data_sets, list):
-        copied["dataSets"] = list(data_sets)
+    """Copy a JSON-like time-series payload so hydrated data cannot mutate cache."""
+    cloned = _clone_json_like(payload)
+    return cloned if isinstance(cloned, dict) else dict(payload)
 
-    datasets_lower = copied.get("datasets")
-    if isinstance(datasets_lower, list):
-        copied["datasets"] = list(datasets_lower)
 
-    return copied
+def _clone_json_like(value: Any) -> Any:
+    """Recursively clone dict/list containers while keeping immutable scalars."""
+    if isinstance(value, dict):
+        return {key: _clone_json_like(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_clone_json_like(item) for item in value]
+    return value
