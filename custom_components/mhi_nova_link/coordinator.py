@@ -250,7 +250,10 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if not isinstance(cached_zone, dict):
             return zone
 
-        return _deep_fill_missing(zone, cached_zone)
+        cached_without_time_series = {
+            key: value for key, value in cached_zone.items() if key != "timeSeries"
+        }
+        return _deep_fill_missing(zone, cached_without_time_series)
 
     def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
         """Schedule optional historical data after the lightweight refresh completes."""
