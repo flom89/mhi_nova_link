@@ -99,6 +99,36 @@ async def test_time_series_failure_does_not_fail_lightweight_refresh() -> None:
 
 
 @pytest.mark.asyncio
+async def test_refresh_reuses_cached_time_series_before_background_enrichment() -> None:
+    """A lightweight refresh should keep cached history until enrichment updates it."""
+    enrichment_started = asyncio.Event()
+    enrichment_release = asyncio.Event()
+    cached_time_series = {"dataSets": [{"id": "ou_indication_protection_state_comp"}]}
+
+    async def enrich(_: list[dict[str, object]]) -> None:
+        enrichment_started.set()
+        await enrichment_release.wait()
+
+    api = SimpleNamespace(
+        take_initial_zones=lambda: None,
+        async_get_zones=AsyncMock(return_value=[{"zoneId": 1}]),
+        async_get_notifications=AsyncMock(return_value={}),
+        async_get_gpios=AsyncMock(return_value=({}, {})),
+        async_get_gateway_update_information=AsyncMock(return_value={}),
+        get_cached_time_series=lambda zone_id: cached_time_series if zone_id == 1 else None,
+        async_enrich_time_series=enrich,
+    )
+    coordinator = NovaRcDataUpdateCoordinator(DummyHass(), api)
+
+    zones = await coordinator._async_update_data()
+
+    assert zones[0]["timeSeries"] == cached_time_series
+    await enrichment_started.wait()
+    enrichment_release.set()
+    await coordinator._time_series_enrichment_task
+
+
+@pytest.mark.asyncio
 async def test_new_refresh_replaces_stale_time_series_enrichment() -> None:
     """A newer zone refresh should supersede its unfinished history request."""
     first_started = asyncio.Event()

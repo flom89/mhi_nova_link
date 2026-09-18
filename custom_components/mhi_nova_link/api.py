@@ -411,6 +411,10 @@ class NovaRcApiClient:
         """Return cached time-series payload for a zone."""
         return self._time_series_cache.get(zone_id)
 
+    def get_cached_time_series(self, zone_id: int) -> dict[str, Any] | None:
+        """Expose cached time-series payload for a zone."""
+        return self._get_cached_time_series(zone_id)
+
     def _set_cached_time_series(
         self,
         zone_id: int,

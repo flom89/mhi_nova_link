@@ -147,6 +147,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             and previous_installed_version is not None
         ):
             self.gateway_update["installed_version"] = previous_installed_version
+        self._hydrate_with_cached_time_series(data)
         data = self._stabilize_zones(data)
         self._async_schedule_time_series_enrichment(data)
         return data
@@ -223,6 +224,24 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         offline_zone["available"] = False
         self._zone_cache[zone_id] = offline_zone
         return offline_zone
+
+    def _hydrate_with_cached_time_series(self, zones: list[dict[str, Any]]) -> None:
+        """Attach cached time-series payloads so sensors do not flap to unknown."""
+        get_cached = getattr(self.api, "get_cached_time_series", None)
+        if not callable(get_cached):
+            return
+
+        for zone in zones:
+            if zone.get("timeSeries") is not None:
+                continue
+
+            zone_id = zone.get("zoneId")
+            if not isinstance(zone_id, int):
+                continue
+
+            cached_payload = get_cached(zone_id)
+            if isinstance(cached_payload, dict):
+                zone["timeSeries"] = cached_payload
 
     def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
         """Schedule optional historical data after the lightweight refresh completes."""
