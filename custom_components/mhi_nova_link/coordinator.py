@@ -147,6 +147,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             and previous_installed_version is not None
         ):
             self.gateway_update["installed_version"] = previous_installed_version
+        self._hydrate_with_cached_time_series(data)
         data = self._stabilize_zones(data)
         self._async_schedule_time_series_enrichment(data)
         return data
@@ -178,6 +179,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 stabilized.append(self._debounce_offline_zone(zone_id, zone))
                 continue
 
+            zone = self._merge_with_cached_zone(zone_id, zone)
             self._zone_missing_streak[zone_id] = 0
             self._zone_cache[zone_id] = zone
             stabilized.append(zone)
@@ -223,6 +225,35 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         offline_zone["available"] = False
         self._zone_cache[zone_id] = offline_zone
         return offline_zone
+
+    def _hydrate_with_cached_time_series(self, zones: list[dict[str, Any]]) -> None:
+        """Attach cached time-series payloads so sensors do not flap to unknown."""
+        get_cached = getattr(self.api, "get_cached_time_series", None)
+        if not callable(get_cached):
+            return
+
+        for zone in zones:
+            if zone.get("timeSeries") is not None:
+                continue
+
+            zone_id = zone.get("zoneId")
+            if not isinstance(zone_id, int):
+                continue
+
+            cached_payload = get_cached(zone_id)
+            if isinstance(cached_payload, dict):
+                zone["timeSeries"] = _copy_time_series_payload(cached_payload)
+
+    def _merge_with_cached_zone(self, zone_id: int, zone: dict[str, Any]) -> dict[str, Any]:
+        """Fill missing keys and ``None`` scalars from the last known-good payload."""
+        cached_zone = self._zone_cache.get(zone_id)
+        if not isinstance(cached_zone, dict):
+            return zone
+
+        cached_without_time_series = {
+            key: value for key, value in cached_zone.items() if key != "timeSeries"
+        }
+        return _deep_fill_missing(zone, cached_without_time_series)
 
     def _async_schedule_time_series_enrichment(self, zones: list[dict[str, Any]]) -> None:
         """Schedule optional historical data after the lightweight refresh completes."""
@@ -795,3 +826,43 @@ def _get_update_interval(entry: Any | None) -> timedelta:
         return timedelta(seconds=DEFAULT_POLL_INTERVAL)
 
     return timedelta(seconds=max(interval, 1))
+
+
+def _deep_fill_missing(current: Any, fallback: Any) -> Any:
+    """Merge payloads by filling missing keys and ``None`` values from fallback.
+
+    For dictionaries, absent keys and keys with ``None`` values in ``current`` are
+    recursively replaced from ``fallback``. For lists, the fresh list is always
+    preserved (including explicit empty lists) to avoid reviving stale entries.
+    """
+    if current is None:
+        return fallback
+
+    if isinstance(current, dict) and isinstance(fallback, dict):
+        merged = dict(current)
+        for key, fallback_value in fallback.items():
+            if key not in merged:
+                merged[key] = fallback_value
+                continue
+            merged[key] = _deep_fill_missing(merged[key], fallback_value)
+        return merged
+
+    if isinstance(current, list) and isinstance(fallback, list):
+        return current
+
+    return current
+
+
+def _copy_time_series_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Copy a JSON-like time-series payload so hydrated data cannot mutate cache."""
+    cloned = _clone_json_like(payload)
+    return cloned if isinstance(cloned, dict) else dict(payload)
+
+
+def _clone_json_like(value: Any) -> Any:
+    """Recursively clone dict/list containers while keeping immutable scalars."""
+    if isinstance(value, dict):
+        return {key: _clone_json_like(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_clone_json_like(item) for item in value]
+    return value
