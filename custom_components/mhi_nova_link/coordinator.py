@@ -246,7 +246,7 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
                 zone["timeSeries"] = deepcopy(cached_payload)
 
     def _merge_with_cached_zone(self, zone_id: int, zone: dict[str, Any]) -> dict[str, Any]:
-        """Fill missing/null fields from the last known-good zone payload."""
+        """Fill missing keys and ``None`` scalars from the last known-good payload."""
         cached_zone = self._zone_cache.get(zone_id)
         if not isinstance(cached_zone, dict):
             return zone
@@ -827,7 +827,12 @@ def _get_update_interval(entry: Any | None) -> timedelta:
 
 
 def _deep_fill_missing(current: Any, fallback: Any) -> Any:
-    """Fill missing/None values in current payload from fallback payload."""
+    """Merge payloads by filling missing keys and ``None`` values from fallback.
+
+    For dictionaries, absent keys and keys with ``None`` values in ``current`` are
+    recursively replaced from ``fallback``. For lists, the fresh list is always
+    preserved (including explicit empty lists) to avoid reviving stale entries.
+    """
     if current is None:
         return fallback
 
