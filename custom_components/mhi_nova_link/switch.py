@@ -49,7 +49,7 @@ class NovaRc3DAutoSwitch(NovaRcZoneEntity, SwitchEntity):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize a switch for a specific gateway zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_3d_auto"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}_3d_auto"
 
     @property
     def is_on(self) -> bool:
@@ -94,7 +94,7 @@ class NovaRcGatewayControlSwitch(CoordinatorEntity[NovaRcDataUpdateCoordinator],
         """Initialize a gateway-level GPIO control switch."""
         super().__init__(coordinator)
         self._attr_unique_id = (
-            f"{coordinator.api.host}_gateway_gpio_control_{self._gpio_function.lower()}"
+            f"{coordinator.config_entry.entry_id}_gateway_gpio_control_{self._gpio_function.lower()}"
         )
 
     @property

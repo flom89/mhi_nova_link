@@ -6,8 +6,9 @@ from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -46,8 +47,28 @@ PLATFORMS: tuple[Platform, ...] = (
 )
 
 
+async def _async_migrate_unique_ids(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Rewrite host-based entity unique ids to use the config entry id."""
+    old_prefix = f"{entry.data[CONF_HOST]}_"
+    new_prefix = f"{entry.entry_id}_"
+
+    @callback
+    def _migrate(entity_entry: er.RegistryEntry) -> dict[str, str] | None:
+        if entity_entry.unique_id.startswith(old_prefix):
+            return {"new_unique_id": new_prefix + entity_entry.unique_id[len(old_prefix) :]}
+        return None
+
+    await er.async_migrate_entries(hass, entry.entry_id, _migrate)
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload the entry when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: NovaRcConfigEntry) -> bool:
     """Set up a config entry."""
+    await _async_migrate_unique_ids(hass, entry)
     expected_title = f"CompTrol 4Web NOVA RC ({entry.data[CONF_HOST]})"
     if entry.title != expected_title:
         hass.config_entries.async_update_entry(entry, title=expected_title)
@@ -112,6 +133,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: NovaRcConfigEntry) -> bo
         hass.config_entries.async_update_entry(entry, data=updated_data)
     if opt_in and anonymous_id:
         hass.async_create_task(async_send_analytics_ping(hass, anonymous_id))
+
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     return True
 
