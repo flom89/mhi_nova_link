@@ -98,7 +98,7 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         """Initialize the climate entity for a single zone."""
         super().__init__(coordinator, zone_id)
 
-        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}"
 
         self._attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE

@@ -78,7 +78,7 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_louver"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}_louver"
 
     @property
     def icon(self) -> str:
@@ -139,7 +139,7 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.api.host}_zone_{zone_id}_vane"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}_vane"
 
     @property
     def icon(self) -> str:
