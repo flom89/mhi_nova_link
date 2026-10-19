@@ -962,14 +962,18 @@ class NovaRcApiClient:
                     _LOGGER.error("Mutation returned HTTP error (%s): %s", response.status, text)
                     return False
 
-                response_json = await response.json()
+                response_json = _coerce_mapping(await response.json())
                 if "errors" in response_json:
                     _LOGGER.error("Mutation GraphQL error: %s", response_json["errors"])
                     return False
 
-                job = (
-                    response_json.get("data", {}).get("xybus", {}).get("zone", {}).get("patch", {})
-                )
+                data = _coerce_mapping(response_json.get("data"))
+                xybus = _coerce_mapping(data.get("xybus"))
+                zone = _coerce_mapping(xybus.get("zone"))
+                job = _coerce_mapping(zone.get("patch"))
+                if not job:
+                    return False
+
                 _LOGGER.debug(
                     "Patch job started for zone %s (data: %s): %s",
                     zone_id,
@@ -1023,7 +1027,7 @@ class NovaRcApiClient:
                     )
                     return False
 
-                response_json = await response.json()
+                response_json = _coerce_mapping(await response.json())
                 if "errors" in response_json:
                     _LOGGER.error("SetActiveHigh GraphQL error: %s", response_json["errors"])
                     return False
