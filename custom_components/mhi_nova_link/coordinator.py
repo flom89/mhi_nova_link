@@ -99,13 +99,6 @@ class NovaRcDataUpdateCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             "updated_at": None,
         }
 
-    @property
-    def config_entry_id(self) -> str:
-        """Return the config entry id used to create this coordinator."""
-        if self.config_entry is None:
-            raise RuntimeError("Coordinator has no config entry")
-        return self.config_entry.entry_id
-
     async def _async_update_data(self) -> list[dict[str, Any]]:
         """Fetch the latest zone data from the GraphQL gateway."""
         await self._async_ensure_restore_state_loaded()

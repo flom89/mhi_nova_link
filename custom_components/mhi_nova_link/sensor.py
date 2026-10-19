@@ -17,7 +17,12 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcIndoorUnitEntity, NovaRcZoneEntity, build_gateway_device_info
+from .entity import (
+    NovaRcIndoorUnitEntity,
+    NovaRcZoneEntity,
+    build_gateway_device_info,
+    get_config_entry_id,
+)
 from .helpers import get_dataset_value, get_zone_time_series_datasets
 
 
@@ -118,7 +123,7 @@ class NovaRcGatewaySoftwareVersionSensor(
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
         """Initialize the gateway software version sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_gateway_software_version"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_gateway_software_version"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -164,7 +169,7 @@ class NovaRcRestoreStatusSensor(CoordinatorEntity[NovaRcDataUpdateCoordinator], 
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
         """Initialize the restore status diagnostic sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_gateway_restore_status"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_gateway_restore_status"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -206,7 +211,7 @@ class NovaRcTemperatureSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the room-temperature sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_temp"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_temp"
 
     @property
     def native_value(self) -> float | None:
@@ -225,7 +230,7 @@ class NovaRcSetpointSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the setpoint sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_setpoint"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_setpoint"
 
     @property
     def native_value(self) -> float | None:
@@ -244,7 +249,7 @@ class NovaRcCoolingTemperatureMinSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the cooling minimum temperature sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_cooling_temp_min"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_cooling_temp_min"
 
     @property
     def native_value(self) -> float | None:
@@ -264,7 +269,7 @@ class NovaRcCoolingTemperatureMaxSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the cooling maximum temperature sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_cooling_temp_max"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_cooling_temp_max"
 
     @property
     def native_value(self) -> float | None:
@@ -284,7 +289,7 @@ class NovaRcHeatingTemperatureMinSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the heating minimum temperature sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_heating_temp_min"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_heating_temp_min"
 
     @property
     def native_value(self) -> float | None:
@@ -304,7 +309,7 @@ class NovaRcHeatingTemperatureMaxSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the heating maximum temperature sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_heating_temp_max"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_heating_temp_max"
 
     @property
     def native_value(self) -> float | None:
@@ -322,7 +327,7 @@ class NovaRcOperationModeSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the operation mode sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_mode"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_mode"
 
     @property
     def native_value(self) -> str | None:
@@ -354,7 +359,7 @@ class NovaRcFanSpeedSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the fan-speed sensor for a zone."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_fan"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_fan"
 
     @property
     def native_value(self) -> str | None:
@@ -389,7 +394,7 @@ class NovaRcIndoorUnitTemperatureSensor(NovaRcIndoorUnitBaseSensor):
     ) -> None:
         """Initialize the indoor-unit temperature sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_{indoor_unit_id}_temp"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_temp"
 
     @property
     def native_value(self) -> float | None:
@@ -422,7 +427,7 @@ class NovaRcIndoorUnitSetpointSensor(NovaRcIndoorUnitBaseSensor):
         """Initialize the indoor-unit setpoint sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = (
-            f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_{indoor_unit_id}_setpoint"
+            f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_setpoint"
         )
 
     @property
@@ -449,7 +454,7 @@ class NovaRcIndoorUnitOperationModeSensor(NovaRcIndoorUnitBaseSensor):
     ) -> None:
         """Initialize the indoor-unit operation-mode sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
-        self._attr_unique_id =         f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_{indoor_unit_id}_mode"
+        self._attr_unique_id =         f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_mode"
 
     @property
     def native_value(self) -> str | None:
@@ -484,7 +489,7 @@ class NovaRcIndoorUnitFanSpeedSensor(NovaRcIndoorUnitBaseSensor):
     ) -> None:
         """Initialize the indoor-unit fan-speed sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
-        self._attr_unique_id =         f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_{indoor_unit_id}_fan"
+        self._attr_unique_id =         f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_fan"
 
     @property
     def native_value(self) -> str | None:
@@ -517,7 +522,7 @@ class NovaRcOutdoorAirTemperatureSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the outdoor-air temperature sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_outdoor_temp"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_outdoor_temp"
 
     @property
     def native_value(self) -> float | None:
@@ -537,7 +542,7 @@ class NovaRcCompressorFrequencySensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the compressor-frequency sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_compressor_freq"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_compressor_freq"
 
     @property
     def native_value(self) -> float | None:
@@ -558,7 +563,7 @@ class NovaRcCompressorCurrentSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the compressor-current sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_compressor_current"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_compressor_current"
 
     @property
     def native_value(self) -> float | None:
@@ -579,7 +584,7 @@ class NovaRcCompressorPowerSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the compressor-power sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_compressor_power"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_compressor_power"
 
     @property
     def native_value(self) -> float | None:
@@ -599,7 +604,7 @@ class NovaRcProtectionStateSensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the protection-state sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_protection_state"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_protection_state"
 
     @property
     def native_value(self) -> str | None:
@@ -635,7 +640,7 @@ class NovaRcIndoorCapacitySensor(NovaRcBaseSensor):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize the indoor-capacity sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_capacity"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_capacity"
 
     @property
     def native_value(self) -> float | None:
@@ -661,7 +666,7 @@ class NovaRcIndoorHeatExchanger1LowTempSensor(NovaRcBaseSensor):
         """Initialize the indoor heat exchanger 1 low-site temperature sensor."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = (
-            f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_heat_exchanger_1_low_temp"
+            f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_heat_exchanger_1_low_temp"
         )
 
     @property
@@ -684,7 +689,7 @@ class NovaRcOutdoorHeatExchanger1LowTempSensor(NovaRcBaseSensor):
         """Initialize the outdoor heat exchanger 1 low-site temperature sensor."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = (
-            f"{coordinator.config_entry_id}_zone_{zone_id}_outdoor_heat_exchanger_1_low_temp"
+            f"{get_config_entry_id(coordinator)}_zone_{zone_id}_outdoor_heat_exchanger_1_low_temp"
         )
 
     @property
@@ -707,7 +712,7 @@ class NovaRcOutdoorHeatExchanger1HighTempSensor(NovaRcBaseSensor):
         """Initialize the outdoor heat exchanger 1 high-site temperature sensor."""
         super().__init__(coordinator, zone_id)
         self._attr_unique_id = (
-            f"{coordinator.config_entry_id}_zone_{zone_id}_outdoor_heat_exchanger_1_high_temp"
+            f"{get_config_entry_id(coordinator)}_zone_{zone_id}_outdoor_heat_exchanger_1_high_temp"
         )
 
     @property

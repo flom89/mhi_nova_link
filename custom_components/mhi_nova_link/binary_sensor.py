@@ -13,7 +13,12 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcIndoorUnitEntity, NovaRcZoneEntity, build_gateway_device_info
+from .entity import (
+    NovaRcIndoorUnitEntity,
+    NovaRcZoneEntity,
+    build_gateway_device_info,
+    get_config_entry_id,
+)
 from .helpers import dataset_is_on, get_dataset_value, get_zone_time_series_datasets
 
 
@@ -88,7 +93,7 @@ class NovaRcGatewayBinarySensor(CoordinatorEntity[NovaRcDataUpdateCoordinator], 
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
         """Initialize a gateway-level GPIO binary sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_gateway_gpio_{self._gpio_function.lower()}"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_gateway_gpio_{self._gpio_function.lower()}"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -120,7 +125,7 @@ class NovaRcGatewayUpdateAvailableBinarySensor(
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator) -> None:
         """Initialize the gateway update-availability sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_gateway_update_available"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_gateway_update_available"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -182,7 +187,7 @@ class NovaRcRunningBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the running state sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_running"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_running"
 
     @property
     def is_on(self) -> bool:
@@ -204,7 +209,7 @@ class NovaRcAvailableBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the availability sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_available"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_available"
 
     @property
     def is_on(self) -> bool:
@@ -224,7 +229,7 @@ class NovaRc3DAutoBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the 3D auto state sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_3d_auto"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_3d_auto"
 
     @property
     def is_on(self) -> bool:
@@ -244,7 +249,7 @@ class NovaRcTemperatureRangeBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the temperature range sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_temp_range"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_temp_range"
 
     @property
     def is_on(self) -> bool:
@@ -266,7 +271,7 @@ class NovaRcCriticalErrorBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the critical error sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_critical_error"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_critical_error"
 
     @property
     def is_on(self) -> bool:
@@ -289,7 +294,7 @@ class NovaRcMaintenanceBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the maintenance sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_maintenance"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_maintenance"
 
     @property
     def is_on(self) -> bool:
@@ -310,7 +315,7 @@ class NovaRcCompressorBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the compressor activity binary sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_compressor"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_compressor"
 
     @property
     def is_on(self) -> bool:
@@ -341,7 +346,7 @@ class NovaRcDefrostingBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the defrosting binary sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_defrosting"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_defrosting"
 
     @property
     def is_on(self) -> bool:
@@ -368,7 +373,7 @@ class NovaRcIndoorUnitRunningBinarySensor(NovaRcIndoorUnitBaseBinarySensor):
         """Initialize the indoor-unit running binary sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = (
-            f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_{indoor_unit_id}_running"
+            f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_running"
         )
 
     @property
@@ -397,7 +402,7 @@ class NovaRcIndoorUnitFilterBinarySensor(NovaRcIndoorUnitBaseBinarySensor):
         """Initialize the indoor-unit filter binary sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
         self._attr_unique_id = (
-            f"{coordinator.config_entry_id}_zone_{zone_id}_indoor_{indoor_unit_id}_filter"
+            f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_filter"
         )
 
     @property
@@ -424,7 +429,7 @@ class NovaRcNotificationsBinarySensor(NovaRcBaseBinarySensor):
     ) -> None:
         """Initialize the notifications binary sensor."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry_id}_zone_{zone_id}_notifications"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_notifications"
 
     @property
     def is_on(self) -> bool:
