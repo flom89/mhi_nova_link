@@ -561,6 +561,12 @@ class TestNormalizeGatewayUpdatePayload:
         assert result["installed_bundle_description"] == "Bundle A"
         assert result["installed_bundle_build"] == "build-1"
 
+    @pytest.mark.parametrize("version", [None, "not-a-dict"])
+    def test_invalid_installed_version_returns_none(self, version: object) -> None:
+        payload = {"data": {"system": {"information": {"installedVersion": version}}}}
+        result = normalize_gateway_update_payload(payload)
+        assert result["installed_version"] is None
+
     def test_available_version_triggers_update_available_flag(self) -> None:
         payload = {
             "data": {
@@ -581,6 +587,17 @@ class TestNormalizeGatewayUpdatePayload:
         assert result["update_available"] is True
         assert result["automatic_check"] is True
         assert result["automatic_install"] is False
+
+    @pytest.mark.parametrize("version", [None, "not-a-dict"])
+    def test_invalid_available_version_returns_none(self, version: object) -> None:
+        payload = {
+            "data": {
+                "update": {"cloud": {"availableSoftwareRelease": {"version": version}}},
+            }
+        }
+        result = normalize_gateway_update_payload(payload)
+        assert result["available_version"] is None
+        assert result["update_available"] is False
 
     def test_no_available_version_means_no_update(self) -> None:
         payload = {

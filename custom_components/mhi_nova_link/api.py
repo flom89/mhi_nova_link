@@ -305,13 +305,13 @@ def normalize_gateway_update_payload(data: dict[str, Any]) -> dict[str, Any]:
     cloud = _coerce_mapping(update).get("cloud", {}) if isinstance(update, dict) else {}
 
     installed_version = (
-        _coerce_mapping(information).get("installedVersion", {}).get("asString")
+        _coerce_mapping(_coerce_mapping(information).get("installedVersion")).get("asString")
         if isinstance(information, dict)
         else None
     )
     available_release = _coerce_mapping(cloud).get("availableSoftwareRelease", {}) if isinstance(cloud, dict) else {}
     available_version = (
-        _coerce_mapping(available_release).get("version", {}).get("asString")
+        _coerce_mapping(_coerce_mapping(available_release).get("version")).get("asString")
         if isinstance(available_release, dict)
         else None
     )
