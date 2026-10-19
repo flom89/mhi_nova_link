@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.3.8] - 2026-10-19
+
+### Release readiness
+- Synchronized integration and package metadata, documentation, and issue-template version examples to 2.3.8.
+- Maintenance release; no integration behavior changes.
+
 ## [2.3.6] - 2026-09-05
 
 ### Release readiness
