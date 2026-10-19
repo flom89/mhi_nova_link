@@ -454,7 +454,7 @@ class NovaRcIndoorUnitOperationModeSensor(NovaRcIndoorUnitBaseSensor):
     ) -> None:
         """Initialize the indoor-unit operation-mode sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
-        self._attr_unique_id =         f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_mode"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_mode"
 
     @property
     def native_value(self) -> str | None:
@@ -489,7 +489,7 @@ class NovaRcIndoorUnitFanSpeedSensor(NovaRcIndoorUnitBaseSensor):
     ) -> None:
         """Initialize the indoor-unit fan-speed sensor."""
         super().__init__(coordinator, zone_id, indoor_unit_id)
-        self._attr_unique_id =         f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_fan"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_indoor_{indoor_unit_id}_fan"
 
     @property
     def native_value(self) -> str | None:
