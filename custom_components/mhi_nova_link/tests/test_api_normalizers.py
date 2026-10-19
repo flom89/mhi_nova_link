@@ -286,6 +286,10 @@ class TestNormalizeZonesPayload:
         result = normalize_zones_payload(payload)
         assert len(result) == 1
 
+    def test_none_or_non_dict_top_level_payload_is_safe(self) -> None:
+        assert normalize_zones_payload(None) == []
+        assert normalize_zones_payload([]) == []
+
 
 # ---------------------------------------------------------------------------
 # normalize_notifications_payload
@@ -352,6 +356,12 @@ class TestNormalizeNotificationsPayload:
     def test_non_dict_notification_value_returns_empty(self) -> None:
         payload = {"data": {"notification": "invalid"}}
         assert normalize_notifications_payload(payload) == {}
+
+    def test_none_or_non_dict_top_level_payload_is_safe(self) -> None:
+        result = normalize_notifications_payload(None)
+        assert result["notifications"] == []
+        assert result["errors"] == []
+        assert normalize_notifications_payload([]) == {"notifications": [], "errors": [], "notification_count": None, "sources": None}
 
 
 # ---------------------------------------------------------------------------
