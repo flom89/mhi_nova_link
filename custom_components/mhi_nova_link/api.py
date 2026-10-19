@@ -543,7 +543,7 @@ class NovaRcApiClient:
                     _LOGGER.error("GetZones returned HTTP error (%s): %s", response.status, text)
                     raise CannotConnect(f"HTTP error: {response.status}")
 
-                data = await response.json()
+                data = _coerce_mapping(await response.json())
                 if "errors" in data:
                     _LOGGER.error("GraphQL response error: %s", data["errors"])
                     raise CannotConnect("GraphQL query error")
@@ -597,7 +597,7 @@ class NovaRcApiClient:
                     _LOGGER.debug("GetZone failed for zone %s: %s", zone_id, text)
                     return None
 
-                data = await response.json()
+                data = _coerce_mapping(await response.json())
                 if "errors" in data:
                     _LOGGER.debug(
                         "GetZone GraphQL errors for zone %s: %s",
@@ -670,7 +670,7 @@ class NovaRcApiClient:
                     _LOGGER.debug("Notification query failed: %s", text)
                     return {}
 
-                data = await response.json()
+                data = _coerce_mapping(await response.json())
                 if "errors" in data:
                     _LOGGER.debug("Notification query error: %s", data.get("errors"))
                     return {}
@@ -708,7 +708,7 @@ class NovaRcApiClient:
                     _LOGGER.debug("GPIO query failed: %s", text)
                     return {}, {}
 
-                data = await response.json()
+                data = _coerce_mapping(await response.json())
                 if "errors" in data:
                     _LOGGER.debug("GPIO query error: %s", data.get("errors"))
                     return {}, {}
@@ -746,7 +746,7 @@ class NovaRcApiClient:
                     _LOGGER.debug("Gateway update-info query failed: %s", text)
                     return {}
 
-                data = await response.json()
+                data = _coerce_mapping(await response.json())
                 if "errors" in data:
                     _LOGGER.debug("Gateway update-info query error: %s", data.get("errors"))
                     return {}
@@ -822,7 +822,7 @@ class NovaRcApiClient:
                         zone["timeSeries"] = cached_payload
                     return
 
-                data = await response.json()
+                data = _coerce_mapping(await response.json())
                 if "errors" in data:
                     _LOGGER.debug(
                         "Time-series query error for zone %s: %s",
