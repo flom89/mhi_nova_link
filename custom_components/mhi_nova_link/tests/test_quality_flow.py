@@ -66,6 +66,9 @@ class DummyConfigEntries:
 class DummyHass(SimpleNamespace):
     """Minimal Home Assistant stub for the regression tests."""
 
+    __hash__ = object.__hash__
+    __eq__ = object.__eq__
+
     def __init__(self) -> None:
         """Initialize the minimal Home Assistant stub."""
         super().__init__(data={}, config_entries=DummyConfigEntries())
