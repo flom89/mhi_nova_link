@@ -1,11 +1,13 @@
 """Comprehensive unit tests for all normalize_* and build_* functions in api.py."""
 
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from custom_components.mhi_nova_link.api import (
     InvalidAuth,
+    NovaRcApiClient,
     _get_time_series_update_interval,
     _raise_if_auth_rejected,
     build_time_series_identifiers,
@@ -597,3 +599,39 @@ class TestNormalizeGatewayUpdatePayload:
         payload: dict[str, object] = {"data": {"system": None, "update": {}}}
         result = normalize_gateway_update_payload(payload)
         assert result["installed_version"] is None
+
+    @pytest.mark.parametrize("version", [None, "unexpected"])
+    def test_non_dict_installed_version_is_handled_gracefully(self, version: object) -> None:
+        payload = {"data": {"system": {"information": {"installedVersion": version}}}}
+        result = normalize_gateway_update_payload(payload)
+        assert result["installed_version"] is None
+
+    @pytest.mark.parametrize("version", [None, "unexpected"])
+    def test_non_dict_available_version_is_handled_gracefully(self, version: object) -> None:
+        payload = {
+            "data": {
+                "update": {
+                    "cloud": {
+                        "availableSoftwareRelease": {"version": version},
+                    }
+                }
+            }
+        }
+        result = normalize_gateway_update_payload(payload)
+        assert result["available_version"] is None
+
+
+@pytest.mark.asyncio
+async def test_login_handles_null_zones_response() -> None:
+    """A null JSON response should be normalized before the GraphQL error check."""
+    response = MagicMock()
+    response.status = 200
+    response.text = AsyncMock(return_value="null")
+    response.json = AsyncMock(return_value=None)
+    session = MagicMock()
+    session.post.return_value.__aenter__ = AsyncMock(return_value=response)
+
+    client = NovaRcApiClient("gateway.local", session)
+
+    assert await client.async_login("username", "password") is True
+    assert client.take_initial_zones() == []
