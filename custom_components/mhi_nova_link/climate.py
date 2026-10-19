@@ -22,7 +22,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity
+from .entity import NovaRcZoneEntity, get_config_entry_id
 
 # Map gateway mode names to Home Assistant HVAC modes.
 HVAC_MODE_MAP = {
@@ -98,7 +98,7 @@ class NovaRcZoneClimate(NovaRcZoneEntity, ClimateEntity):
         """Initialize the climate entity for a single zone."""
         super().__init__(coordinator, zone_id)
 
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}"
 
         self._attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE

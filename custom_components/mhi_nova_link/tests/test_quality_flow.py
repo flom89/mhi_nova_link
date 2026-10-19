@@ -88,7 +88,10 @@ def hass_fixture() -> HomeAssistant:
 @pytest.fixture(autouse=True)
 def patch_update_coordinator_report_usage() -> Generator[None, None, None]:
     """Disable frame usage reporting for lightweight unit test stubs."""
-    with patch("homeassistant.helpers.frame.report_usage"):
+    with (
+        patch("homeassistant.helpers.frame.report_usage"),
+        patch("homeassistant.helpers.entity_registry.async_migrate_entries", new_callable=AsyncMock),
+    ):
         yield
 
 
@@ -124,6 +127,10 @@ class DummyConfigEntry(SimpleNamespace):
 
     def async_on_unload(self, func: object) -> None:
         """Accept unload callbacks required by DataUpdateCoordinator."""
+
+    def add_update_listener(self, func: object) -> object:
+        """Return a no-op unsubscribe callback for update listeners."""
+        return lambda: None
 
 
 @pytest.fixture(name="integration_module")

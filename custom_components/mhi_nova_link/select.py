@@ -8,7 +8,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import NovaRcConfigEntry
 from .coordinator import NovaRcDataUpdateCoordinator
-from .entity import NovaRcZoneEntity
+from .entity import NovaRcZoneEntity, get_config_entry_id
 
 # Position mapping (gateway values to UI text)
 LOUVER_MAP = {
@@ -78,7 +78,7 @@ class NovaRcLouverSelect(NovaRcBaseSelect):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}_louver"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_louver"
 
     @property
     def icon(self) -> str:
@@ -139,7 +139,7 @@ class NovaRcVaneSelect(NovaRcBaseSelect):
     def __init__(self, coordinator: NovaRcDataUpdateCoordinator, zone_id: int) -> None:
         """Initialize."""
         super().__init__(coordinator, zone_id)
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_zone_{zone_id}_vane"
+        self._attr_unique_id = f"{get_config_entry_id(coordinator)}_zone_{zone_id}_vane"
 
     @property
     def icon(self) -> str:

@@ -120,6 +120,13 @@ class NovaRcIndoorUnitEntity(NovaRcZoneEntity):
         return device_info
 
 
+def get_config_entry_id(coordinator: NovaRcDataUpdateCoordinator) -> str:
+    """Return the config entry id required for stable entity identity."""
+    if coordinator.config_entry is None:
+        raise RuntimeError("Coordinator has no config entry")
+    return coordinator.config_entry.entry_id
+
+
 def build_gateway_device_info(
     entry_id: str, *, identifier_suffix: str, name: str, via_gateway: bool = True
 ) -> DeviceInfo:
